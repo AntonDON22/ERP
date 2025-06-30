@@ -114,11 +114,41 @@ export const useDeleteDocuments = () => {
   });
 };
 
+let isCreatingDocument = false;
+let lastDocumentRequest: any = null;
+
 export const useCreateReceiptDocument = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (documentData: any) => {
-      return apiRequest("/api/documents/create-receipt", "POST", documentData);
+      // Защита от дублирования на уровне hook
+      if (isCreatingDocument) {
+        console.log('🚫 Блокирован повторный запрос в hook');
+        throw new Error('Document creation already in progress');
+      }
+      
+      // Проверяем, не такой ли же запрос недавно обрабатывался
+      if (lastDocumentRequest && JSON.stringify(lastDocumentRequest) === JSON.stringify(documentData)) {
+        console.log('🚫 Блокирован дублированный запрос');
+        throw new Error('Duplicate request detected');
+      }
+      
+      isCreatingDocument = true;
+      lastDocumentRequest = { ...documentData };
+      
+      console.log('🔒 Блокировка активирована в hook');
+      
+      try {
+        const result = await apiRequest("/api/documents/create-receipt", "POST", documentData);
+        console.log('✅ Запрос успешно выполнен в hook');
+        return result;
+      } finally {
+        setTimeout(() => {
+          isCreatingDocument = false;
+          lastDocumentRequest = null;
+          console.log('🔓 Блокировка снята в hook');
+        }, 1000); // Блокировка на 1 секунду
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });

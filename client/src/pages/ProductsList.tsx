@@ -490,7 +490,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
+                  style={{ width: '500px', minWidth: '500px', maxWidth: '500px' }}
                 >
                   <div className="flex items-center justify-between">
                     <button

@@ -417,7 +417,7 @@ export default function SuppliersList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
+                  style={{ width: '500px', minWidth: '500px', maxWidth: '500px' }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -437,7 +437,7 @@ export default function SuppliersList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}
+                  style={{ width: '800px', minWidth: '800px', maxWidth: '800px' }}
                 >
                   <button
                     className="flex items-center space-x-1 hover:text-gray-700"

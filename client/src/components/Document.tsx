@@ -78,7 +78,8 @@ export default function Document({ config, mode = 'create', documentData }: Docu
   const { toast } = useToast();
   const { data: products = [] } = useProducts();
   const mutation = config.mutationHook();
-  const submittingRef = useRef(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitCountRef = useRef(0);
 
   // Состояние для режима редактирования/просмотра
   const [isEditing, setIsEditing] = useState(mode === 'create' || mode === 'edit');
@@ -169,34 +170,53 @@ export default function Document({ config, mode = 'create', documentData }: Docu
     setIsEditing(!isEditing);
   };
 
-  // Функция сохранения изменений
+  // Функция сохранения изменений - защищенная от дублирования
   const handleSave = async (data: FormDocument) => {
-    if (mutation.isPending || submittingRef.current) return; // Предотвращаем множественные отправки
+    // Тройная защита от множественного вызова
+    if (isSubmitting || mutation.isPending) {
+      console.log('⚠️ Отклонен: уже отправляется (isSubmitting:', isSubmitting, ', isPending:', mutation.isPending, ')');
+      return;
+    }
     
-    submittingRef.current = true;
+    // Увеличиваем счетчик попыток отправки
+    submitCountRef.current += 1;
+    const currentSubmitId = submitCountRef.current;
+    
+    console.log(`🚀 Начинаем отправку #${currentSubmitId}`);
+    setIsSubmitting(true);
+    
     try {
-      const finalDocumentName = mode === 'create' ? generateDocumentName() : documentName;
+      // Дополнительная проверка - если другая отправка уже началась, прерываем эту
+      if (currentSubmitId !== submitCountRef.current) {
+        console.log(`❌ Отклонен: найден более новый запрос #${submitCountRef.current}`);
+        return;
+      }
       
-      const documentPayload = {
-        name: finalDocumentName,
-        type: documentType,
-        date: documentDate,
-        items: data.items.map((item: FormDocumentItem) => ({
-          productId: item.productId,
-          quantity: Number(item.quantity),
-          price: Number(item.price || "0"),
-        })),
-      };
-
       if (mode === 'create') {
-        await mutation.mutateAsync(documentPayload);
+        const finalDocumentName = generateDocumentName();
+        
+        const documentPayload = {
+          name: finalDocumentName,
+          type: documentType,
+          date: documentDate,
+          items: data.items.map((item: FormDocumentItem) => ({
+            productId: item.productId,
+            quantity: Number(item.quantity),
+            price: Number(item.price || "0"),
+          })),
+        };
+        
+        console.log(`📤 Отправляем запрос #${currentSubmitId}:`, documentPayload);
+        const result = await mutation.mutateAsync(documentPayload);
+        console.log(`✅ Получен ответ #${currentSubmitId}:`, result);
+        
         toast({
           title: "Успешно",
           description: config.successMessage,
         });
         setLocation(config.backUrl);
       } else {
-        // Здесь будет логика обновления существующего документа
+        // Логика для режима редактирования
         toast({
           title: "Успешно",
           description: "Документ успешно сохранен",
@@ -204,14 +224,15 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         setIsEditing(false);
       }
     } catch (error) {
-      console.error("Ошибка при сохранении документа:", error);
+      console.error(`💥 Ошибка при отправке #${currentSubmitId}:`, error);
       toast({
         title: "Ошибка",
         description: "Не удалось сохранить документ",
         variant: "destructive",
       });
     } finally {
-      submittingRef.current = false;
+      console.log(`🏁 Завершение отправки #${currentSubmitId}`);
+      setIsSubmitting(false);
     }
   };
 
@@ -410,9 +431,9 @@ export default function Document({ config, mode = 'create', documentData }: Docu
           {isEditing && (
             <Button 
               type="submit" 
-              disabled={mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
+              disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
             >
-              {mutation.isPending ? "Сохранение..." : "Сохранить"}
+              {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
             </Button>
           )}
         </div>

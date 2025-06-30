@@ -19,14 +19,24 @@ export default function SuppliersList() {
   // Ширина столбцов (сохраняется в localStorage)
   interface ColumnWidths {
     name: number;
-    website: number;
+    sku: number;
+    price: number;
+    purchasePrice: number;
+    barcode: number;
+    weight: number;
+    dimensions: number;
   }
 
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('supplierTableColumnWidths');
     return saved ? JSON.parse(saved) : {
-      name: 600,
-      website: 552,
+      name: 200,
+      sku: 120,
+      price: 100,
+      purchasePrice: 120,
+      barcode: 150,
+      weight: 100,
+      dimensions: 150,
     };
   });
 
@@ -458,20 +468,120 @@ export default function SuppliersList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}
+                  style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
                       className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("website")}
+                      onClick={() => handleSort("name")}
                     >
                       <span>Веб-сайт</span>
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'website')}
-                      onTouchStart={(e) => handleTouchStart(e, 'website')}
+                      onMouseDown={(e) => handleMouseDown(e, 'sku')}
+                      onTouchStart={(e) => handleTouchStart(e, 'sku')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>-</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'price')}
+                      onTouchStart={(e) => handleTouchStart(e, 'price')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>-</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
+                      onTouchStart={(e) => handleTouchStart(e, 'purchasePrice')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>-</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'barcode')}
+                      onTouchStart={(e) => handleTouchStart(e, 'barcode')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>-</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'weight')}
+                      onTouchStart={(e) => handleTouchStart(e, 'weight')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>-</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'dimensions')}
+                      onTouchStart={(e) => handleTouchStart(e, 'dimensions')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -481,13 +591,13 @@ export default function SuppliersList() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     Загрузка поставщиков...
                   </td>
                 </tr>
               ) : sortedSuppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
                   </td>
                 </tr>
@@ -503,8 +613,23 @@ export default function SuppliersList() {
                     <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}>
                       <CopyableCell value={supplier.name} type="Название" />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}>
                       <CopyableCell value={supplier.website} type="Веб-сайт" />
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}>
+                      -
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}>
+                      -
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}>
+                      -
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}>
+                      -
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}>
+                      -
                     </td>
                   </tr>
                 ))

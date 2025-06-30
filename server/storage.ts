@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, documents, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type Document, type InsertDocument } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, inventory, documentItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type Document, type InsertDocument, type DocumentItem, type InsertDocumentItem, type Inventory } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 

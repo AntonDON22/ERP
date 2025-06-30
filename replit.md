@@ -94,6 +94,8 @@ The application uses a dual storage approach:
 ## Changelog
 - June 30, 2025. Initial setup
 - June 30, 2025. Removed category and description fields completely from all products
+- June 30, 2025. Successfully migrated from in-memory storage to PostgreSQL database with Drizzle ORM
+- June 30, 2025. Removed all photos, buttons, and creation/editing functionality - simplified to view-only product listing
 
 ## User Preferences
 

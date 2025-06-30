@@ -428,11 +428,13 @@ export default function ProductsList() {
                 className="pl-10 h-10"
               />
             </div>
-            {searchQuery && (
-              <p className="text-sm text-gray-500 mt-2">
-                Найдено товаров: {sortedProducts.length} из {products.length}
-              </p>
-            )}
+            <div className="h-6 mt-2">
+              {searchQuery && (
+                <p className="text-sm text-gray-500">
+                  Найдено товаров: {sortedProducts.length} из {products.length}
+                </p>
+              )}
+            </div>
           </div>
           <div className="flex space-x-3">
             {selectedProducts.size > 0 && (

@@ -27,7 +27,7 @@ export default function DocumentsList() {
       columns={columns}
       isLoading={isLoading}
       entityName="документ"
-      entityNamePlural="документов"
+      entityNamePlural="Документы"
       searchFields={['name', 'type']}
       excelConfig={excelConfig}
       onDelete={async (ids) => {

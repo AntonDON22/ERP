@@ -5,20 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
-import { Supplier, InsertSupplier } from "@shared/schema";
-import * as XLSX from "xlsx";
 import { apiRequest } from "@/lib/queryClient";
-
-interface ColumnWidths {
-  name: number;
-  sku: number;
-  price: number;
-  purchasePrice: number;
-  barcode: number;
-  weight: number;
-  dimensions: number;
-}
+import type { Supplier, InsertSupplier } from "@shared/schema";
+import * as XLSX from 'xlsx';
 
 export default function SuppliersList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -26,16 +15,18 @@ export default function SuppliersList() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<number>>(new Set());
   const [isResizing, setIsResizing] = useState(false);
+
+  // Ширина столбцов (сохраняется в localStorage)
+  interface ColumnWidths {
+    name: number;
+    website: number;
+  }
+
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('supplierTableColumnWidths');
     return saved ? JSON.parse(saved) : {
-      name: 200,
-      sku: 120,
-      price: 100,
-      purchasePrice: 120,
-      barcode: 140,
-      weight: 100,
-      dimensions: 140
+      name: 300,
+      website: 250,
     };
   });
 
@@ -51,7 +42,7 @@ export default function SuppliersList() {
         title: "Скопировано",
         description: `${type} скопирован в буфер обмена`,
       });
-    } catch (err) {
+    } catch (error) {
       toast({
         title: "Ошибка",
         description: "Не удалось скопировать в буфер обмена",
@@ -61,66 +52,46 @@ export default function SuppliersList() {
   }, [toast]);
 
   // Компонент для ячейки с возможностью копирования
-  const CopyableCell = useCallback(({ value, type }: { value: string | null, type: string }) => {
-    if (!value) return <span className="text-gray-400">—</span>;
+  const CopyableCell = ({ value, type }: { value: string | null | undefined; type: string }) => {
+    if (!value) return <span>-</span>;
     
     return (
-      <div className="flex items-center justify-between group">
+      <div className="flex items-center gap-2 group">
         <span className="truncate">{value}</span>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 ml-2 flex-shrink-0"
-          onClick={() => copyToClipboard(value, type)}
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            copyToClipboard(value, type);
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+          title={`Копировать ${type.toLowerCase()}`}
         >
-          <Copy className="h-3 w-3" />
-        </Button>
+          <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
+        </button>
       </div>
     );
-  }, [copyToClipboard]);
+  };
 
-  // Получение поставщиков
   const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
-    queryKey: ['/api/suppliers'],
-    staleTime: 30000,
+    queryKey: ["/api/suppliers"],
   });
 
-  // Мутация для удаления поставщика
-  const deleteMutation = useMutation({
-    mutationFn: async (id: number) => {
-      return apiRequest(`/api/suppliers/${id}`, {
-        method: 'DELETE',
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
-      toast({
-        title: "Успешно",
-        description: "Поставщик удален",
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Ошибка",
-        description: error.message || "Не удалось удалить поставщика",
-        variant: "destructive",
-      });
-    },
-  });
+  // Обработка ошибок отдельно
+  if (error) {
+    toast({
+      title: "Ошибка",
+      description: "Не удалось загрузить поставщиков",
+      variant: "destructive",
+    });
+  }
 
-  // Мутация для массового удаления поставщиков
+  // Мутация для удаления выбранных поставщиков
   const deleteSelectedMutation = useMutation({
-    mutationFn: async (supplierIds: number[]) => {
-      return apiRequest('/api/suppliers/delete-multiple', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ supplierIds }),
-      });
+    mutationFn: async (ids: number[]) => {
+      return await apiRequest("POST", "/api/suppliers/delete-multiple", { ids });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       setSelectedSuppliers(new Set());
       toast({
         title: "Успешно",
@@ -130,7 +101,7 @@ export default function SuppliersList() {
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: error.message || "Не удалось удалить поставщиков",
+        description: "Не удалось удалить поставщиков",
         variant: "destructive",
       });
     },
@@ -138,26 +109,21 @@ export default function SuppliersList() {
 
   // Мутация для импорта поставщиков
   const importMutation = useMutation({
-    mutationFn: async (suppliersData: InsertSupplier[]) => {
-      return apiRequest('/api/suppliers/import', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ suppliers: suppliersData }),
-      });
+    mutationFn: async (suppliers: InsertSupplier[]) => {
+      const response = await apiRequest("POST", "/api/suppliers/import", { suppliers });
+      return await response.json();
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+    onSuccess: (data: Supplier[]) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       toast({
         title: "Успешно",
-        description: `Импортировано поставщиков: ${data.imported}`,
+        description: `Импортировано поставщиков: ${data.length}`,
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: error.message || "Ошибка при импорте поставщиков",
+        description: "Не удалось импортировать поставщиков",
         variant: "destructive",
       });
     },
@@ -176,37 +142,59 @@ export default function SuppliersList() {
 
   // Сортировка поставщиков
   const sortedSuppliers = useMemo(() => {
-    const sorted = [...filteredSuppliers].sort((a, b) => {
+    return [...filteredSuppliers].sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
       
-      if (aValue === null && bValue === null) return 0;
-      if (aValue === null) return 1;
-      if (bValue === null) return -1;
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
       
-      const comparison = String(aValue).localeCompare(String(bValue), 'ru', { 
-        numeric: true, 
-        sensitivity: 'base' 
-      });
-      
+      const comparison = String(aValue).localeCompare(String(bValue), 'ru', { numeric: true });
       return sortDirection === "asc" ? comparison : -comparison;
     });
-    
-    return sorted;
   }, [filteredSuppliers, sortField, sortDirection]);
 
-  // Состояние выбора всех элементов
+  // Состояние выбора
   const selectionState = useMemo(() => {
-    const totalVisible = sortedSuppliers.length;
-    const selectedVisible = sortedSuppliers.filter(supplier => selectedSuppliers.has(supplier.id)).length;
-    
-    return {
-      isAllSelected: totalVisible > 0 && selectedVisible === totalVisible,
-      isIndeterminate: selectedVisible > 0 && selectedVisible < totalVisible
-    };
-  }, [sortedSuppliers, selectedSuppliers]);
+    const totalVisible = filteredSuppliers.length;
+    const selectedCount = selectedSuppliers.size;
+    const isAllSelected = totalVisible > 0 && selectedCount === totalVisible;
+    const isIndeterminate = selectedCount > 0 && selectedCount < totalVisible;
 
-  // Обработчики
+    return {
+      totalVisible,
+      selectedCount,
+      isAllSelected,
+      isIndeterminate
+    };
+  }, [filteredSuppliers.length, selectedSuppliers.size]);
+
+  // Функции для работы с выбором поставщиков
+  const handleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedSuppliers(new Set(filteredSuppliers.map((s: Supplier) => s.id)));
+    } else {
+      setSelectedSuppliers(new Set());
+    }
+  }, [filteredSuppliers]);
+
+  const handleSelectSupplier = useCallback((supplierId: number, checked: boolean) => {
+    setSelectedSuppliers(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(supplierId);
+      } else {
+        newSelected.delete(supplierId);
+      }
+      return newSelected;
+    });
+  }, []);
+
+  const handleDeleteSelected = useCallback(() => {
+    if (selectedSuppliers.size === 0) return;
+    deleteSelectedMutation.mutate(Array.from(selectedSuppliers));
+  }, [selectedSuppliers, deleteSelectedMutation]);
+
   const handleSort = (field: keyof Supplier) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -216,30 +204,6 @@ export default function SuppliersList() {
     }
   };
 
-  const handleSelectSupplier = (id: number, checked: boolean) => {
-    const newSelected = new Set(selectedSuppliers);
-    if (checked) {
-      newSelected.add(id);
-    } else {
-      newSelected.delete(id);
-    }
-    setSelectedSuppliers(newSelected);
-  };
-
-  const handleSelectAll = (checked: boolean) => {
-    if (checked) {
-      setSelectedSuppliers(new Set(sortedSuppliers.map((s: Supplier) => s.id)));
-    } else {
-      setSelectedSuppliers(new Set());
-    }
-  };
-
-  const handleDeleteSelected = () => {
-    if (selectedSuppliers.size === 0) return;
-    deleteSelectedMutation.mutate([...selectedSuppliers]);
-  };
-
-  // Экспорт в Excel
   const handleExportToExcel = () => {
     if (!suppliers || suppliers.length === 0) {
       return;
@@ -248,19 +212,17 @@ export default function SuppliersList() {
     const exportData = suppliers.map((supplier: Supplier) => ({
       'Название': supplier.name,
       'Веб-сайт': supplier.website || '',
-      '-': '',
-      '- ': '',
-      '- -': '',
-      '- - ': '',
-      '- - -': '',
     }));
 
-    const worksheet = XLSX.utils.json_to_sheet(exportData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Поставщики');
-    
-    const fileName = `поставщики_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Поставщики");
+    XLSX.writeFile(wb, "suppliers.xlsx");
+
+    toast({
+      title: "Успешно",
+      description: "Данные экспортированы в файл suppliers.xlsx",
+    });
   };
 
   const handleImportClick = () => {
@@ -300,39 +262,36 @@ export default function SuppliersList() {
       });
     }
 
-    // Сброс значения input для возможности повторного выбора того же файла
+    // Очищаем input для возможности загрузки того же файла снова
     event.target.value = '';
   };
 
-  // Сохранение ширины столбцов в localStorage
+  // Сохраняем ширину колонок в localStorage
   useEffect(() => {
     localStorage.setItem('supplierTableColumnWidths', JSON.stringify(columnWidths));
   }, [columnWidths]);
 
-  // Обработка изменения размера столбцов
+  // Обработчики изменения размера колонок (поддержка мыши и touch)
   const handleResizeStart = useCallback((startX: number, column: keyof ColumnWidths) => {
     setIsResizing(true);
-    document.body.classList.add('table-resizing');
-    document.body.style.cursor = 'col-resize';
     
     const startWidth = columnWidths[column];
     
+    // Добавляем класс для предотвращения выделения текста
+    document.body.classList.add('table-resizing');
+    document.body.style.cursor = 'col-resize';
+    
     const handleMove = (currentX: number) => {
-      const diff = currentX - startX;
-      const newWidth = Math.max(50, startWidth + diff);
+      const deltaX = currentX - startX;
+      const newWidth = Math.max(150, startWidth + deltaX);
       
-      setColumnWidths(prev => {
-        const newWidths = {
-          ...prev,
-          [column]: newWidth
-        };
-        console.log('New column widths:', newWidths);
-        return newWidths;
-      });
+      setColumnWidths(prev => ({
+        ...prev,
+        [column]: newWidth
+      }));
     };
     
     const handleEnd = () => {
-      console.log('Resize ended for column:', column);
       setIsResizing(false);
       document.body.classList.remove('table-resizing');
       document.body.style.cursor = '';
@@ -389,7 +348,7 @@ export default function SuppliersList() {
 
   if (error) {
     return (
-      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ maxWidth: '1400px' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="text-red-800">
             Ошибка при загрузке поставщиков. Пожалуйста, попробуйте еще раз.
@@ -400,19 +359,19 @@ export default function SuppliersList() {
   }
 
   return (
-    <div className="unified-table-container">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="unified-table-header">
-        <div className="unified-table-search-row">
-          <div className="unified-table-search-container">
-            <div className="unified-table-search-input">
-              <Search className="unified-table-search-icon" />
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Поиск по названию или веб-сайту..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="unified-table-input"
+                className="pl-10 h-10"
               />
             </div>
             {searchQuery && (
@@ -421,11 +380,11 @@ export default function SuppliersList() {
               </p>
             )}
           </div>
-          <div className="unified-table-buttons">
+          <div className="flex space-x-3">
             {selectedSuppliers.size > 0 && (
               <Button 
                 variant="destructive" 
-                className="unified-table-button"
+                className="inline-flex items-center h-10"
                 onClick={handleDeleteSelected}
                 disabled={deleteSelectedMutation.isPending}
               >
@@ -435,7 +394,7 @@ export default function SuppliersList() {
             )}
             <Button
               variant="outline"
-              className="unified-table-button"
+              className="inline-flex items-center h-10"
               onClick={handleImportClick}
               disabled={importMutation.isPending}
             >
@@ -444,7 +403,7 @@ export default function SuppliersList() {
             </Button>
             <Button
               variant="outline"
-              className="unified-table-button"
+              className="inline-flex items-center h-10"
               onClick={handleExportToExcel}
               disabled={!suppliers || suppliers.length === 0}
             >
@@ -465,12 +424,12 @@ export default function SuppliersList() {
       />
 
       {/* Suppliers Table */}
-      <div className="unified-table-wrapper">
-        <div className="unified-table-scroll">
-          <table className="unified-table">
-            <thead className="unified-table-head">
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
+            <thead className="bg-gray-50">
               <tr>
-                <th className="unified-table-header-cell unified-table-header-checkbox">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -478,7 +437,7 @@ export default function SuppliersList() {
                   />
                 </th>
                 <th 
-                  className="unified-table-header-cell"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                   style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -498,8 +457,8 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="unified-table-header-cell"
-                  style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -511,156 +470,41 @@ export default function SuppliersList() {
                     </button>
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'sku')}
-                      onTouchStart={(e) => handleTouchStart(e, 'sku')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="unified-table-header-cell"
-                  style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>-</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'price')}
-                      onTouchStart={(e) => handleTouchStart(e, 'price')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="unified-table-header-cell"
-                  style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>-</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
-                      onTouchStart={(e) => handleTouchStart(e, 'purchasePrice')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="unified-table-header-cell"
-                  style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>-</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'barcode')}
-                      onTouchStart={(e) => handleTouchStart(e, 'barcode')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="unified-table-header-cell"
-                  style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>-</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'weight')}
-                      onTouchStart={(e) => handleTouchStart(e, 'weight')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="unified-table-header-cell"
-                  style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>-</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'dimensions')}
-                      onTouchStart={(e) => handleTouchStart(e, 'dimensions')}
+                      onMouseDown={(e) => handleMouseDown(e, 'website')}
+                      onTouchStart={(e) => handleTouchStart(e, 'website')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
                 </th>
               </tr>
             </thead>
-            <tbody className="unified-table-body">
+            <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="unified-table-cell text-center text-gray-500 py-8">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                     Загрузка поставщиков...
                   </td>
                 </tr>
               ) : sortedSuppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="unified-table-cell text-center text-gray-500 py-8">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
                   </td>
                 </tr>
               ) : (
                 sortedSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="unified-table-row">
-                    <td className="unified-table-cell-checkbox">
+                  <tr key={supplier.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 w-12">
                       <Checkbox
                         checked={selectedSuppliers.has(supplier.id)}
                         onCheckedChange={(checked) => handleSelectSupplier(supplier.id, checked as boolean)}
                       />
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       <CopyableCell value={supplier.name} type="Название" />
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       <CopyableCell value={supplier.website} type="Веб-сайт" />
-                    </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}>
-                      -
-                    </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}>
-                      -
-                    </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}>
-                      -
-                    </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}>
-                      -
-                    </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}>
-                      -
                     </td>
                   </tr>
                 ))
@@ -671,14 +515,16 @@ export default function SuppliersList() {
       </div>
 
       {/* Summary */}
-      <div className="unified-table-summary">
-        Всего поставщиков: {suppliers.length}
-        {selectedSuppliers.size > 0 && (
-          <span className="ml-4">
-            Выбрано: {selectedSuppliers.size}
-          </span>
-        )}
-      </div>
+      {!isLoading && (
+        <div className="mt-4 text-sm text-gray-500 text-center">
+          Показано {sortedSuppliers.length} из {suppliers.length} поставщиков
+          {selectionState.selectedCount > 0 && (
+            <span className="ml-2">
+              • Выбрано: {selectionState.selectedCount}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -413,19 +413,19 @@ export default function ProductsList() {
   }
 
   return (
-    <div className="unified-table-container">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="unified-table-header">
-        <div className="unified-table-search-row">
-          <div className="unified-table-search-container">
-            <div className="unified-table-search-input">
-              <Search className="unified-table-search-icon" />
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex-1 max-w-md">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
                 placeholder="Поиск по названию, артикулу или штрихкоду..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="unified-table-input"
+                className="pl-10 h-10"
               />
             </div>
             {searchQuery && (
@@ -434,11 +434,11 @@ export default function ProductsList() {
               </p>
             )}
           </div>
-          <div className="unified-table-buttons">
+          <div className="flex space-x-3">
             {selectedProducts.size > 0 && (
               <Button 
                 variant="destructive" 
-                className="unified-table-button"
+                className="inline-flex items-center h-10"
                 onClick={handleDeleteSelected}
                 disabled={deleteSelectedMutation.isPending}
               >
@@ -448,7 +448,7 @@ export default function ProductsList() {
             )}
             <Button
               variant="outline"
-              className="unified-table-button"
+              className="inline-flex items-center h-10"
               onClick={handleImportClick}
               disabled={importMutation.isPending}
             >
@@ -457,7 +457,7 @@ export default function ProductsList() {
             </Button>
             <Button
               variant="outline"
-              className="unified-table-button"
+              className="inline-flex items-center h-10"
               onClick={handleExportToExcel}
               disabled={!products || products.length === 0}
             >
@@ -478,12 +478,12 @@ export default function ProductsList() {
       />
 
       {/* Products Table */}
-      <div className="unified-table-wrapper">
-        <div className="unified-table-scroll">
-          <table className="unified-table">
-            <thead className="unified-table-head">
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
+            <thead className="bg-gray-50">
               <tr>
-                <th className="unified-table-header-cell unified-table-header-checkbox">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -491,7 +491,7 @@ export default function ProductsList() {
                   />
                 </th>
                 <th 
-                  className="unified-table-header-cell"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                   style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -511,7 +511,7 @@ export default function ProductsList() {
                   </div>
                 </th>
                 <th 
-                  className="unified-table-header-cell"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                   style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -531,7 +531,7 @@ export default function ProductsList() {
                   </div>
                 </th>
                 <th 
-                  className="unified-table-header-cell"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                   style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -551,7 +551,7 @@ export default function ProductsList() {
                   </div>
                 </th>
                 <th 
-                  className="unified-table-header-cell"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
                   style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -624,47 +624,47 @@ export default function ProductsList() {
                 </th>
               </tr>
             </thead>
-            <tbody className="unified-table-body">
+            <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="unified-table-cell text-center text-gray-500 py-8">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     Загрузка товаров...
                   </td>
                 </tr>
               ) : sortedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="unified-table-cell text-center text-gray-500 py-8">
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? "Товары не найдены" : "Нет товаров для отображения"}
                   </td>
                 </tr>
               ) : (
                 sortedProducts.map((product) => (
-                  <tr key={product.id} className="unified-table-row">
-                    <td className="unified-table-cell-checkbox">
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 w-12">
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
                         onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                       />
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       <CopyableCell value={product.name} type="Название" />
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       <CopyableCell value={product.sku} type="Артикул" />
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       {formatPrice(product.price)}
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       {formatPrice(product.purchasePrice)}
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       <CopyableCell value={product.barcode} type="Штрихкод" />
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       {formatWeight(product.weight)}
                     </td>
-                    <td className="unified-table-cell" style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
                       {formatDimensions(product.length, product.width, product.height)}
                     </td>
                   </tr>
@@ -676,7 +676,7 @@ export default function ProductsList() {
       </div>
 
       {/* Summary */}
-      <div className="unified-table-summary">
+      <div className="mt-6 text-sm text-gray-500">
         Всего товаров: {products.length}
         {searchQuery && ` • Показано: ${sortedProducts.length}`}
         {selectedProducts.size > 0 && ` • Выбрано: ${selectedProducts.size}`}

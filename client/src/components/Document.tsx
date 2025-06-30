@@ -229,8 +229,8 @@ export default function Document({ config, documentData }: DocumentProps) {
           <CardContent>
             <div className="space-y-4">
               {fields.map((field: any, index: number) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
-                  <div className="md:col-span-2">
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-6 gap-4 p-4 border rounded-lg">
+                  <div className="md:col-span-3">
                     <Label>Товар</Label>
                     <Select
                       value={form.watch(`items.${index}.productId`)?.toString() || ""}
@@ -253,8 +253,8 @@ export default function Document({ config, documentData }: DocumentProps) {
                     </Select>
                   </div>
 
-                  <div>
-                    <Label>Количество</Label>
+                  <div className="md:col-span-1">
+                    <Label>Кол-во</Label>
                     <Input
                       type="number"
                       step="1"
@@ -263,7 +263,7 @@ export default function Document({ config, documentData }: DocumentProps) {
                     />
                   </div>
 
-                  <div>
+                  <div className="md:col-span-1">
                     <Label>Цена</Label>
                     <Input
                       type="number"
@@ -273,13 +273,14 @@ export default function Document({ config, documentData }: DocumentProps) {
                     />
                   </div>
 
-                  <div className="flex items-end">
+                  <div className="md:col-span-1 flex items-end">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
                       onClick={() => removeItem(index)}
                       disabled={fields.length === 1}
+                      className="w-full"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

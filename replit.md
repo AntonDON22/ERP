@@ -115,3 +115,4 @@ The application uses a dual storage approach:
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Always update Dashboard changelog: Add new entries to the changelog history on the Dashboard page for every system change or update.

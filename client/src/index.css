@@ -4,6 +4,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom styles for column resizing */
+.column-resizer {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  cursor: col-resize;
+  background: transparent;
+  transition: background-color 0.2s ease;
+}
+
+.column-resizer:hover {
+  background-color: #3b82f6;
+}
+
+.column-resizer.active {
+  background-color: #2563eb;
+}
+
+/* Prevent text selection during resize */
+.resizing {
+  user-select: none;
+}
+
 :root {
   --background: hsl(0, 0%, 100%);
   --foreground: hsl(20, 14.3%, 4.1%);

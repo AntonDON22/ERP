@@ -1,115 +1,52 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Download, Upload, Search, Trash2, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Download, Upload, Trash2, ArrowUpDown, ExternalLink } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-// import { type Product, type InsertProduct } from "@shared/schema";
 import * as XLSX from 'xlsx';
 
 import { type Supplier, type InsertSupplier } from "@shared/schema";
 
-interface ColumnWidths {
-  name: number;
-  website: number;
-}
-
 export default function SuppliersList() {
-  // Состояние компонента
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof Supplier>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<number>>(new Set());
-  const [isResizing, setIsResizing] = useState(false);
-
-  // Настройки ширины столбцов с сохранением в localStorage
-  const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
-    const saved = localStorage.getItem('supplierTableColumnWidths');
-    return saved ? JSON.parse(saved) : {
-      name: 400,
-      website: 300,
-    };
-  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Функция копирования в буфер обмена
-  const copyToClipboard = useCallback(async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast({
-        title: "Скопировано",
-        description: `${type} скопирован в буфер обмена`,
-      });
-    } catch (error) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось скопировать в буфер обмена",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
-
-  // Компонент для ячейки с возможностью копирования
-  const CopyableCell = ({ value, type }: { value: string | null | undefined; type: string }) => {
-    if (!value) return <span>-</span>;
-    
-    return (
-      <div className="flex items-center gap-2 group">
-        <span className="truncate">{value}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            copyToClipboard(value, type);
-          }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
-          title={`Копировать ${type.toLowerCase()}`}
-        >
-          <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
-        </button>
-      </div>
-    );
-  };
-
-  // Заглушка данных поставщиков
-  const mockSuppliers: Supplier[] = [
-    {
-      id: 1,
-      name: "ООО \"Глобал Трейд\"",
-      website: "https://globaltrade.ru"
-    },
-    {
-      id: 2,
-      name: "ИП Петров А.С.",
-      website: "https://petrov-company.com"
-    },
-    {
-      id: 3,
-      name: "ООО \"Северная компания\"",
-      website: "https://northcompany.ru"
-    }
-  ];
-
-  const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
+  const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["/api/suppliers"],
   });
 
-  // Мутации для удаления поставщиков
   const deleteSelectedMutation = useMutation({
     mutationFn: async (supplierIds: number[]) => {
-      return apiRequest("DELETE", "/api/suppliers/delete-multiple", { ids: supplierIds });
+      const response = await fetch("/api/suppliers/delete-multiple", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ supplierIds }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Ошибка при удалении поставщиков");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       setSelectedSuppliers(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       toast({
         title: "Успешно",
-        description: `Удалено поставщиков: ${selectedSuppliers.size}`,
+        description: "Выбранные поставщики удалены",
       });
     },
     onError: (error: Error) => {
@@ -121,72 +58,6 @@ export default function SuppliersList() {
     },
   });
 
-  // Фильтрация поставщиков
-  const filteredSuppliers = useMemo(() => {
-    return suppliers.filter(supplier => {
-      const query = searchQuery.toLowerCase();
-      return (
-        supplier.name.toLowerCase().includes(query) ||
-        (supplier.website && supplier.website.toLowerCase().includes(query))
-      );
-    });
-  }, [suppliers, searchQuery]);
-
-  // Сортировка поставщиков
-  const sortedSuppliers = useMemo(() => {
-    return [...filteredSuppliers].sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-
-      const comparison = String(aValue).localeCompare(String(bValue), 'ru', { numeric: true });
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-  }, [filteredSuppliers, sortField, sortDirection]);
-
-  // Состояние выбора поставщиков
-  const selectionState = useMemo(() => {
-    const totalVisible = filteredSuppliers.length;
-    const selectedCount = selectedSuppliers.size;
-    const isAllSelected = totalVisible > 0 && selectedCount === totalVisible;
-    const isIndeterminate = selectedCount > 0 && selectedCount < totalVisible;
-
-    return {
-      totalVisible,
-      selectedCount,
-      isAllSelected,
-      isIndeterminate
-    };
-  }, [filteredSuppliers.length, selectedSuppliers.size]);
-
-  // Функции для работы с выбором поставщиков
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedSuppliers(new Set(filteredSuppliers.map(s => s.id)));
-    } else {
-      setSelectedSuppliers(new Set());
-    }
-  }, [filteredSuppliers]);
-
-  const handleSelectSupplier = useCallback((supplierId: number, checked: boolean) => {
-    setSelectedSuppliers(prev => {
-      const newSelected = new Set(prev);
-      if (checked) {
-        newSelected.add(supplierId);
-      } else {
-        newSelected.delete(supplierId);
-      }
-      return newSelected;
-    });
-  }, []);
-
-  const handleDeleteSelected = useCallback(() => {
-    if (selectedSuppliers.size === 0) return;
-    deleteSelectedMutation.mutate(Array.from(selectedSuppliers));
-  }, [selectedSuppliers, deleteSelectedMutation]);
-
   const handleSort = (field: keyof Supplier) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -196,12 +67,64 @@ export default function SuppliersList() {
     }
   };
 
-  const handleExportToExcel = () => {
-    if (!suppliers || suppliers.length === 0) {
-      return;
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedSuppliers(new Set(sortedSuppliers.map(s => s.id)));
+    } else {
+      setSelectedSuppliers(new Set());
     }
+  };
 
-    const exportData = suppliers.map(supplier => ({
+  const handleSelectSupplier = (supplierId: number, checked: boolean) => {
+    const newSelected = new Set(selectedSuppliers);
+    if (checked) {
+      newSelected.add(supplierId);
+    } else {
+      newSelected.delete(supplierId);
+    }
+    setSelectedSuppliers(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedSuppliers.size === 0) return;
+    deleteSelectedMutation.mutate(Array.from(selectedSuppliers));
+  };
+
+  const filteredSuppliers = suppliers.filter((supplier: Supplier) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      supplier.name.toLowerCase().includes(query) ||
+      (supplier.website && supplier.website.toLowerCase().includes(query))
+    );
+  });
+
+  const sortedSuppliers = [...filteredSuppliers].sort((a, b) => {
+    const aValue = a[sortField];
+    const bValue = b[sortField];
+    
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+    
+    let comparison = 0;
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      comparison = aValue.localeCompare(bValue);
+    } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+      comparison = aValue - bValue;
+    } else {
+      comparison = String(aValue).localeCompare(String(bValue));
+    }
+    
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  const selectionState = {
+    selectedCount: selectedSuppliers.size,
+    isAllSelected: sortedSuppliers.length > 0 && selectedSuppliers.size === sortedSuppliers.length,
+    isIndeterminate: selectedSuppliers.size > 0 && selectedSuppliers.size < sortedSuppliers.length
+  };
+
+  const handleExportToExcel = () => {
+    const exportData = suppliers.map((supplier: Supplier) => ({
       'Название': supplier.name,
       'Вебсайт': supplier.website || '',
     }));
@@ -210,7 +133,7 @@ export default function SuppliersList() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Поставщики");
 
-    const fileName = `поставщики_${new Date().toISOString().split('T')[0]}.xlsx`;
+    const fileName = `поставщики_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
     XLSX.writeFile(wb, fileName);
 
     toast({
@@ -248,93 +171,11 @@ export default function SuppliersList() {
     event.target.value = '';
   };
 
-  // Сохраняем ширину колонок в localStorage
-  useEffect(() => {
-    localStorage.setItem('supplierTableColumnWidths', JSON.stringify(columnWidths));
-  }, [columnWidths]);
-
-  // Обработчики изменения размера колонок (поддержка мыши и touch)
-  const handleResizeStart = useCallback((startX: number, column: keyof ColumnWidths) => {
-    console.log('Resize started for column:', column);
-    setIsResizing(true);
-    
-    const startWidth = columnWidths[column];
-    
-    document.body.classList.add('table-resizing');
-    document.body.style.cursor = 'col-resize';
-    
-    const handleMove = (currentX: number) => {
-      const deltaX = currentX - startX;
-      const newWidth = Math.max(80, startWidth + deltaX);
-      
-      setColumnWidths(prev => ({
-        ...prev,
-        [column]: newWidth
-      }));
-    };
-    
-    const handleEnd = () => {
-      setIsResizing(false);
-      document.body.classList.remove('table-resizing');
-      document.body.style.cursor = '';
-    };
-
-    return { handleMove, handleEnd };
-  }, [columnWidths]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const { handleMove, handleEnd } = handleResizeStart(e.clientX, column);
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      handleMove(e.clientX);
-    };
-    
-    const handleMouseUp = () => {
-      handleEnd();
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [handleResizeStart]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent, column: keyof ColumnWidths) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const touch = e.touches[0];
-    const { handleMove, handleEnd } = handleResizeStart(touch.clientX, column);
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      if (touch) {
-        handleMove(touch.clientX);
-      }
-    };
-    
-    const handleTouchEnd = () => {
-      handleEnd();
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-    
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  }, [handleResizeStart]);
-
-  if (error) {
+  if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="text-red-800">
-            Ошибка при загрузке поставщиков. Пожалуйста, попробуйте еще раз.
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-500">Загрузка поставщиков...</div>
         </div>
       </div>
     );
@@ -356,15 +197,15 @@ export default function SuppliersList() {
             />
           </div>
           <div className="flex gap-2">
-            {selectionState.selectedCount > 0 && (
-              <Button
-                variant="destructive"
+            {selectedSuppliers.size > 0 && (
+              <Button 
+                variant="destructive" 
                 size="sm"
                 onClick={handleDeleteSelected}
                 disabled={deleteSelectedMutation.isPending}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
-                Удалить ({selectionState.selectedCount})
+                Удалить ({selectedSuppliers.size})
               </Button>
             )}
             <Button
@@ -405,7 +246,7 @@ export default function SuppliersList() {
       {/* Suppliers Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto min-w-full">
-          <table className="w-full" style={{ tableLayout: 'fixed', width: '1400px', minWidth: '1400px' }}>
+          <table className="w-full" style={{ tableLayout: 'fixed', width: '1000px', minWidth: '1000px' }}>
             <thead className="bg-gray-50 h-12">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
@@ -416,28 +257,20 @@ export default function SuppliersList() {
                   />
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   style={{ width: '500px', minWidth: '500px', maxWidth: '500px' }}
                 >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>Название</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'name')}
-                      onTouchStart={(e) => handleTouchStart(e, 'name')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("name")}
+                  >
+                    <span>Название</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={{ width: '800px', minWidth: '800px', maxWidth: '800px' }}
+                  style={{ width: '488px', minWidth: '488px', maxWidth: '488px' }}
                 >
                   <button
                     className="flex items-center space-x-1 hover:text-gray-700"
@@ -453,7 +286,7 @@ export default function SuppliersList() {
               {isLoading ? (
                 <tr>
                   <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
-                    Загрузка поставщиков...
+                    Загрузка...
                   </td>
                 </tr>
               ) : sortedSuppliers.length === 0 ? (
@@ -472,25 +305,27 @@ export default function SuppliersList() {
                       />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900 truncate">
-                      <div className="truncate">
-                        <CopyableCell value={supplier.name} type="Название" />
+                      <div className="truncate" title={supplier.name}>
+                        {supplier.name}
                       </div>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900 truncate">
-                      <div className="truncate">
-                        {supplier.website ? (
-                          <a 
-                            href={supplier.website} 
-                            target="_blank" 
+                      {supplier.website ? (
+                        <div className="flex items-center gap-2 truncate">
+                          <a
+                            href={supplier.website.startsWith('http') ? supplier.website : `https://${supplier.website}`}
+                            target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 hover:text-blue-800 hover:underline truncate"
+                            title={supplier.website}
                           >
                             {supplier.website}
                           </a>
-                        ) : (
-                          <span className="text-gray-400">-</span>
-                        )}
-                      </div>
+                          <ExternalLink className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -500,10 +335,10 @@ export default function SuppliersList() {
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Summary */}
       <div className="mt-4 text-sm text-gray-500">
         Всего поставщиков: {suppliers.length}
-        {selectionState.selectedCount > 0 && ` • Выбрано: ${selectionState.selectedCount}`}
+        {selectedSuppliers.size > 0 && ` • Выбрано: ${selectedSuppliers.size}`}
       </div>
     </div>
   );

@@ -1,57 +1,38 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Download, Upload, Search, Trash2, Copy } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
 import { Product, InsertProduct } from "@shared/schema";
 import * as XLSX from "xlsx";
 import { apiRequest } from "@/lib/queryClient";
-
-interface ColumnWidths {
-  name: number;
-  sku: number;
-  price: number;
-  purchasePrice: number;
-  barcode: number;
-  weight: number;
-  dimensions: number;
-}
 
 export default function ProductsList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof Product>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
-  const [isResizing, setIsResizing] = useState(false);
-  const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
-    const saved = localStorage.getItem('productTableColumnWidths');
-    return saved ? JSON.parse(saved) : {
-      name: 200,
-      sku: 120,
-      price: 100,
-      purchasePrice: 120,
-      barcode: 140,
-      weight: 100,
-      dimensions: 140
-    };
-  });
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Функция копирования в буфер обмена
   const copyToClipboard = useCallback(async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
+      const key = `${type}-${text}`;
+      setCopiedStates(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [key]: false }));
+      }, 2000);
       toast({
         title: "Скопировано",
         description: `${type} скопирован в буфер обмена`,
       });
-    } catch (error) {
+    } catch (err) {
       toast({
         title: "Ошибка",
         description: "Не удалось скопировать в буфер обмена",
@@ -60,47 +41,40 @@ export default function ProductsList() {
     }
   }, [toast]);
 
-  // Компонент для ячейки с возможностью копирования
   const CopyableCell = ({ value, type }: { value: string | null | undefined; type: string }) => {
-    if (!value) return <span>-</span>;
+    if (!value) return <span className="text-gray-400">-</span>;
+    
+    const key = `${type}-${value}`;
+    const isCopied = copiedStates[key];
     
     return (
       <div className="flex items-center gap-2 group">
         <span className="truncate">{value}</span>
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            copyToClipboard(value, type);
-          }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+          onClick={() => copyToClipboard(value, type)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded"
           title={`Копировать ${type.toLowerCase()}`}
         >
-          <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
+          {isCopied ? (
+            <Check className="w-3 h-3 text-green-600" />
+          ) : (
+            <Copy className="w-3 h-3 text-gray-500" />
+          )}
         </button>
       </div>
     );
   };
 
-  const { data: products = [], isLoading, error } = useQuery<Product[]>({
+  const { data: products = [], isLoading } = useQuery({
     queryKey: ["/api/products"],
   });
 
   const importMutation = useMutation({
-    mutationFn: async (products: InsertProduct[]) => {
-      const response = await fetch("/api/products/import", {
+    mutationFn: async (productsData: InsertProduct[]) => {
+      return apiRequest("/api/products/import", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ products }),
+        body: JSON.stringify({ products: productsData }),
       });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || "Ошибка при импорте товаров");
-      }
-      
-      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -136,12 +110,12 @@ export default function ProductsList() {
       return response.json();
     },
     onSuccess: () => {
+      setSelectedProducts(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({
         title: "Успешно",
         description: "Выбранные товары удалены",
       });
-      setSelectedProducts(new Set());
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
     onError: (error: Error) => {
       toast({
@@ -152,84 +126,6 @@ export default function ProductsList() {
     },
   });
 
-  // Мемоизированная фильтрация и сортировка товаров
-  const filteredProducts = useMemo(() => {
-    if (!products) return [];
-    
-    return products.filter(product => {
-      if (!searchQuery.trim()) return true;
-      
-      const query = searchQuery.toLowerCase();
-      return (
-        product.name?.toLowerCase().includes(query) ||
-        product.sku?.toLowerCase().includes(query) ||
-        product.barcode?.toLowerCase().includes(query)
-      );
-    });
-  }, [products, searchQuery]);
-
-  const sortedProducts = useMemo(() => {
-    return filteredProducts.sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
-      
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-      
-      let comparison = 0;
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        comparison = aValue.localeCompare(bValue);
-      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        comparison = aValue - bValue;
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue));
-      }
-      
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
-  }, [filteredProducts, sortField, sortDirection]);
-
-  // Мемоизированные вычисления состояния выбора
-  const selectionState = useMemo(() => {
-    const totalVisible = filteredProducts.length;
-    const selectedCount = selectedProducts.size;
-    const isAllSelected = totalVisible > 0 && selectedCount === totalVisible;
-    const isIndeterminate = selectedCount > 0 && selectedCount < totalVisible;
-    
-    return {
-      totalVisible,
-      selectedCount,
-      isAllSelected,
-      isIndeterminate
-    };
-  }, [filteredProducts.length, selectedProducts.size]);
-
-  // Функции для работы с выбором товаров
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
-    } else {
-      setSelectedProducts(new Set());
-    }
-  }, [filteredProducts]);
-
-  const handleSelectProduct = useCallback((productId: number, checked: boolean) => {
-    setSelectedProducts(prev => {
-      const newSelected = new Set(prev);
-      if (checked) {
-        newSelected.add(productId);
-      } else {
-        newSelected.delete(productId);
-      }
-      return newSelected;
-    });
-  }, []);
-
-  const handleDeleteSelected = useCallback(() => {
-    if (selectedProducts.size === 0) return;
-    deleteSelectedMutation.mutate(Array.from(selectedProducts));
-  }, [selectedProducts, deleteSelectedMutation]);
-
   const handleSort = (field: keyof Product) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -239,12 +135,96 @@ export default function ProductsList() {
     }
   };
 
-  const handleExportToExcel = () => {
-    if (!products || products.length === 0) {
-      return;
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(new Set(sortedProducts.map(p => p.id)));
+    } else {
+      setSelectedProducts(new Set());
     }
+  };
 
-    const exportData = products.map(product => ({
+  const handleSelectProduct = (productId: number, checked: boolean) => {
+    const newSelected = new Set(selectedProducts);
+    if (checked) {
+      newSelected.add(productId);
+    } else {
+      newSelected.delete(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedProducts.size === 0) return;
+    deleteSelectedMutation.mutate(Array.from(selectedProducts));
+  };
+
+  const formatPrice = (price: string | number | null | undefined): string => {
+    if (!price || price === '') return '-';
+    const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+    return isNaN(numPrice) ? '-' : `${numPrice.toFixed(2)} ₽`;
+  };
+
+  const formatWeight = (weight: string | number | null | undefined): string => {
+    if (!weight || weight === '') return '-';
+    const numWeight = typeof weight === 'string' ? parseFloat(weight) : weight;
+    return isNaN(numWeight) ? '-' : `${numWeight} г`;
+  };
+
+  const formatDimensions = (
+    length: string | number | null | undefined, 
+    width: string | number | null | undefined, 
+    height: string | number | null | undefined
+  ): string => {
+    const l = length && length !== '' ? (typeof length === 'string' ? parseFloat(length) : length) : null;
+    const w = width && width !== '' ? (typeof width === 'string' ? parseFloat(width) : width) : null;
+    const h = height && height !== '' ? (typeof height === 'string' ? parseFloat(height) : height) : null;
+    
+    if (!l && !w && !h) return '-';
+    
+    const parts = [];
+    if (l && !isNaN(l)) parts.push(`${l}`);
+    if (w && !isNaN(w)) parts.push(`${w}`);
+    if (h && !isNaN(h)) parts.push(`${h}`);
+    
+    return parts.length > 0 ? `${parts.join('×')} мм` : '-';
+  };
+
+  const filteredProducts = products.filter((product: Product) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(query) ||
+      product.sku.toLowerCase().includes(query) ||
+      (product.barcode && product.barcode.toLowerCase().includes(query))
+    );
+  });
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    const aValue = a[sortField];
+    const bValue = b[sortField];
+    
+    if (aValue === null || aValue === undefined) return 1;
+    if (bValue === null || bValue === undefined) return -1;
+    
+    let comparison = 0;
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      comparison = aValue.localeCompare(bValue);
+    } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+      comparison = aValue - bValue;
+    } else {
+      comparison = String(aValue).localeCompare(String(bValue));
+    }
+    
+    return sortDirection === "asc" ? comparison : -comparison;
+  });
+
+  const selectionState = {
+    selectedCount: selectedProducts.size,
+    isAllSelected: sortedProducts.length > 0 && selectedProducts.size === sortedProducts.length,
+    isIndeterminate: selectedProducts.size > 0 && selectedProducts.size < sortedProducts.length
+  };
+
+  const handleExportToExcel = () => {
+    const exportData = products.map((product: Product) => ({
       'Название': product.name,
       'Артикул': product.sku,
       'Цена': product.price,
@@ -288,125 +268,27 @@ export default function ProductsList() {
         length: String(row['Длина (мм)'] || row['длина'] || '') || undefined,
         width: String(row['Ширина (мм)'] || row['ширина'] || '') || undefined,
         height: String(row['Высота (мм)'] || row['высота'] || '') || undefined,
-      })).filter(product => product.name && product.sku);
-
-      if (productsToImport.length === 0) {
-        toast({
-          title: "Ошибка",
-          description: "Не найдено товаров для импорта. Проверьте формат файла.",
-          variant: "destructive",
-        });
-        return;
-      }
+      }));
 
       importMutation.mutate(productsToImport);
     } catch (error) {
       toast({
         title: "Ошибка",
-        description: "Не удалось прочитать файл",
+        description: "Не удалось обработать файл",
         variant: "destructive",
       });
     }
 
-    // Очищаем input для возможности загрузки того же файла снова
-    event.target.value = '';
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
-  // Сохраняем ширину колонок в localStorage
-  useEffect(() => {
-    localStorage.setItem('productTableColumnWidths', JSON.stringify(columnWidths));
-  }, [columnWidths]);
-
-  // Обработчики изменения размера колонок (поддержка мыши и touch)
-  const handleResizeStart = useCallback((startX: number, column: keyof ColumnWidths) => {
-    console.log('Resize started for column:', column);
-    setIsResizing(true);
-    
-    const startWidth = columnWidths[column];
-    
-    // Добавляем класс для предотвращения выделения текста
-    document.body.classList.add('table-resizing');
-    document.body.style.cursor = 'col-resize';
-    
-    const handleMove = (currentX: number) => {
-      const deltaX = currentX - startX;
-      const newWidth = Math.max(80, startWidth + deltaX);
-      
-      console.log(`Resizing ${column} to width: ${newWidth}`);
-      
-      setColumnWidths(prev => {
-        const newWidths = {
-          ...prev,
-          [column]: newWidth
-        };
-        console.log('New column widths:', newWidths);
-        return newWidths;
-      });
-    };
-    
-    const handleEnd = () => {
-      console.log('Resize ended for column:', column);
-      setIsResizing(false);
-      document.body.classList.remove('table-resizing');
-      document.body.style.cursor = '';
-    };
-
-    return { handleMove, handleEnd };
-  }, [columnWidths]);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const { handleMove, handleEnd } = handleResizeStart(e.clientX, column);
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      handleMove(e.clientX);
-    };
-    
-    const handleMouseUp = () => {
-      handleEnd();
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  }, [handleResizeStart]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent, column: keyof ColumnWidths) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    const touch = e.touches[0];
-    const { handleMove, handleEnd } = handleResizeStart(touch.clientX, column);
-    
-    const handleTouchMove = (e: TouchEvent) => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      if (touch) {
-        handleMove(touch.clientX);
-      }
-    };
-    
-    const handleTouchEnd = () => {
-      handleEnd();
-      document.removeEventListener('touchmove', handleTouchMove);
-      document.removeEventListener('touchend', handleTouchEnd);
-    };
-    
-    document.addEventListener('touchmove', handleTouchMove, { passive: false });
-    document.addEventListener('touchend', handleTouchEnd);
-  }, [handleResizeStart]);
-
-  if (error) {
+  if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-red-50 border border-red-200 rounded-md p-4">
-          <div className="text-red-800">
-            Ошибка при загрузке товаров. Пожалуйста, попробуйте еще раз.
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-500">Загрузка товаров...</div>
         </div>
       </div>
     );
@@ -489,134 +371,86 @@ export default function ProductsList() {
                   />
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: '500px', minWidth: '500px', maxWidth: '500px' }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
-                    >
-                      <span>Название</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'name')}
-                      onTouchStart={(e) => handleTouchStart(e, 'name')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("sku")}
-                    >
-                      <span>Артикул</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'sku')}
-                      onTouchStart={(e) => handleTouchStart(e, 'sku')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("price")}
-                    >
-                      <span>Цена</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'price')}
-                      onTouchStart={(e) => handleTouchStart(e, 'price')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("purchasePrice")}
-                    >
-                      <span>Цена закупки</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
-                      onTouchStart={(e) => handleTouchStart(e, 'purchasePrice')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("barcode")}
-                    >
-                      <span>Штрихкод</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'barcode')}
-                      onTouchStart={(e) => handleTouchStart(e, 'barcode')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("weight")}
-                    >
-                      <span>Вес (г)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'weight')}
-                      onTouchStart={(e) => handleTouchStart(e, 'weight')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
+                  style={{ width: '500px', minWidth: '500px', maxWidth: '500px' }}
                 >
                   <button
                     className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort("length")}
+                    onClick={() => handleSort("name")}
                   >
-                    <span>Габариты (мм)</span>
+                    <span>Название</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("sku")}
+                  >
+                    <span>Артикул</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("price")}
+                  >
+                    <span>Цена</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: '150px', minWidth: '150px', maxWidth: '150px' }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("purchasePrice")}
+                  >
+                    <span>Цена закупки</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("barcode")}
+                  >
+                    <span>Штрихкод</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: '100px', minWidth: '100px', maxWidth: '100px' }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("weight")}
+                  >
+                    <span>Вес (г)</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("dimensions")}
+                  >
+                    <span>Размеры</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 </th>
@@ -626,7 +460,7 @@ export default function ProductsList() {
               {isLoading ? (
                 <tr>
                   <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    Загрузка товаров...
+                    Загрузка...
                   </td>
                 </tr>
               ) : sortedProducts.length === 0 ? (

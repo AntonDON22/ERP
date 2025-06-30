@@ -19,7 +19,9 @@ export function formatPrice(price: string | number | null | undefined): string {
 export function formatWeight(weight: string | number | null | undefined): string {
   if (!weight) return "—";
   const numWeight = typeof weight === 'string' ? parseFloat(weight) : weight;
-  return `${numWeight} г`;
+  // Убираем .0 для целых чисел
+  const formattedWeight = numWeight % 1 === 0 ? numWeight.toFixed(0) : numWeight.toString();
+  return `${formattedWeight} г`;
 }
 
 export function formatDimensions(
@@ -35,5 +37,8 @@ export function formatDimensions(
   
   if (!l && !w && !h) return "—";
   
-  return `${l || 0}×${w || 0}×${h || 0} мм`;
+  // Убираем .0 для целых чисел
+  const formatNumber = (num: number) => num % 1 === 0 ? num.toFixed(0) : num.toString();
+  
+  return `${formatNumber(l || 0)}×${formatNumber(w || 0)}×${formatNumber(h || 0)} мм`;
 }

@@ -281,6 +281,7 @@ export default function ProductsList() {
 
   // Обработчики изменения размера колонок
   const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
+    console.log('Resize started for column:', column);
     e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
@@ -290,11 +291,14 @@ export default function ProductsList() {
     
     // Добавляем класс для предотвращения выделения текста
     document.body.classList.add('table-resizing');
+    document.body.style.cursor = 'col-resize';
     
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
       const deltaX = e.clientX - startX;
       const newWidth = Math.max(80, startWidth + deltaX);
+      
+      console.log(`Resizing ${column} to width: ${newWidth}`);
       
       setColumnWidths(prev => ({
         ...prev,
@@ -303,8 +307,10 @@ export default function ProductsList() {
     };
     
     const handleMouseUp = () => {
+      console.log('Resize ended for column:', column);
       setIsResizing(false);
       document.body.classList.remove('table-resizing');
+      document.body.style.cursor = '';
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -418,9 +424,8 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'name')}
-                    >
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    </div>
+                      title="Потяните для изменения ширины столбца"
+                    />
                   </div>
                 </th>
                 <th 
@@ -438,9 +443,8 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'sku')}
-                    >
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    </div>
+                      title="Потяните для изменения ширины столбца"
+                    />
                   </div>
                 </th>
                 <th 
@@ -458,9 +462,8 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'price')}
-                    >
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    </div>
+                      title="Потяните для изменения ширины столбца"
+                    />
                   </div>
                 </th>
                 <th 
@@ -478,9 +481,8 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
-                    >
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    </div>
+                      title="Потяните для изменения ширины столбца"
+                    />
                   </div>
                 </th>
                 <th 
@@ -498,9 +500,8 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'barcode')}
-                    >
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    </div>
+                      title="Потяните для изменения ширины столбца"
+                    />
                   </div>
                 </th>
                 <th 
@@ -518,9 +519,8 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'weight')}
-                    >
-                      <div className="w-px h-4 bg-gray-300"></div>
-                    </div>
+                      title="Потяните для изменения ширины столбца"
+                    />
                   </div>
                 </th>
                 <th 

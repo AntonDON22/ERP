@@ -51,8 +51,6 @@ export default function ContractorsList() {
       excelConfig={excelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
-      deleteLabel="Удалить выбранных контрагентов"
-      importLabel="Импорт контрагентов"
     />
   );
 }

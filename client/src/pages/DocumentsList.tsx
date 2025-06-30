@@ -23,7 +23,6 @@ export default function DocumentsList() {
       onDelete={async (ids) => {
         await deleteDocuments.mutateAsync(ids);
       }}
-      deleteLabel="удалить"
     />
   );
 }

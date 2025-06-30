@@ -122,8 +122,6 @@ export default function ProductsList() {
       excelConfig={excelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
-      deleteLabel="Удалить выбранные товары"
-      importLabel="Импорт товаров"
     />
   );
 }

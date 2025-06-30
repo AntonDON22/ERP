@@ -51,8 +51,6 @@ export default function SuppliersList() {
       excelConfig={excelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
-      deleteLabel="Удалить выбранных поставщиков"
-      importLabel="Импорт поставщиков"
     />
   );
 }

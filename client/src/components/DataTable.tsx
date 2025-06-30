@@ -88,8 +88,8 @@ export default function DataTable<T extends { id: number; name: string }>({
   excelConfig,
   onDelete,
   onImport,
-  deleteLabel = "Удалить выбранные",
-  importLabel = "Импорт из Excel"
+  deleteLabel = "Удалить",
+  importLabel = "Импорт"
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof T>("name");

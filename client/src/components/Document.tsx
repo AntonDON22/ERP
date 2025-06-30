@@ -308,7 +308,14 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         </CardContent>
       </Card>
 
-      <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+      <form onSubmit={(e) => {
+        console.log('📝 Форма отправляется, событие:', e);
+        console.log('🔍 Данные формы:', form.getValues());
+        return form.handleSubmit((data) => {
+          console.log('📤 handleSubmit вызван с данными:', data);
+          return handleSave(data);
+        })(e);
+      }} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -432,6 +439,10 @@ export default function Document({ config, mode = 'create', documentData }: Docu
             <Button 
               type="submit" 
               disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
+              onClick={() => {
+                console.log('🔘 Кнопка "Сохранить" была нажата');
+                console.log('📊 Состояние:', { isSubmitting, isPending: mutation.isPending, itemsCount: items.length });
+              }}
             >
               {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
             </Button>

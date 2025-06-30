@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type Document, type InsertDocument } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -28,6 +28,13 @@ export interface IStorage {
   createContractor(contractor: InsertContractor): Promise<Contractor>;
   updateContractor(id: number, contractor: Partial<InsertContractor>): Promise<Contractor | undefined>;
   deleteContractor(id: number): Promise<boolean>;
+  
+  // Documents
+  getDocuments(): Promise<Document[]>;
+  getDocument(id: number): Promise<Document | undefined>;
+  createDocument(document: InsertDocument): Promise<Document>;
+  updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document | undefined>;
+  deleteDocument(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -375,6 +382,52 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(contractors)
       .where(eq(contractors.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Documents
+  async getDocuments(): Promise<Document[]> {
+    const startTime = Date.now();
+    console.log('[DB] Starting getDocuments query...');
+    
+    try {
+      const result = await db.select().from(documents);
+      const endTime = Date.now();
+      console.log(`[DB] getDocuments completed in ${endTime - startTime}ms, returned ${result.length} documents`);
+      return result;
+    } catch (error) {
+      const endTime = Date.now();
+      console.error(`[DB] getDocuments failed after ${endTime - startTime}ms:`, error);
+      throw error;
+    }
+  }
+
+  async getDocument(id: number): Promise<Document | undefined> {
+    const [document] = await db.select().from(documents).where(eq(documents.id, id));
+    return document || undefined;
+  }
+
+  async createDocument(insertDocument: InsertDocument): Promise<Document> {
+    const [document] = await db
+      .insert(documents)
+      .values(insertDocument)
+      .returning();
+    return document;
+  }
+
+  async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<Document | undefined> {
+    const [document] = await db
+      .update(documents)
+      .set(updateData)
+      .where(eq(documents.id, id))
+      .returning();
+    return document || undefined;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    const result = await db
+      .delete(documents)
+      .where(eq(documents.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

@@ -34,6 +34,12 @@ export const contractors = pgTable("contractors", {
   website: text("website"),
 });
 
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  type: text("type"),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -92,6 +98,13 @@ export const insertContractorSchema = createInsertSchema(contractors).omit({
   website: z.string().optional().refine((val) => !val || val.startsWith('http'), "Вебсайт должен начинаться с http"),
 });
 
+export const insertDocumentSchema = createInsertSchema(documents).omit({
+  id: true,
+}).extend({
+  name: z.string().min(1, "Название обязательно"),
+  type: z.string().optional(),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
@@ -103,3 +116,6 @@ export type Supplier = typeof suppliers.$inferSelect;
 
 export type InsertContractor = z.infer<typeof insertContractorSchema>;
 export type Contractor = typeof contractors.$inferSelect;
+
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+export type Document = typeof documents.$inferSelect;

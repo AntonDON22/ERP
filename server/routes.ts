@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertDocumentSchema } from "@shared/schema";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
@@ -389,6 +389,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Ошибка при импорте контрагентов" });
     }
   });
+
+  // Documents routes
+  // Get all documents
+  app.get("/api/documents", async (req, res) => {
+    try {
+      const documents = await storage.getDocuments();
+      res.json(documents);
+    } catch (error) {
+      console.error("Error fetching documents:", error);
+      res.status(500).json({ message: "Ошибка при загрузке документов" });
+    }
+  });
+
+  // Delete multiple documents
+  app.post("/api/documents/delete-multiple", async (req, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Укажите массив ID документов для удаления" });
+      }
+
+      const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
+      if (validIds.length !== ids.length) {
+        return res.status(400).json({ message: "Некорректные ID документов" });
+      }
+
+      let deletedCount = 0;
+      const results = [];
+
+      for (const id of validIds) {
+        try {
+          const success = await storage.deleteDocument(id);
+          if (success) {
+            deletedCount++;
+            results.push({ id, status: 'deleted' });
+          } else {
+            results.push({ id, status: 'not_found' });
+          }
+        } catch (error) {
+          console.error(`Error deleting document ${id}:`, error);
+          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+
+      res.json({ 
+        message: `Удалено документов: ${deletedCount} из ${ids.length}`,
+        deletedCount,
+        results 
+      });
+    } catch (error) {
+      console.error("Error deleting multiple documents:", error);
+      res.status(500).json({ message: "Ошибка при удалении документов" });
+    }
+  });
+
+
 
   const httpServer = createServer(app);
   return httpServer;

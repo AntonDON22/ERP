@@ -280,7 +280,7 @@ export default function DataTable<T extends { id: number; name: string }>({
         {/* Заголовок и статистика */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural.charAt(0).toUpperCase() + entityNamePlural.slice(1)}</h1>
             <p className="text-sm text-gray-600 mt-1">
               Всего {entityNamePlural.toLowerCase()}: {filteredAndSortedData.length}
             </p>

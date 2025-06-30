@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import ProductsList from "@/pages/ProductsList";
 import SuppliersList from "@/pages/SuppliersList";
 import ContractorsList from "@/pages/ContractorsList";
+import DocumentsList from "@/pages/DocumentsList";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
               <Route path="/products" component={ProductsList} />
               <Route path="/suppliers" component={SuppliersList} />
               <Route path="/contractors" component={ContractorsList} />
+              <Route path="/documents" component={DocumentsList} />
             </Switch>
           </div>
         </Router>

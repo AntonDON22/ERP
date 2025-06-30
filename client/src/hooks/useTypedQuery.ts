@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Product, Supplier, Contractor, InsertProduct, InsertSupplier, InsertContractor } from "@shared/schema";
+import { Product, Supplier, Contractor, Document, InsertProduct, InsertSupplier, InsertContractor } from "@shared/schema";
 import { apiRequest, apiRequestJson } from "@/lib/queryClient";
 
 // Типизированные хуки для продуктов
@@ -91,6 +91,25 @@ export const useImportContractors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+    },
+  });
+};
+
+// Типизированные хуки для документов
+export const useDocuments = () => {
+  return useQuery<Document[]>({
+    queryKey: ["/api/documents"],
+  });
+};
+
+export const useDeleteDocuments = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      return apiRequest("/api/documents/delete-multiple", "POST", { ids });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
     },
   });
 };

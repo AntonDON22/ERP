@@ -403,7 +403,7 @@ export default function SuppliersList() {
       />
 
       {/* Suppliers Table */}
-      <div className="bg-white rounded-lg border shadow-sm" style={{ height: '350px' }}>
+      <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto min-w-full">
           <table className="w-full" style={{ tableLayout: 'fixed', width: '1400px', minWidth: '1400px' }}>
             <thead className="bg-gray-50 h-12">
@@ -471,22 +471,26 @@ export default function SuppliersList() {
                         onCheckedChange={(checked) => handleSelectSupplier(supplier.id, checked as boolean)}
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={supplier.name} type="Название" />
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        <CopyableCell value={supplier.name} type="Название" />
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {supplier.website ? (
-                        <a 
-                          href={supplier.website} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 underline"
-                        >
-                          {supplier.website}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        {supplier.website ? (
+                          <a 
+                            href={supplier.website} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 underline"
+                          >
+                            {supplier.website}
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))

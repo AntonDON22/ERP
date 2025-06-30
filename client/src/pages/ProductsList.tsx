@@ -476,7 +476,7 @@ export default function ProductsList() {
       />
 
       {/* Products Table */}
-      <div className="bg-white rounded-lg border shadow-sm" style={{ height: '350px' }}>
+      <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto min-w-full">
           <table className="w-full" style={{ tableLayout: 'fixed', width: '1400px', minWidth: '1400px' }}>
             <thead className="bg-gray-50 h-12">
@@ -644,26 +644,40 @@ export default function ProductsList() {
                         onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={product.name} type="Название" />
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        <CopyableCell value={product.name} type="Название" />
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={product.sku} type="Артикул" />
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        <CopyableCell value={product.sku} type="Артикул" />
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatPrice(product.price)}
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        {formatPrice(product.price)}
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatPrice(product.purchasePrice)}
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        {formatPrice(product.purchasePrice)}
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={product.barcode} type="Штрихкод" />
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        <CopyableCell value={product.barcode} type="Штрихкод" />
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatWeight(product.weight)}
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        {formatWeight(product.weight)}
+                      </div>
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatDimensions(product.length, product.width, product.height)}
+                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
+                      <div className="truncate">
+                        {formatDimensions(product.length, product.width, product.height)}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -676,7 +690,6 @@ export default function ProductsList() {
       {/* Summary */}
       <div className="mt-4 text-sm text-gray-500">
         Всего товаров: {products.length}
-        {searchQuery && ` • Показано: ${sortedProducts.length}`}
         {selectedProducts.size > 0 && ` • Выбрано: ${selectedProducts.size}`}
       </div>
     </div>

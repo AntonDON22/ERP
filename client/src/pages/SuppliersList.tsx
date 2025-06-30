@@ -82,22 +82,22 @@ export default function SuppliersList() {
   };
 
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ["/api/suppliers"],
   });
 
   const importMutation = useMutation({
     mutationFn: async (products: InsertProduct[]) => {
-      const response = await fetch("/api/products/import", {
+      const response = await fetch("/api/suppliers/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ products }),
+        body: JSON.stringify({ suppliers: products }),
       });
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Ошибка при импорте товаров");
+        throw new Error(error.message || "Ошибка при импорте поставщиков");
       }
       
       return response.json();
@@ -105,14 +105,14 @@ export default function SuppliersList() {
     onSuccess: () => {
       toast({
         title: "Успешно",
-        description: "Товары импортированы",
+        description: "Поставщики импортированы",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: error.message || "Не удалось импортировать товары",
+        description: error.message || "Не удалось импортировать поставщиков",
         variant: "destructive",
       });
     },
@@ -120,17 +120,17 @@ export default function SuppliersList() {
 
   const deleteSelectedMutation = useMutation({
     mutationFn: async (productIds: number[]) => {
-      const response = await fetch("/api/products/delete-multiple", {
+      const response = await fetch("/api/suppliers/delete-multiple", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ productIds }),
+        body: JSON.stringify({ supplierIds: productIds }),
       });
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Ошибка при удалении товаров");
+        throw new Error(error.message || "Ошибка при удалении поставщиков");
       }
       
       return response.json();
@@ -138,15 +138,15 @@ export default function SuppliersList() {
     onSuccess: () => {
       toast({
         title: "Успешно",
-        description: "Выбранные товары удалены",
+        description: "Выбранные поставщики удалены",
       });
       setSelectedProducts(new Set());
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: error.message || "Не удалось удалить товары",
+        description: error.message || "Не удалось удалить поставщиков",
         variant: "destructive",
       });
     },

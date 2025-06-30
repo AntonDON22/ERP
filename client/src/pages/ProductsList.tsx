@@ -41,18 +41,18 @@ export default function ProductsList() {
     }
   }, [toast]);
 
-  const CopyableCell = ({ value, type }: { value: string | null | undefined; type: string }) => {
+  const CopyableCell = ({ value, type, multiline = false }: { value: string | null | undefined; type: string; multiline?: boolean }) => {
     if (!value) return <span className="text-gray-400">-</span>;
     
     const key = `${type}-${value}`;
     const isCopied = copiedStates[key];
     
     return (
-      <div className="flex items-center gap-2 group">
-        <span className="truncate">{value}</span>
+      <div className="flex items-start gap-2 group">
+        <span className={multiline ? "flex-1 break-words" : "truncate"}>{value}</span>
         <button
           onClick={() => copyToClipboard(value, type)}
-          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded"
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded flex-shrink-0 mt-0.5"
           title={`Копировать ${type.toLowerCase()}`}
         >
           {isCopied ? (
@@ -479,15 +479,28 @@ export default function ProductsList() {
                       />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      <div className="leading-tight" style={{ 
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        wordBreak: 'break-word',
-                        hyphens: 'auto'
-                      }}>
-                        <CopyableCell value={product.name} type="Название" />
+                      <div className="flex items-start gap-2 group">
+                        <div className="flex-1 leading-tight" style={{ 
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          wordBreak: 'break-word',
+                          hyphens: 'auto'
+                        }}>
+                          {product.name}
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(product.name, "Название")}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded flex-shrink-0 mt-0.5"
+                          title="Копировать название"
+                        >
+                          {copiedStates[`Название-${product.name}`] ? (
+                            <Check className="w-3 h-3 text-green-600" />
+                          ) : (
+                            <Copy className="w-3 h-3 text-gray-500" />
+                          )}
+                        </button>
                       </div>
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900 truncate">

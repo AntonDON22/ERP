@@ -208,6 +208,11 @@ export default function DataTable<T extends { id: number; name: string }>({
   const handleExport = useCallback(() => {
     const exportData = filteredAndSortedData.map((item) => {
       const exportItem: Record<string, any> = {};
+      
+      // Добавляем ID как первую колонку
+      exportItem['ID'] = item.id;
+      
+      // Добавляем остальные колонки
       columns.forEach(column => {
         const value = item[column.key];
         const formattedValue = column.format ? column.format(value) : value;

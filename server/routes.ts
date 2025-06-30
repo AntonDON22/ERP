@@ -448,27 +448,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create receipt document
   app.post("/api/documents/create-receipt", async (req, res) => {
     try {
+      console.log("🔄 Создание документа:", req.body);
       const validatedData = receiptDocumentSchema.parse(req.body);
       
-      // Создаем документ сначала для получения ID
+      // Создаем данные документа
       const documentData = {
         name: validatedData.name,
         type: "Оприходование" as const,
         date: validatedData.date,
       };
       
-      const tempDocument = await storage.createDocument(documentData);
-      
       // Преобразуем элементы в правильный формат
       const itemsData = validatedData.items.map(item => ({
         productId: item.productId,
         quantity: item.quantity.toString(),
         price: item.price.toString(),
-        documentId: tempDocument.id,
       }));
       
-      // Создаем документ с элементами
+      console.log("📋 Данные документа:", documentData);
+      console.log("📦 Данные товаров:", itemsData);
+      
+      // Создаем только один документ с элементами
       const document = await storage.createReceiptDocument(documentData, itemsData);
+      console.log("✅ Документ создан:", document);
       res.status(201).json(document);
     } catch (error) {
       console.error("Error creating receipt document:", error);

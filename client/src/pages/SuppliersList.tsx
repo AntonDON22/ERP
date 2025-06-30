@@ -400,19 +400,19 @@ export default function SuppliersList() {
   }
 
   return (
-    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ maxWidth: '1400px' }}>
+    <div className="unified-table-container">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex-1 max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      <div className="unified-table-header">
+        <div className="unified-table-search-row">
+          <div className="unified-table-search-container">
+            <div className="unified-table-search-input">
+              <Search className="unified-table-search-icon" />
               <Input
                 type="text"
                 placeholder="Поиск по названию или веб-сайту..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10"
+                className="unified-table-input"
               />
             </div>
             {searchQuery && (
@@ -421,11 +421,11 @@ export default function SuppliersList() {
               </p>
             )}
           </div>
-          <div className="flex space-x-3">
+          <div className="unified-table-buttons">
             {selectedSuppliers.size > 0 && (
               <Button 
                 variant="destructive" 
-                className="inline-flex items-center h-10"
+                className="unified-table-button"
                 onClick={handleDeleteSelected}
                 disabled={deleteSelectedMutation.isPending}
               >
@@ -435,7 +435,7 @@ export default function SuppliersList() {
             )}
             <Button
               variant="outline"
-              className="inline-flex items-center h-10"
+              className="unified-table-button"
               onClick={handleImportClick}
               disabled={importMutation.isPending}
             >
@@ -444,7 +444,7 @@ export default function SuppliersList() {
             </Button>
             <Button
               variant="outline"
-              className="inline-flex items-center h-10"
+              className="unified-table-button"
               onClick={handleExportToExcel}
               disabled={!suppliers || suppliers.length === 0}
             >
@@ -465,12 +465,12 @@ export default function SuppliersList() {
       />
 
       {/* Suppliers Table */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full" style={{ tableLayout: 'fixed', width: '1200px' }}>
-            <thead className="bg-gray-50">
+      <div className="unified-table-wrapper">
+        <div className="unified-table-scroll">
+          <table className="unified-table">
+            <thead className="unified-table-head">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}>
+                <th className="unified-table-header-cell unified-table-header-checkbox">
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -478,7 +478,7 @@ export default function SuppliersList() {
                   />
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -498,7 +498,7 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -518,7 +518,7 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -538,7 +538,7 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -558,7 +558,7 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -578,7 +578,7 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -598,7 +598,7 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  className="unified-table-header-cell"
                   style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
                 >
                   <div className="flex items-center justify-between">
@@ -619,47 +619,47 @@ export default function SuppliersList() {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="unified-table-body">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="unified-table-cell text-center text-gray-500 py-8">
                     Загрузка поставщиков...
                   </td>
                 </tr>
               ) : sortedSuppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={8} className="unified-table-cell text-center text-gray-500 py-8">
                     {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
                   </td>
                 </tr>
               ) : (
                 sortedSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4" style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}>
+                  <tr key={supplier.id} className="unified-table-row">
+                    <td className="unified-table-cell-checkbox">
                       <Checkbox
                         checked={selectedSuppliers.has(supplier.id)}
                         onCheckedChange={(checked) => handleSelectSupplier(supplier.id, checked as boolean)}
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}>
                       <CopyableCell value={supplier.name} type="Название" />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}>
                       <CopyableCell value={supplier.website} type="Веб-сайт" />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}>
                       -
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}>
                       -
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}>
                       -
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}>
                       -
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}>
+                    <td className="unified-table-cell" style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}>
                       -
                     </td>
                   </tr>
@@ -671,7 +671,7 @@ export default function SuppliersList() {
       </div>
 
       {/* Summary */}
-      <div className="mt-6 text-sm text-gray-500">
+      <div className="unified-table-summary">
         Всего поставщиков: {suppliers.length}
         {selectedSuppliers.size > 0 && (
           <span className="ml-4">

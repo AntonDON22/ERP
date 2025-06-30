@@ -149,6 +149,162 @@
   user-select: none;
 }
 
+/* Принудительная унификация всех таблиц */
+.unified-table-container {
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  padding: 24px 16px !important;
+}
+
+@media (min-width: 640px) {
+  .unified-table-container {
+    padding: 24px 24px !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .unified-table-container {
+    padding: 24px 32px !important;
+  }
+}
+
+.unified-table-header {
+  margin-bottom: 24px !important;
+}
+
+.unified-table-search-row {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+@media (min-width: 640px) {
+  .unified-table-search-row {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+}
+
+.unified-table-search-container {
+  flex: 1 !important;
+  max-width: 28rem !important;
+}
+
+.unified-table-search-input {
+  position: relative !important;
+}
+
+.unified-table-search-icon {
+  position: absolute !important;
+  left: 12px !important;
+  top: 50% !important;
+  transform: translateY(-50%) !important;
+  color: rgb(156, 163, 175) !important;
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.unified-table-input {
+  padding-left: 40px !important;
+  height: 40px !important;
+  width: 100% !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+}
+
+.unified-table-buttons {
+  display: flex !important;
+  gap: 12px !important;
+}
+
+.unified-table-button {
+  display: inline-flex !important;
+  align-items: center !important;
+  height: 40px !important;
+  padding: 0 16px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  font-weight: 500 !important;
+  border-radius: 6px !important;
+}
+
+.unified-table-wrapper {
+  background: white !important;
+  border-radius: 8px !important;
+  border: 1px solid rgb(229, 231, 235) !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+.unified-table-scroll {
+  overflow-x: auto !important;
+}
+
+.unified-table {
+  width: 100% !important;
+  table-layout: fixed !important;
+  width: 1200px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.unified-table-head {
+  background-color: rgb(249, 250, 251) !important;
+}
+
+.unified-table-header-cell {
+  padding: 12px 16px !important;
+  text-align: left !important;
+  font-size: 12px !important;
+  line-height: 16px !important;
+  font-weight: 500 !important;
+  color: rgb(107, 114, 128) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  position: relative !important;
+}
+
+.unified-table-header-checkbox {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+}
+
+.unified-table-body {
+  background: white !important;
+  border-top: 1px solid rgb(229, 231, 235) !important;
+}
+
+.unified-table-row {
+  border-bottom: 1px solid rgb(229, 231, 235) !important;
+}
+
+.unified-table-row:hover {
+  background-color: rgb(249, 250, 251) !important;
+}
+
+.unified-table-cell {
+  padding: 16px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  color: rgb(17, 24, 39) !important;
+  font-family: 'Inter', sans-serif !important;
+}
+
+.unified-table-cell-checkbox {
+  width: 48px !important;
+  min-width: 48px !important;
+  max-width: 48px !important;
+  padding: 16px !important;
+}
+
+.unified-table-summary {
+  margin-top: 24px !important;
+  font-size: 14px !important;
+  line-height: 20px !important;
+  color: rgb(107, 114, 128) !important;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

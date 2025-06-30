@@ -140,12 +140,19 @@ export default function Document({ config, mode = 'create', documentData }: Docu
 
   // Автозаполнение цены при выборе товара
   const handleProductChange = (index: number, productId: number) => {
-    updateItem(index, "productId", productId);
+    const newItems = [...items];
+    newItems[index] = { 
+      ...newItems[index], 
+      productId: productId 
+    };
     
     const product = getProductInfo(productId);
     if (product && product.price) {
-      updateItem(index, "price", product.price.toString());
+      newItems[index].price = product.price.toString();
     }
+    
+    setItems(newItems);
+    form.setValue("items", newItems);
   };
 
   // Генерация названия документа
@@ -289,25 +296,31 @@ export default function Document({ config, mode = 'create', documentData }: Docu
           </CardHeader>
           <CardContent className="space-y-4">
             {items.map((item, index) => {
-              const product = getProductInfo(item.productId);
+              const selectedProduct = products.find(p => p.id === item.productId);
               return (
-                <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg">
+                <div key={`item-${index}`} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg">
                   <div className="col-span-4">
                     <Label htmlFor={`product-${index}`}>Товар</Label>
-                    <select
-                      key={`${index}-${item.productId}`}
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      value={item.productId}
-                      onChange={(e) => handleProductChange(index, Number(e.target.value))}
-                      disabled={!isEditing}
-                    >
-                      <option value={0}>Выберите товар</option>
-                      {products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </select>
+                    {isEditing ? (
+                      <select
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        value={item.productId || 0}
+                        onChange={(e) => handleProductChange(index, Number(e.target.value))}
+                      >
+                        <option value={0}>Выберите товар</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        value={selectedProduct ? selectedProduct.name : "Товар не выбран"}
+                        disabled={true}
+                        className="bg-muted"
+                      />
+                    )}
                   </div>
 
                   <div className="col-span-2">

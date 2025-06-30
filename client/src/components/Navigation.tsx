@@ -5,7 +5,8 @@ import logoPath from "@assets/1_1751287471931.png";
 export default function Navigation() {
   const [location] = useLocation();
   
-  const isProductsActive = location === "/" || location === "/products";
+  const isHomeActive = location === "/";
+  const isProductsActive = location === "/products";
   const isSuppliersActive = location === "/suppliers";
 
   return (
@@ -24,6 +25,16 @@ export default function Navigation() {
               </h1>
             </div>
             <div className="hidden md:ml-8 md:flex md:space-x-8">
+              <Link 
+                href="/"
+                className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  isHomeActive 
+                    ? "border-blue-600 text-blue-600" 
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Главная
+              </Link>
               <Link 
                 href="/products"
                 className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${

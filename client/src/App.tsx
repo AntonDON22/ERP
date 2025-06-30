@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Router, Route, Switch } from "wouter";
 import Navigation from "@/components/Navigation";
+import Dashboard from "@/pages/Dashboard";
 import ProductsList from "@/pages/ProductsList";
 import SuppliersList from "@/pages/SuppliersList";
 
@@ -15,7 +16,7 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Navigation />
             <Switch>
-              <Route path="/" component={ProductsList} />
+              <Route path="/" component={Dashboard} />
               <Route path="/products" component={ProductsList} />
               <Route path="/suppliers" component={SuppliersList} />
             </Switch>

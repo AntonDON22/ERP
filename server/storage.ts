@@ -120,7 +120,8 @@ export class MemStorage implements IStorage {
     const id = this.currentSupplierId++;
     const supplier: Supplier = { 
       ...insertSupplier, 
-      id 
+      id,
+      website: insertSupplier.website ?? null
     };
     this.suppliers.set(id, supplier);
     return supplier;

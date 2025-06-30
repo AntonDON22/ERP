@@ -25,6 +25,7 @@ export const products = pgTable("products", {
 export const suppliers = pgTable("suppliers", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  website: text("website"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

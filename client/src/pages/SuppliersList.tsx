@@ -16,10 +16,18 @@ export default function SuppliersList() {
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<number>>(new Set());
   const [isResizing, setIsResizing] = useState(false);
 
-  // Ширина столбца для названий (сохраняется в localStorage)
-  const [columnWidth, setColumnWidth] = useState(() => {
-    const saved = localStorage.getItem('supplierTableColumnWidth');
-    return saved ? parseInt(saved, 10) : 400;
+  // Ширина столбцов (сохраняется в localStorage)
+  interface ColumnWidths {
+    name: number;
+    website: number;
+  }
+
+  const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
+    const saved = localStorage.getItem('supplierTableColumnWidths');
+    return saved ? JSON.parse(saved) : {
+      name: 300,
+      website: 250,
+    };
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -127,7 +135,8 @@ export default function SuppliersList() {
     
     const query = searchQuery.toLowerCase();
     return suppliers.filter((supplier: Supplier) =>
-      supplier.name.toLowerCase().includes(query)
+      supplier.name.toLowerCase().includes(query) ||
+      (supplier.website && supplier.website.toLowerCase().includes(query))
     );
   }, [suppliers, searchQuery]);
 
@@ -202,6 +211,7 @@ export default function SuppliersList() {
 
     const exportData = suppliers.map((supplier: Supplier) => ({
       'Название': supplier.name,
+      'Веб-сайт': supplier.website || '',
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -231,6 +241,7 @@ export default function SuppliersList() {
 
       const suppliersToImport: InsertSupplier[] = jsonData.map((row: any) => ({
         name: row['Название'] || row['название'] || '',
+        website: row['Веб-сайт'] || row['веб-сайт'] || row['website'] || undefined,
       })).filter(supplier => supplier.name);
 
       if (suppliersToImport.length === 0) {
@@ -255,16 +266,16 @@ export default function SuppliersList() {
     event.target.value = '';
   };
 
-  // Сохраняем ширину колонки в localStorage
+  // Сохраняем ширину колонок в localStorage
   useEffect(() => {
-    localStorage.setItem('supplierTableColumnWidth', columnWidth.toString());
-  }, [columnWidth]);
+    localStorage.setItem('supplierTableColumnWidths', JSON.stringify(columnWidths));
+  }, [columnWidths]);
 
-  // Обработчики изменения размера колонки (поддержка мыши и touch)
-  const handleResizeStart = useCallback((startX: number) => {
+  // Обработчики изменения размера колонок (поддержка мыши и touch)
+  const handleResizeStart = useCallback((startX: number, column: keyof ColumnWidths) => {
     setIsResizing(true);
     
-    const startWidth = columnWidth;
+    const startWidth = columnWidths[column];
     
     // Добавляем класс для предотвращения выделения текста
     document.body.classList.add('table-resizing');
@@ -273,7 +284,11 @@ export default function SuppliersList() {
     const handleMove = (currentX: number) => {
       const deltaX = currentX - startX;
       const newWidth = Math.max(150, startWidth + deltaX);
-      setColumnWidth(newWidth);
+      
+      setColumnWidths(prev => ({
+        ...prev,
+        [column]: newWidth
+      }));
     };
     
     const handleEnd = () => {
@@ -283,13 +298,13 @@ export default function SuppliersList() {
     };
 
     return { handleMove, handleEnd };
-  }, [columnWidth]);
+  }, [columnWidths]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
     e.preventDefault();
     e.stopPropagation();
     
-    const { handleMove, handleEnd } = handleResizeStart(e.clientX);
+    const { handleMove, handleEnd } = handleResizeStart(e.clientX, column);
     
     const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
@@ -306,12 +321,12 @@ export default function SuppliersList() {
     document.addEventListener('mouseup', handleMouseUp);
   }, [handleResizeStart]);
 
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+  const handleTouchStart = useCallback((e: React.TouchEvent, column: keyof ColumnWidths) => {
     e.preventDefault();
     e.stopPropagation();
     
     const touch = e.touches[0];
-    const { handleMove, handleEnd } = handleResizeStart(touch.clientX);
+    const { handleMove, handleEnd } = handleResizeStart(touch.clientX, column);
     
     const handleTouchMove = (e: TouchEvent) => {
       e.preventDefault();
@@ -405,7 +420,7 @@ export default function SuppliersList() {
       {/* Suppliers Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: columnWidth + 48 + 'px' }}>
+          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
@@ -417,7 +432,7 @@ export default function SuppliersList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidth}px`, minWidth: `${columnWidth}px`, maxWidth: `${columnWidth}px` }}
+                  style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -429,8 +444,28 @@ export default function SuppliersList() {
                     </button>
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={handleMouseDown}
-                      onTouchStart={handleTouchStart}
+                      onMouseDown={(e) => handleMouseDown(e, 'name')}
+                      onTouchStart={(e) => handleTouchStart(e, 'name')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("website")}
+                    >
+                      <span>Веб-сайт</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'website')}
+                      onTouchStart={(e) => handleTouchStart(e, 'website')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -440,13 +475,13 @@ export default function SuppliersList() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={2} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                     Загрузка поставщиков...
                   </td>
                 </tr>
               ) : sortedSuppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={2} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
                   </td>
                 </tr>
@@ -461,6 +496,9 @@ export default function SuppliersList() {
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                       <CopyableCell value={supplier.name} type="Название" />
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <CopyableCell value={supplier.website} type="Веб-сайт" />
                     </td>
                   </tr>
                 ))

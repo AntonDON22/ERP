@@ -136,6 +136,7 @@ The application uses a dual storage approach:
 - June 30, 2025. Fixed critical inventory tracking bug: Receipt documents now properly update stock levels in database. Implemented correct getInventory method in storage layer that calculates real stock from inventory table using PostgreSQL SUM query. Added cache invalidation for inventory queries when receipt documents are created. Inventory page now shows actual calculated stock levels instead of zero quantities.
 - June 30, 2025. Cleaned up test data: Removed accumulated test documents and inventory records to provide clean starting state. System correctly showed cumulative inventory totals from all historical receipt documents, demonstrating proper FIFO inventory tracking functionality. Database now reset to zero quantities for fresh testing.
 - June 30, 2025. Fixed document deletion bug: Implemented proper cascading delete functionality. When documents are deleted, system now automatically removes related records from document_items and inventory tables. Added detailed logging to track deletion operations. Both document deletion and creation now properly invalidate inventory cache for real-time updates.
+- June 30, 2025. Fixed critical FIFO inventory logic error: Documents "Списание" now correctly subtract inventory quantities instead of adding them. Implemented proper sign logic where receipt documents add positive quantities and writeoff documents add negative quantities to inventory table. System now properly tracks both incoming and outgoing inventory movements.
 
 ## User Preferences
 

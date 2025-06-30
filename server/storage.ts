@@ -568,11 +568,16 @@ export class DatabaseStorage implements IStorage {
             });
 
           // 3. Добавляем в инвентарь (FIFO)
+          // Для документов списания используем отрицательное количество
+          const inventoryQuantity = updatedDocument.type === 'Списание' 
+            ? `-${item.quantity}` 
+            : item.quantity;
+            
           await tx
             .insert(inventory)
             .values({
               productId: item.productId,
-              quantity: item.quantity,
+              quantity: inventoryQuantity,
               price: item.price,
               documentId: createdDocument.id,
             });

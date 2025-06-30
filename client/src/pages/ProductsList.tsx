@@ -479,7 +479,7 @@ export default function ProductsList() {
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto min-w-full">
           <table className="w-full" style={{ tableLayout: 'fixed', width: '1400px', minWidth: '1400px' }}>
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 h-12">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   <Checkbox
@@ -637,7 +637,7 @@ export default function ProductsList() {
                 </tr>
               ) : (
                 sortedProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                  <tr key={product.id} className="hover:bg-gray-50 h-16">
                     <td className="px-4 py-4 w-12">
                       <Checkbox
                         checked={selectedProducts.has(product.id)}

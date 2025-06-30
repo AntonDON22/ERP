@@ -42,21 +42,36 @@ const productsColumns: ColumnConfig<Product>[] = [
     key: "length",
     label: "Длина",
     width: "w-20",
-    format: (value) => value ? `${value} мм` : "",
+    format: (value) => {
+      if (!value) return "";
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
+      return `${formatted} мм`;
+    },
     className: "text-right",
   },
   {
     key: "width",
     label: "Ширина", 
     width: "w-20",
-    format: (value) => value ? `${value} мм` : "",
+    format: (value) => {
+      if (!value) return "";
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
+      return `${formatted} мм`;
+    },
     className: "text-right",
   },
   {
     key: "height",
     label: "Высота",
     width: "w-20", 
-    format: (value) => value ? `${value} мм` : "",
+    format: (value) => {
+      if (!value) return "";
+      const num = typeof value === 'string' ? parseFloat(value) : value;
+      const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
+      return `${formatted} мм`;
+    },
     className: "text-right",
   },
   {

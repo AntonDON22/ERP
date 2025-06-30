@@ -242,9 +242,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    // Очистка числовых полей от символов валюты и единиц
+    const cleanNumericValue = (value: string | null | undefined): string | null => {
+      if (!value || value === "") return null;
+      const cleaned = String(value)
+        .replace(/[^\d.,]/g, '') // Удаляем все кроме цифр, точек и запятых
+        .replace(',', '.') // Заменяем запятые на точки
+        .trim();
+      return cleaned || null;
+    };
+
+    const cleanedProduct = {
+      ...insertProduct,
+      price: cleanNumericValue(insertProduct.price) || "0",
+      purchasePrice: cleanNumericValue(insertProduct.purchasePrice),
+      weight: cleanNumericValue(insertProduct.weight),
+      length: cleanNumericValue(insertProduct.length),
+      width: cleanNumericValue(insertProduct.width),
+      height: cleanNumericValue(insertProduct.height),
+    };
+
+
+
     const [product] = await db
       .insert(products)
-      .values(insertProduct)
+      .values(cleanedProduct)
       .returning();
     return product;
   }

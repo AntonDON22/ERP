@@ -83,8 +83,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk import products
   app.post("/api/products/import", async (req, res) => {
     try {
-      // Данные могут приходить как массив или как объект с массивом products
-      const products = Array.isArray(req.body) ? req.body : req.body.products;
+      // Данные приходят как объект с массивом products из фронтенда
+      const products = req.body.products;
       
       if (!Array.isArray(products)) {
         return res.status(400).json({ message: "Ожидается массив товаров" });
@@ -93,17 +93,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = [];
       for (const productData of products) {
         try {
-          // Используем более простую валидацию для импорта
+          // Простая валидация для импорта
           const validatedData = {
             name: productData.name || productData.Название || "Без названия",
             sku: productData.sku || productData.Артикул || `SKU-${Date.now()}`,
             price: String(productData.price || productData.Цена || "0"),
-            purchasePrice: String(productData.purchasePrice || productData["Цена закупки"] || ""),
+            purchasePrice: String(productData.purchasePrice || productData["Закупочная цена"] || ""),
             weight: String(productData.weight || productData.Вес || ""),
             length: String(productData.length || productData.Длина || ""),
             width: String(productData.width || productData.Ширина || ""),
             height: String(productData.height || productData.Высота || ""),
-            barcode: String(productData.barcode || productData["Штрих-код"] || ""),
+            barcode: String(productData.barcode || productData["Штрихкод"] || productData["Штрих-код"] || ""),
             imageUrl: String(productData.imageUrl || productData["Изображение"] || ""),
           };
           

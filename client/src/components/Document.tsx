@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -78,6 +78,7 @@ export default function Document({ config, mode = 'create', documentData }: Docu
   const { toast } = useToast();
   const { data: products = [] } = useProducts();
   const mutation = config.mutationHook();
+  const submittingRef = useRef(false);
 
   // Состояние для режима редактирования/просмотра
   const [isEditing, setIsEditing] = useState(mode === 'create' || mode === 'edit');
@@ -170,8 +171,9 @@ export default function Document({ config, mode = 'create', documentData }: Docu
 
   // Функция сохранения изменений
   const handleSave = async (data: FormDocument) => {
-    if (mutation.isPending) return; // Предотвращаем множественные отправки
+    if (mutation.isPending || submittingRef.current) return; // Предотвращаем множественные отправки
     
+    submittingRef.current = true;
     try {
       const finalDocumentName = mode === 'create' ? generateDocumentName() : documentName;
       
@@ -208,6 +210,8 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         description: "Не удалось сохранить документ",
         variant: "destructive",
       });
+    } finally {
+      submittingRef.current = false;
     }
   };
 

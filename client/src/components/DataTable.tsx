@@ -18,7 +18,7 @@ export interface DataTableColumn<T = any> {
 
 // Конфигурация действий
 export interface DataTableActions<T = any> {
-  onImport?: (data: T[]) => Promise<void>;
+  onImport?: (data: any[]) => Promise<void>;
   onExport?: () => void;
   onDeleteSelected?: (ids: number[]) => Promise<void>;
   importFields?: { [key: string]: string[] }; // Маппинг полей для импорта
@@ -89,23 +89,23 @@ export default function DataTable<T extends { id: number }>({
 
   // Компонент для ячейки с возможностью копирования
   const CopyableCell = ({ value, type, column }: { value: any; type: string; column: DataTableColumn<T> }) => {
-    if (!value && value !== 0) return <span>-</span>;
+    if (!value && value !== 0) return <span className="cell-text">-</span>;
     
     const displayValue = column.render ? column.render(value, {} as T) : String(value);
     
     if (!column.copyable) {
-      return <span className="truncate">{displayValue}</span>;
+      return <span className="cell-text">{displayValue}</span>;
     }
     
     return (
-      <div className="flex items-center gap-2 group">
-        <span className="truncate">{displayValue}</span>
+      <div className="copyable-cell">
+        <span className="cell-text">{displayValue}</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
             copyToClipboard(String(value), type);
           }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+          className="copy-button"
           title={`Копировать ${type.toLowerCase()}`}
         >
           <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
@@ -371,6 +371,21 @@ export default function DataTable<T extends { id: number }>({
     document.addEventListener('touchend', handleTouchEnd);
   }, [handleResizeStart]);
 
+  // Функция для получения CSS класса колонки
+  const getColumnClass = (columnKey: string) => {
+    const classMap: Record<string, string> = {
+      'name': 'col-name',
+      'sku': 'col-sku', 
+      'price': 'col-price',
+      'purchasePrice': 'col-purchase-price',
+      'barcode': 'col-barcode',
+      'weight': 'col-weight',
+      'dimensions': 'col-dimensions',
+      'website': 'col-website'
+    };
+    return classMap[columnKey] || '';
+  };
+
   const totalWidth = Object.values(columnWidths).reduce((sum, width) => sum + width, 48);
 
   return (
@@ -443,10 +458,10 @@ export default function DataTable<T extends { id: number }>({
       {/* Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: totalWidth + 'px' }}>
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <table className="data-table" style={{ minWidth: totalWidth + 'px' }}>
+            <thead>
               <tr>
-                <th className="w-12 px-6 py-3 text-left">
+                <th className="col-checkbox">
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -457,10 +472,9 @@ export default function DataTable<T extends { id: number }>({
                 {columns.map((column) => (
                   <th 
                     key={column.key}
-                    className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider transition-colors duration-150 relative group ${
+                    className={`${getColumnClass(column.key)} ${
                       column.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
-                    }`}
-                    style={{ width: `${columnWidths[column.key] || column.width}px` }}
+                    } transition-colors duration-150 relative group`}
                     onClick={column.sortable !== false ? () => handleSort(column.key) : undefined}
                   >
                     <div className="flex items-center justify-between select-none">
@@ -481,23 +495,23 @@ export default function DataTable<T extends { id: number }>({
                 ))}
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={columns.length + 1} className="text-center text-gray-500">
                     Загрузка {entityNamePlural.toLowerCase()}...
                   </td>
                 </tr>
               ) : sortedData.length === 0 ? (
                 <tr>
-                  <td colSpan={columns.length + 1} className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan={columns.length + 1} className="text-center text-gray-500">
                     {searchQuery ? `${entityNamePlural} не найдены` : `Нет ${entityNamePlural.toLowerCase()} для отображения`}
                   </td>
                 </tr>
               ) : (
                 sortedData.map((item) => (
-                  <tr key={item.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 w-12">
+                  <tr key={item.id}>
+                    <td className="col-checkbox">
                       <Checkbox
                         checked={selectedItems.has(item.id)}
                         onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
@@ -506,8 +520,7 @@ export default function DataTable<T extends { id: number }>({
                     {columns.map((column) => (
                       <td 
                         key={column.key}
-                        className="px-6 py-4 text-sm text-gray-900"
-                        style={{ width: `${columnWidths[column.key] || column.width}px` }}
+                        className={getColumnClass(column.key)}
                       >
                         <CopyableCell 
                           value={(item as any)[column.key]} 

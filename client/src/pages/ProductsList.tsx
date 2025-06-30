@@ -1,8 +1,9 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Download, Upload, Search } from "lucide-react";
+import { ArrowUpDown, Download, Upload, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -23,6 +24,7 @@ export default function ProductsList() {
   const [sortField, setSortField] = useState<keyof Product>("id");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('productColumnWidths');
     if (saved) {
@@ -131,6 +133,53 @@ export default function ProductsList() {
       });
     },
   });
+
+  const deleteSelectedMutation = useMutation({
+    mutationFn: async (productIds: number[]) => {
+      await Promise.all(productIds.map(id => 
+        apiRequest('DELETE', `/api/products/${id}`)
+      ));
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      setSelectedProducts(new Set());
+      toast({
+        title: "Успешно",
+        description: "Выбранные товары удалены",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось удалить товары",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Функции для работы с выбором товаров
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedProducts(new Set(sortedProducts.map(p => p.id)));
+    } else {
+      setSelectedProducts(new Set());
+    }
+  };
+
+  const handleSelectProduct = (productId: number, checked: boolean) => {
+    const newSelected = new Set(selectedProducts);
+    if (checked) {
+      newSelected.add(productId);
+    } else {
+      newSelected.delete(productId);
+    }
+    setSelectedProducts(newSelected);
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedProducts.size === 0) return;
+    deleteSelectedMutation.mutate(Array.from(selectedProducts));
+  };
 
   const handleSort = (field: keyof Product) => {
     if (sortField === field) {
@@ -281,6 +330,17 @@ export default function ProductsList() {
             )}
           </div>
           <div className="flex space-x-3">
+            {selectedProducts.size > 0 && (
+              <Button 
+                variant="destructive" 
+                className="inline-flex items-center h-10"
+                onClick={handleDeleteSelected}
+                disabled={deleteSelectedMutation.isPending}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                {deleteSelectedMutation.isPending ? 'Удаление...' : `Удалить (${selectedProducts.size})`}
+              </Button>
+            )}
             <Button 
               variant="outline" 
               className="inline-flex items-center h-10"
@@ -341,6 +401,13 @@ export default function ProductsList() {
               >
                 <thead className="bg-gray-50">
                   <tr>
+                    <th className="px-6 py-3 text-left w-12">
+                      <Checkbox
+                        checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
+                        onCheckedChange={(checked) => handleSelectAll(checked === true)}
+                        aria-label="Выбрать все товары"
+                      />
+                    </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
                       onClick={(e) => {
@@ -476,6 +543,13 @@ export default function ProductsList() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {sortedProducts.map((product) => (
                     <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap w-12">
+                        <Checkbox
+                          checked={selectedProducts.has(product.id)}
+                          onCheckedChange={(checked) => handleSelectProduct(product.id, checked === true)}
+                          aria-label={`Выбрать товар ${product.name}`}
+                        />
+                      </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap"
                         style={{ 

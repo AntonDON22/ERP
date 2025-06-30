@@ -476,7 +476,7 @@ export default function ProductsList() {
       />
 
       {/* Products Table */}
-      <div className="bg-white rounded-lg border shadow-sm">
+      <div className="bg-white rounded-lg border shadow-sm" style={{ height: '350px' }}>
         <div className="overflow-x-auto min-w-full">
           <table className="w-full" style={{ tableLayout: 'fixed', width: '1400px', minWidth: '1400px' }}>
             <thead className="bg-gray-50 h-12">

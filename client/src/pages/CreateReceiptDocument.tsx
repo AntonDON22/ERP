@@ -2,10 +2,10 @@ import Document, { DocumentTypeConfig } from "@/components/Document";
 import { useCreateReceiptDocument } from "@/hooks/useTypedQuery";
 
 const receiptConfig: DocumentTypeConfig = {
-  title: "Создание документа оприходования",
+  title: "Документ",
   type: "Оприходование",
   namePrefix: "Оприходование",
-  submitLabel: "Создать документ",
+  submitLabel: "Сохранить",
   successMessage: "Документ оприходования успешно создан",
   backUrl: "/documents",
   mutationHook: useCreateReceiptDocument,

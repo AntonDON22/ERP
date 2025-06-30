@@ -228,15 +228,33 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         </Button>
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
-          {mode !== 'create' && (
+          <div className="flex gap-2">
             <Button 
-              type="button"
-              variant={isEditing ? "outline" : "default"}
-              onClick={toggleEditMode}
+              type="button" 
+              variant="outline" 
+              onClick={() => setLocation(config.backUrl)}
             >
-              {isEditing ? "Отменить" : "Редактировать"}
+              {mode === 'view' ? "Назад" : "Отмена"}
             </Button>
-          )}
+            {mode !== 'create' && (
+              <Button 
+                type="button"
+                variant={isEditing ? "outline" : "default"}
+                onClick={toggleEditMode}
+              >
+                {isEditing ? "Отменить" : "Редактировать"}
+              </Button>
+            )}
+            {isEditing && (
+              <Button 
+                type="submit" 
+                form="document-form"
+                disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
+              >
+                {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -277,7 +295,7 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         </CardContent>
       </Card>
 
-      <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+      <form id="document-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -389,23 +407,7 @@ export default function Document({ config, mode = 'create', documentData }: Docu
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-4">
-          <Button 
-            type="button" 
-            variant="outline" 
-            onClick={() => setLocation(config.backUrl)}
-          >
-            {mode === 'view' ? "Назад" : "Отмена"}
-          </Button>
-          {isEditing && (
-            <Button 
-              type="submit" 
-              disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
-            >
-              {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
-            </Button>
-          )}
-        </div>
+
       </form>
     </div>
   );

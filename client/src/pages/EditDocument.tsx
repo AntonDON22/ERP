@@ -3,10 +3,10 @@ import Document, { DocumentTypeConfig } from "@/components/Document";
 import { useCreateReceiptDocument } from "@/hooks/useTypedQuery";
 
 const editConfig: DocumentTypeConfig = {
-  title: "Редактирование документа",
+  title: "Документ",
   type: "Оприходование",
   namePrefix: "Оприходование",
-  submitLabel: "Сохранить изменения",
+  submitLabel: "Сохранить",
   successMessage: "Документ успешно сохранен",
   backUrl: "/documents",
   mutationHook: useCreateReceiptDocument

@@ -500,7 +500,7 @@ export default function SuppliersList() {
       {/* Stats */}
       {sortedSuppliers.length > 0 && (
         <div className="mt-4 text-sm text-gray-500">
-          Показано {sortedSuppliers.length} из {suppliers.length} поставщиков
+          Всего поставщиков: {suppliers.length}
           {selectionState.selectedCount > 0 && ` • Выбрано: ${selectionState.selectedCount}`}
         </div>
       )}

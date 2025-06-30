@@ -104,6 +104,9 @@ The application uses a dual storage approach:
 - June 30, 2025. Created "Поставщики" (Suppliers) page by copying products page structure
 - June 30, 2025. Implemented routing with wouter for navigation between "Товары" and "Поставщики" tabs
 - June 30, 2025. Changed column header from "Наименование" to "Название" in products table
+- June 30, 2025. Simplified suppliers table to only show "Название" and "Вебсайт" columns
+- June 30, 2025. Created suppliers table in PostgreSQL database with name and website fields
+- June 30, 2025. Updated suppliers statistics format to match products page ("Всего поставщиков" instead of "Показано X из Y")
 
 ## User Preferences
 

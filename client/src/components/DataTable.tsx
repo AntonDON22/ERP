@@ -37,7 +37,6 @@ export interface DataTableProps<T extends { id: number; name: string }> {
   excelConfig?: ExcelExportConfig;
   onDelete?: (ids: number[]) => Promise<void>;
   onImport?: (data: any[]) => Promise<void>;
-  onCreate?: () => void;
   deleteLabel?: string;
   importLabel?: string;
 }

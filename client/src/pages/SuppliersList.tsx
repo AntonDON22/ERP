@@ -5,9 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
+import { Supplier, InsertSupplier } from "@shared/schema";
+import * as XLSX from "xlsx";
 import { apiRequest } from "@/lib/queryClient";
-import type { Supplier, InsertSupplier } from "@shared/schema";
-import * as XLSX from 'xlsx';
+
+interface ColumnWidths {
+  name: number;
+  sku: number;
+  price: number;
+  purchasePrice: number;
+  barcode: number;
+  weight: number;
+  dimensions: number;
+}
 
 export default function SuppliersList() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -15,18 +26,6 @@ export default function SuppliersList() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedSuppliers, setSelectedSuppliers] = useState<Set<number>>(new Set());
   const [isResizing, setIsResizing] = useState(false);
-
-  // Ширина столбцов (сохраняется в localStorage)
-  interface ColumnWidths {
-    name: number;
-    sku: number;
-    price: number;
-    purchasePrice: number;
-    barcode: number;
-    weight: number;
-    dimensions: number;
-  }
-
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('supplierTableColumnWidths');
     return saved ? JSON.parse(saved) : {
@@ -34,9 +33,9 @@ export default function SuppliersList() {
       sku: 120,
       price: 100,
       purchasePrice: 120,
-      barcode: 150,
+      barcode: 140,
       weight: 100,
-      dimensions: 150,
+      dimensions: 140
     };
   });
 
@@ -52,7 +51,7 @@ export default function SuppliersList() {
         title: "Скопировано",
         description: `${type} скопирован в буфер обмена`,
       });
-    } catch (error) {
+    } catch (err) {
       toast({
         title: "Ошибка",
         description: "Не удалось скопировать в буфер обмена",
@@ -62,46 +61,66 @@ export default function SuppliersList() {
   }, [toast]);
 
   // Компонент для ячейки с возможностью копирования
-  const CopyableCell = ({ value, type }: { value: string | null | undefined; type: string }) => {
-    if (!value) return <span>-</span>;
+  const CopyableCell = useCallback(({ value, type }: { value: string | null, type: string }) => {
+    if (!value) return <span className="text-gray-400">—</span>;
     
     return (
-      <div className="flex items-center gap-2 group">
+      <div className="flex items-center justify-between group">
         <span className="truncate">{value}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            copyToClipboard(value, type);
-          }}
-          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
-          title={`Копировать ${type.toLowerCase()}`}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="opacity-0 group-hover:opacity-100 h-6 w-6 p-0 ml-2 flex-shrink-0"
+          onClick={() => copyToClipboard(value, type)}
         >
-          <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
-        </button>
+          <Copy className="h-3 w-3" />
+        </Button>
       </div>
     );
-  };
+  }, [copyToClipboard]);
 
+  // Получение поставщиков
   const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
-    queryKey: ["/api/suppliers"],
+    queryKey: ['/api/suppliers'],
+    staleTime: 30000,
   });
 
-  // Обработка ошибок отдельно
-  if (error) {
-    toast({
-      title: "Ошибка",
-      description: "Не удалось загрузить поставщиков",
-      variant: "destructive",
-    });
-  }
-
-  // Мутация для удаления выбранных поставщиков
-  const deleteSelectedMutation = useMutation({
-    mutationFn: async (ids: number[]) => {
-      return await apiRequest("POST", "/api/suppliers/delete-multiple", { ids });
+  // Мутация для удаления поставщика
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      return apiRequest(`/api/suppliers/${id}`, {
+        method: 'DELETE',
+      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
+      toast({
+        title: "Успешно",
+        description: "Поставщик удален",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Ошибка",
+        description: error.message || "Не удалось удалить поставщика",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Мутация для массового удаления поставщиков
+  const deleteSelectedMutation = useMutation({
+    mutationFn: async (supplierIds: number[]) => {
+      return apiRequest('/api/suppliers/delete-multiple', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ supplierIds }),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       setSelectedSuppliers(new Set());
       toast({
         title: "Успешно",
@@ -111,7 +130,7 @@ export default function SuppliersList() {
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: "Не удалось удалить поставщиков",
+        description: error.message || "Не удалось удалить поставщиков",
         variant: "destructive",
       });
     },
@@ -119,21 +138,26 @@ export default function SuppliersList() {
 
   // Мутация для импорта поставщиков
   const importMutation = useMutation({
-    mutationFn: async (suppliers: InsertSupplier[]) => {
-      const response = await apiRequest("POST", "/api/suppliers/import", { suppliers });
-      return await response.json();
+    mutationFn: async (suppliersData: InsertSupplier[]) => {
+      return apiRequest('/api/suppliers/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ suppliers: suppliersData }),
+      });
     },
-    onSuccess: (data: Supplier[]) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/suppliers'] });
       toast({
         title: "Успешно",
-        description: `Импортировано поставщиков: ${data.length}`,
+        description: `Импортировано поставщиков: ${data.imported}`,
       });
     },
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: "Не удалось импортировать поставщиков",
+        description: error.message || "Ошибка при импорте поставщиков",
         variant: "destructive",
       });
     },
@@ -152,59 +176,37 @@ export default function SuppliersList() {
 
   // Сортировка поставщиков
   const sortedSuppliers = useMemo(() => {
-    return [...filteredSuppliers].sort((a, b) => {
+    const sorted = [...filteredSuppliers].sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
       
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
+      if (aValue === null && bValue === null) return 0;
+      if (aValue === null) return 1;
+      if (bValue === null) return -1;
       
-      const comparison = String(aValue).localeCompare(String(bValue), 'ru', { numeric: true });
+      const comparison = String(aValue).localeCompare(String(bValue), 'ru', { 
+        numeric: true, 
+        sensitivity: 'base' 
+      });
+      
       return sortDirection === "asc" ? comparison : -comparison;
     });
+    
+    return sorted;
   }, [filteredSuppliers, sortField, sortDirection]);
 
-  // Состояние выбора
+  // Состояние выбора всех элементов
   const selectionState = useMemo(() => {
-    const totalVisible = filteredSuppliers.length;
-    const selectedCount = selectedSuppliers.size;
-    const isAllSelected = totalVisible > 0 && selectedCount === totalVisible;
-    const isIndeterminate = selectedCount > 0 && selectedCount < totalVisible;
-
+    const totalVisible = sortedSuppliers.length;
+    const selectedVisible = sortedSuppliers.filter(supplier => selectedSuppliers.has(supplier.id)).length;
+    
     return {
-      totalVisible,
-      selectedCount,
-      isAllSelected,
-      isIndeterminate
+      isAllSelected: totalVisible > 0 && selectedVisible === totalVisible,
+      isIndeterminate: selectedVisible > 0 && selectedVisible < totalVisible
     };
-  }, [filteredSuppliers.length, selectedSuppliers.size]);
+  }, [sortedSuppliers, selectedSuppliers]);
 
-  // Функции для работы с выбором поставщиков
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedSuppliers(new Set(filteredSuppliers.map((s: Supplier) => s.id)));
-    } else {
-      setSelectedSuppliers(new Set());
-    }
-  }, [filteredSuppliers]);
-
-  const handleSelectSupplier = useCallback((supplierId: number, checked: boolean) => {
-    setSelectedSuppliers(prev => {
-      const newSelected = new Set(prev);
-      if (checked) {
-        newSelected.add(supplierId);
-      } else {
-        newSelected.delete(supplierId);
-      }
-      return newSelected;
-    });
-  }, []);
-
-  const handleDeleteSelected = useCallback(() => {
-    if (selectedSuppliers.size === 0) return;
-    deleteSelectedMutation.mutate(Array.from(selectedSuppliers));
-  }, [selectedSuppliers, deleteSelectedMutation]);
-
+  // Обработчики
   const handleSort = (field: keyof Supplier) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
@@ -214,6 +216,30 @@ export default function SuppliersList() {
     }
   };
 
+  const handleSelectSupplier = (id: number, checked: boolean) => {
+    const newSelected = new Set(selectedSuppliers);
+    if (checked) {
+      newSelected.add(id);
+    } else {
+      newSelected.delete(id);
+    }
+    setSelectedSuppliers(newSelected);
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedSuppliers(new Set(sortedSuppliers.map((s: Supplier) => s.id)));
+    } else {
+      setSelectedSuppliers(new Set());
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedSuppliers.size === 0) return;
+    deleteSelectedMutation.mutate([...selectedSuppliers]);
+  };
+
+  // Экспорт в Excel
   const handleExportToExcel = () => {
     if (!suppliers || suppliers.length === 0) {
       return;
@@ -222,17 +248,19 @@ export default function SuppliersList() {
     const exportData = suppliers.map((supplier: Supplier) => ({
       'Название': supplier.name,
       'Веб-сайт': supplier.website || '',
+      '-': '',
+      '- ': '',
+      '- -': '',
+      '- - ': '',
+      '- - -': '',
     }));
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Поставщики");
-    XLSX.writeFile(wb, "suppliers.xlsx");
-
-    toast({
-      title: "Успешно",
-      description: "Данные экспортированы в файл suppliers.xlsx",
-    });
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Поставщики');
+    
+    const fileName = `поставщики_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   const handleImportClick = () => {
@@ -272,36 +300,39 @@ export default function SuppliersList() {
       });
     }
 
-    // Очищаем input для возможности загрузки того же файла снова
+    // Сброс значения input для возможности повторного выбора того же файла
     event.target.value = '';
   };
 
-  // Сохраняем ширину колонок в localStorage
+  // Сохранение ширины столбцов в localStorage
   useEffect(() => {
     localStorage.setItem('supplierTableColumnWidths', JSON.stringify(columnWidths));
   }, [columnWidths]);
 
-  // Обработчики изменения размера колонок (поддержка мыши и touch)
+  // Обработка изменения размера столбцов
   const handleResizeStart = useCallback((startX: number, column: keyof ColumnWidths) => {
     setIsResizing(true);
-    
-    const startWidth = columnWidths[column];
-    
-    // Добавляем класс для предотвращения выделения текста
     document.body.classList.add('table-resizing');
     document.body.style.cursor = 'col-resize';
     
+    const startWidth = columnWidths[column];
+    
     const handleMove = (currentX: number) => {
-      const deltaX = currentX - startX;
-      const newWidth = Math.max(150, startWidth + deltaX);
+      const diff = currentX - startX;
+      const newWidth = Math.max(50, startWidth + diff);
       
-      setColumnWidths(prev => ({
-        ...prev,
-        [column]: newWidth
-      }));
+      setColumnWidths(prev => {
+        const newWidths = {
+          ...prev,
+          [column]: newWidth
+        };
+        console.log('New column widths:', newWidths);
+        return newWidths;
+      });
     };
     
     const handleEnd = () => {
+      console.log('Resize ended for column:', column);
       setIsResizing(false);
       document.body.classList.remove('table-resizing');
       document.body.style.cursor = '';
@@ -358,7 +389,7 @@ export default function SuppliersList() {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ maxWidth: '1400px' }}>
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="text-red-800">
             Ошибка при загрузке поставщиков. Пожалуйста, попробуйте еще раз.
@@ -473,7 +504,7 @@ export default function SuppliersList() {
                   <div className="flex items-center justify-between">
                     <button
                       className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("name")}
+                      onClick={() => handleSort("website")}
                     >
                       <span>Веб-сайт</span>
                       <ArrowUpDown className="w-3 h-3" />
@@ -640,16 +671,14 @@ export default function SuppliersList() {
       </div>
 
       {/* Summary */}
-      {!isLoading && (
-        <div className="mt-4 text-sm text-gray-500 text-center">
-          Показано {sortedSuppliers.length} из {suppliers.length} поставщиков
-          {selectionState.selectedCount > 0 && (
-            <span className="ml-2">
-              • Выбрано: {selectionState.selectedCount}
-            </span>
-          )}
-        </div>
-      )}
+      <div className="mt-6 text-sm text-gray-500">
+        Всего поставщиков: {suppliers.length}
+        {selectedSuppliers.size > 0 && (
+          <span className="ml-4">
+            Выбрано: {selectedSuppliers.size}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

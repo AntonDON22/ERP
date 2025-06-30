@@ -1,7 +1,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Download, Upload } from "lucide-react";
+import { ArrowUpDown, Download, Upload, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -21,6 +22,7 @@ interface ColumnWidths {
 export default function ProductsList() {
   const [sortField, setSortField] = useState<keyof Product>("id");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [searchQuery, setSearchQuery] = useState("");
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('productColumnWidths');
     if (saved) {
@@ -212,7 +214,19 @@ export default function ProductsList() {
     event.target.value = '';
   };
 
-  const sortedProducts = products
+  // Фильтрация товаров по поисковому запросу
+  const filteredProducts = products.filter(product => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      product.name?.toLowerCase().includes(query) ||
+      product.sku?.toLowerCase().includes(query) ||
+      product.barcode?.toLowerCase().includes(query)
+    );
+  });
+
+  const sortedProducts = filteredProducts
     .sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
@@ -249,9 +263,23 @@ export default function ProductsList() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">Товары</h2>
-            <p className="mt-1 text-sm text-gray-500">Просмотр каталога товаров</p>
+          <div className="flex-1 max-w-md">
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">Товары</h2>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Поиск по названию, артикулу или штрихкоду..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            {searchQuery && (
+              <p className="text-sm text-gray-500 mt-2">
+                Найдено товаров: {sortedProducts.length} из {products.length}
+              </p>
+            )}
           </div>
           <div className="mt-4 sm:mt-0 flex space-x-3">
             <Button 
@@ -292,7 +320,14 @@ export default function ProductsList() {
           </div>
         ) : sortedProducts.length === 0 ? (
           <div className="p-8 text-center">
-            <p className="text-gray-500">Нет товаров</p>
+            <p className="text-gray-500">
+              {searchQuery ? 'Товары не найдены по запросу' : 'Нет товаров'}
+            </p>
+            {searchQuery && (
+              <p className="text-sm text-gray-400 mt-1">
+                Попробуйте изменить поисковый запрос или очистить фильтр
+              </p>
+            )}
           </div>
         ) : (
           <>

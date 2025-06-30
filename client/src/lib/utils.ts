@@ -1,0 +1,39 @@
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
+export function formatPrice(price: string | number | null | undefined): string {
+  if (!price) return "0 ₽";
+  const numPrice = typeof price === 'string' ? parseFloat(price) : price;
+  return new Intl.NumberFormat('ru-RU', {
+    style: 'currency',
+    currency: 'RUB',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(numPrice).replace('RUB', '₽');
+}
+
+export function formatWeight(weight: string | number | null | undefined): string {
+  if (!weight) return "—";
+  const numWeight = typeof weight === 'string' ? parseFloat(weight) : weight;
+  return `${numWeight} кг`;
+}
+
+export function formatDimensions(
+  length: string | number | null | undefined,
+  width: string | number | null | undefined,
+  height: string | number | null | undefined
+): string {
+  if (!length && !width && !height) return "—";
+  
+  const l = length ? (typeof length === 'string' ? parseFloat(length) : length) : 0;
+  const w = width ? (typeof width === 'string' ? parseFloat(width) : width) : 0;
+  const h = height ? (typeof height === 'string' ? parseFloat(height) : height) : 0;
+  
+  if (!l && !w && !h) return "—";
+  
+  return `${l || 0}×${w || 0}×${h || 0} см`;
+}

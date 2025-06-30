@@ -1,0 +1,39 @@
+import { Link, useLocation } from "wouter";
+import { User } from "lucide-react";
+
+export default function Navigation() {
+  const [location] = useLocation();
+
+  return (
+    <nav className="bg-white shadow-sm border-b border-gray-200">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
+          <div className="flex items-center">
+            <div className="flex-shrink-0">
+              <h1 className="text-xl font-semibold text-gray-900">
+                Система управления товарами
+              </h1>
+            </div>
+            <div className="hidden md:ml-8 md:flex md:space-x-8">
+              <Link
+                href="/"
+                className={`${
+                  location === "/" || location.startsWith("/products")
+                    ? "border-blue-600 text-blue-600 border-b-2"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 border-b-2"
+                } py-2 px-1 text-sm font-medium`}
+              >
+                Товары
+              </Link>
+            </div>
+          </div>
+          <div className="flex items-center">
+            <button className="bg-gray-50 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
+              <User className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </nav>
+  );
+}

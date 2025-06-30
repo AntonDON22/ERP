@@ -617,7 +617,8 @@ export class DatabaseStorage implements IStorage {
 
     let remainingToWriteoff = quantityToWriteoff;
 
-    // 2. Списываем из самых старых партий
+    // 2. Списываем из самых старых партий - оптимизированно через batch insert
+    const writeoffEntries = [];
     for (const stockItem of availableStock) {
       if (remainingToWriteoff <= 0) break;
 
@@ -625,20 +626,22 @@ export class DatabaseStorage implements IStorage {
       const quantityToTakeFromThisBatch = Math.min(remainingToWriteoff, availableQuantity);
 
       if (quantityToTakeFromThisBatch > 0) {
-        // Создаем запись о списании из этой партии
-        await tx
-          .insert(inventory)
-          .values({
-            productId: productId,
-            quantity: `-${quantityToTakeFromThisBatch}`,
-            price: stockItem.price, // Используем цену из партии прихода
-            movementType: 'OUT',
-            documentId: documentId,
-          });
+        writeoffEntries.push({
+          productId: productId,
+          quantity: `-${quantityToTakeFromThisBatch}`,
+          price: stockItem.price,
+          movementType: 'OUT' as const,
+          documentId: documentId,
+        });
 
         remainingToWriteoff -= quantityToTakeFromThisBatch;
         console.log(`📤 Списано ${quantityToTakeFromThisBatch} из партии ${stockItem.id}, остается списать: ${remainingToWriteoff}`);
       }
+    }
+
+    // Выполняем batch insert для всех списаний
+    if (writeoffEntries.length > 0) {
+      await tx.insert(inventory).values(writeoffEntries);
     }
 
     // 3. Если остались несписанные товары - создаем запись о списании в минус

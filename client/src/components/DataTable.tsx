@@ -324,7 +324,7 @@ export default function DataTable<T extends { id: number; name: string }>({
               className="flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              Экспорт
+              Excel
             </Button>
           )}
 

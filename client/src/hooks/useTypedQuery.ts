@@ -159,6 +159,7 @@ export const useCreateReceiptDocument = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
     },
   });
 };

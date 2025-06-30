@@ -498,14 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get inventory (products with their current stock levels)
   app.get("/api/inventory", async (req, res) => {
     try {
-      const products = await storage.getProducts();
-      
-      const inventory = products.map(product => ({
-        id: product.id,
-        name: product.name,
-        quantity: 0 // For now, we'll show 0 quantity until we implement real inventory tracking
-      }));
-      
+      const inventory = await storage.getInventory();
       res.json(inventory);
     } catch (error) {
       console.error("Error fetching inventory:", error);

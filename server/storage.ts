@@ -1,11 +1,14 @@
 import { users, products, suppliers, contractors, documents, inventory, documentItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  
+  // Inventory
+  getInventory(): Promise<Array<{id: number; name: string; quantity: number}>>;
   
   // Products
   getProducts(): Promise<Product[]>;
@@ -226,12 +229,52 @@ export class MemStorage implements IStorage {
     return false;
   }
 
+  async getInventory(): Promise<Array<{id: number; name: string; quantity: number}>> {
+    const allProducts = Array.from(this.products.values());
+    return allProducts.map(product => ({
+      id: product.id,
+      name: product.name,
+      quantity: 0 // MemStorage doesn't support real inventory tracking
+    }));
+  }
+
   async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
     throw new Error("Receipt documents not supported in MemStorage");
   }
 }
 
 export class DatabaseStorage implements IStorage {
+  async getInventory(): Promise<Array<{id: number; name: string; quantity: number}>> {
+    console.log(`[DB] Starting getInventory query...`);
+    const startTime = Date.now();
+    
+    try {
+      // Получаем все товары с суммарными остатками из inventory
+      const result = await db
+        .select({
+          id: products.id,
+          name: products.name,
+          quantity: sql<number>`COALESCE(SUM(${inventory.quantity}), 0)`.as('quantity')
+        })
+        .from(products)
+        .leftJoin(inventory, eq(products.id, inventory.productId))
+        .groupBy(products.id, products.name);
+      
+      const endTime = Date.now();
+      console.log(`[DB] getInventory completed in ${endTime - startTime}ms, returned ${result.length} items`);
+      
+      // Преобразуем результат, чтобы количество было числом
+      return result.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: Number(item.quantity) || 0
+      }));
+    } catch (error) {
+      console.error(`[DB] getInventory error:`, error);
+      throw error;
+    }
+  }
+
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
     return user || undefined;

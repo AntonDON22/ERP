@@ -29,7 +29,6 @@ export default function EditDocument() {
   return (
     <Document 
       config={editConfig}
-      mode="edit"
       documentData={documentData}
     />
   );

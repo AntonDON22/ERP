@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
 import { z } from "zod";
@@ -24,9 +24,6 @@ export interface DocumentTypeConfig {
   mutationHook: () => any;
 }
 
-// Режимы работы компонента
-export type DocumentMode = 'create' | 'edit' | 'view';
-
 // Данные существующего документа для редактирования
 export interface ExistingDocumentData {
   id: number;
@@ -44,233 +41,164 @@ export interface ExistingDocumentData {
 // Схема для элемента документа
 const documentItemSchema = z.object({
   productId: z.number().min(1, "Выберите товар"),
-  quantity: z.number().min(0.01, "Количество должно быть больше 0"),
+  quantity: z.number().min(1, "Количество должно быть больше 0"), // Целые числа
   price: z.number().min(0, "Цена не может быть отрицательной"),
 });
 
 // Схема для формы документа
-const documentFormSchema = z.object({
+const documentSchema = z.object({
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
-// Модифицированная схема для формы (с строковыми значениями)
-const formDocumentItemSchema = z.object({
-  productId: z.number().min(1, "Выберите товар"),
-  quantity: z.string().min(1, "Количество обязательно"),
-  price: z.string().optional(),
-});
-
-const formDocumentSchema = z.object({
-  items: z.array(formDocumentItemSchema).min(1, "Добавьте хотя бы один товар"),
-});
-
-type FormDocumentItem = z.infer<typeof formDocumentItemSchema>;
-type FormDocument = z.infer<typeof formDocumentSchema>;
+type FormDocumentItem = z.infer<typeof documentItemSchema>;
+type FormDocument = z.infer<typeof documentSchema>;
 
 export interface DocumentProps {
   config: DocumentTypeConfig;
-  mode?: DocumentMode;
   documentData?: ExistingDocumentData;
 }
 
-export default function Document({ config, mode = 'create', documentData }: DocumentProps) {
+export default function Document({ config, documentData }: DocumentProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const { data: products = [] } = useProducts();
   const mutation = config.mutationHook();
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const submitCountRef = useRef(0);
-
-  // Состояние для режима редактирования/просмотра
-  const [isEditing, setIsEditing] = useState(mode === 'create' || mode === 'edit');
+  const { data: products = [] } = useProducts();
   
-  // Состояние для типа документа
+  // Состояние для типа и даты документа
   const [documentType, setDocumentType] = useState(documentData?.type || config.type);
-  
-  // Состояние для даты документа
-  const [documentDate, setDocumentDate] = useState(documentData?.date || new Date().toISOString().split('T')[0]);
+  const [documentDate, setDocumentDate] = useState(
+    documentData?.date || new Date().toISOString().split('T')[0]
+  );
 
-  // Инициализация товаров из существующих данных или пустой массив
-  const initialItems = documentData?.items ? 
-    documentData.items.map(item => ({
-      productId: item.productId,
-      quantity: item.quantity.toString(),
-      price: item.price.toString()
-    })) : 
-    [{ productId: 0, quantity: "1", price: "0" }];
+  // Счетчик и ref для предотвращения дублей
+  const submissionCounter = useRef(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const [items, setItems] = useState<FormDocumentItem[]>(initialItems);
-
+  // Инициализация формы
   const form = useForm<FormDocument>({
-    resolver: zodResolver(formDocumentSchema),
+    resolver: zodResolver(documentSchema),
     defaultValues: {
-      items: items
-    }
+      items: documentData?.items?.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price,
+      })) || [{ productId: 0, quantity: 1, price: 0 }],
+    },
   });
 
-  // Добавление нового товара
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "items",
+  });
+
+  // Обработчик сохранения
+  const handleSave = async (data: FormDocument) => {
+    const currentSubmissionId = ++submissionCounter.current;
+    console.log(`🚀 Starting submission #${currentSubmissionId}`);
+
+    // Тройная защита от дублирования
+    if (isSubmitting) {
+      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
+      return;
+    }
+
+    if (mutation.isPending) {
+      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
+      return;
+    }
+
+    // Проверка последовательности ID
+    if (currentSubmissionId !== submissionCounter.current) {
+      console.log(`❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`);
+      return;
+    }
+
+    setIsSubmitting(true);
+    console.log(`✅ Processing submission #${currentSubmissionId}`);
+
+    try {
+      const documentToSave = {
+        type: documentType,
+        date: documentDate,
+        items: data.items.map((item: FormDocumentItem) => ({
+          productId: item.productId,
+          quantity: item.quantity.toString(),
+          price: item.price.toString(),
+        })),
+      };
+
+      if (documentData) {
+        // Редактирование существующего документа
+        console.log(`📝 Updating document #${documentData.id}`);
+        await mutation.mutateAsync({
+          id: documentData.id,
+          ...documentToSave,
+        });
+      } else {
+        // Создание нового документа
+        console.log(`📄 Creating new document`);
+        await mutation.mutateAsync(documentToSave);
+      }
+
+      console.log(`✅ Submission #${currentSubmissionId} completed successfully`);
+      toast({ title: config.successMessage });
+      setLocation(config.backUrl);
+    } catch (error) {
+      console.error(`❌ Submission #${currentSubmissionId} failed:`, error);
+      toast({ 
+        title: "Ошибка", 
+        description: "Не удалось сохранить документ",
+        variant: "destructive" 
+      });
+    } finally {
+      setIsSubmitting(false);
+      console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+    }
+  };
+
+  // Добавление товара
   const addItem = () => {
-    const newItems = [...items, { productId: 0, quantity: "1", price: "0" }];
-    setItems(newItems);
-    form.setValue("items", newItems);
+    append({ productId: 0, quantity: 1, price: 0 });
   };
 
   // Удаление товара
   const removeItem = (index: number) => {
-    if (items.length > 1) {
-      const newItems = items.filter((_, i) => i !== index);
-      setItems(newItems);
-      form.setValue("items", newItems);
+    if (fields.length > 1) {
+      remove(index);
     }
   };
 
-  // Обновление товара
-  const updateItem = (index: number, field: keyof FormDocumentItem, value: any) => {
-    const newItems = [...items];
-    newItems[index] = { ...newItems[index], [field]: value };
-    setItems(newItems);
-    form.setValue("items", newItems);
-  };
-
-  // Получение информации о товаре
-  const getProductInfo = (productId: number): Product | undefined => {
-    return products.find(p => p.id === productId);
-  };
-
-  // Автозаполнение цены при выборе товара
+  // Обновление цены при выборе товара
   const handleProductChange = (index: number, productId: number) => {
-    const newItems = [...items];
-    newItems[index] = { 
-      ...newItems[index], 
-      productId: productId 
-    };
-    
-    const product = getProductInfo(productId);
+    const product = products.find((p: Product) => p.id === productId);
     if (product && product.price) {
-      newItems[index].price = product.price.toString();
-    }
-    
-    setItems(newItems);
-    form.setValue("items", newItems);
-  };
-
-  // Генерация названия документа
-  const generateDocumentName = () => {
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('ru-RU');
-    const timeStr = today.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
-    return `${config.namePrefix} от ${dateStr} ${timeStr}`;
-  };
-
-  // Функция переключения режима редактирования
-  const toggleEditMode = () => {
-    setIsEditing(!isEditing);
-  };
-
-  const handleSave = async (data: FormDocument) => {
-    if (isSubmitting || mutation.isPending) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      if (mode === 'create') {
-        const finalDocumentName = generateDocumentName();
-        
-        const documentPayload = {
-          name: finalDocumentName,
-          type: documentType,
-          date: documentDate,
-          items: data.items.map((item: FormDocumentItem) => ({
-            productId: item.productId,
-            quantity: Number(item.quantity),
-            price: Number(item.price || "0"),
-          })),
-        };
-        
-        await mutation.mutateAsync(documentPayload);
-        
-        toast({
-          title: "Успешно",
-          description: config.successMessage,
-        });
-        setLocation(config.backUrl);
-      } else {
-        toast({
-          title: "Успешно",
-          description: "Документ успешно сохранен",
-        });
-        setIsEditing(false);
-      }
-    } catch (error) {
-      console.error("Ошибка при сохранении документа:", error);
-      toast({
-        title: "Ошибка",
-        description: "Не удалось сохранить документ",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSubmitting(false);
+      form.setValue(`items.${index}.price`, parseFloat(product.price));
     }
   };
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
-      <div className="mb-6">
-        <Button 
-          variant="ghost" 
-          onClick={() => setLocation(config.backUrl)}
-          className="mb-4"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Назад к документам
-        </Button>
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
-          <div className="flex gap-2">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setLocation(config.backUrl)}
-            >
-              Назад
-            </Button>
-            {mode !== 'create' && !isEditing && (
-              <Button 
-                type="button"
-                variant="default"
-                onClick={toggleEditMode}
-              >
-                Редактировать
-              </Button>
-            )}
-            {isEditing && (
-              <>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  onClick={toggleEditMode}
-                >
-                  Отмена
-                </Button>
-                <Button 
-                  type="submit" 
-                  form="document-form"
-                  disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
-                >
-                  {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
-                </Button>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Основные поля документа */}
-      <Card className="mb-6">
+      <Card>
         <CardHeader>
-          <CardTitle>Информация о документе</CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle>Документ</CardTitle>
+            <div className="flex space-x-2">
+              <Button 
+                variant="outline" 
+                onClick={() => setLocation(config.backUrl)}
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Назад
+              </Button>
+              <Button 
+                form="document-form"
+                type="submit"
+                disabled={isSubmitting || mutation.isPending}
+              >
+                Сохранить
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
@@ -278,7 +206,6 @@ export default function Document({ config, mode = 'create', documentData }: Docu
             <Select
               value={documentType}
               onValueChange={setDocumentType}
-              disabled={!isEditing}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Выберите тип" />
@@ -290,7 +217,6 @@ export default function Document({ config, mode = 'create', documentData }: Docu
             </Select>
           </div>
           
-
           <div>
             <Label htmlFor="documentDate">Дата документа</Label>
             <Input
@@ -298,7 +224,6 @@ export default function Document({ config, mode = 'create', documentData }: Docu
               type="date"
               value={documentDate}
               onChange={(e) => setDocumentDate(e.target.value)}
-              disabled={!isEditing}
             />
           </div>
         </CardContent>
@@ -307,116 +232,77 @@ export default function Document({ config, mode = 'create', documentData }: Docu
       <form id="document-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              Товары в документе
-              {isEditing && (
-                <Button type="button" onClick={addItem} variant="outline" size="sm">
-                  <Plus className="h-4 w-4 mr-2" />
-                  Добавить товар
-                </Button>
-              )}
-            </CardTitle>
+            <div className="flex justify-between items-center">
+              <CardTitle>Товары</CardTitle>
+              <Button type="button" onClick={addItem} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Добавить товар
+              </Button>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {items.map((item, index) => {
-              const selectedProduct = products.find(p => p.id === item.productId);
-              return (
-                <div key={`item-${index}`} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg">
-                  <div className="col-span-4">
-                    <Label htmlFor={`product-${index}`}>Товар</Label>
-                    {isEditing ? (
-                      <select
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        value={item.productId || 0}
-                        onChange={(e) => handleProductChange(index, Number(e.target.value))}
-                      >
-                        <option value={0}>Выберите товар</option>
-                        {products.map((product) => (
-                          <option key={product.id} value={product.id}>
+          <CardContent>
+            <div className="space-y-4">
+              {fields.map((field: any, index: number) => (
+                <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+                  <div className="md:col-span-2">
+                    <Label>Товар</Label>
+                    <Select
+                      value={form.watch(`items.${index}.productId`)?.toString() || ""}
+                      onValueChange={(value) => {
+                        const productId = parseInt(value);
+                        form.setValue(`items.${index}.productId`, productId);
+                        handleProductChange(index, productId);
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите товар" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {products.map((product: Product) => (
+                          <SelectItem key={product.id} value={product.id.toString()}>
                             {product.name}
-                          </option>
+                          </SelectItem>
                         ))}
-                      </select>
-                    ) : (
-                      <Input
-                        value={selectedProduct ? selectedProduct.name : "Товар не выбран"}
-                        disabled={true}
-                        className="bg-muted"
-                      />
-                    )}
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  <div className="col-span-2">
-                    <Label htmlFor={`quantity-${index}`}>Количество</Label>
+                  <div>
+                    <Label>Количество</Label>
                     <Input
-                      id={`quantity-${index}`}
                       type="number"
                       step="1"
                       min="1"
-                      placeholder="1"
-                      value={item.quantity}
-                      onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                      disabled={!isEditing}
+                      {...form.register(`items.${index}.quantity`, { valueAsNumber: true })}
                     />
                   </div>
 
-                  <div className="col-span-2">
-                    <Label htmlFor={`price-${index}`}>Цена за единицу</Label>
+                  <div>
+                    <Label>Цена</Label>
                     <Input
-                      id={`price-${index}`}
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="0.00"
-                      value={item.price}
-                      onChange={(e) => updateItem(index, "price", e.target.value)}
-                      disabled={!isEditing}
+                      {...form.register(`items.${index}.price`, { valueAsNumber: true })}
                     />
                   </div>
 
-                  <div className="col-span-2">
-                    <Label>Сумма</Label>
-                    <div className="h-10 px-3 py-2 border rounded-md bg-gray-50 flex items-center">
-                      {(Number(item.quantity || 0) * Number(item.price || 0)).toFixed(2)} ₽
-                    </div>
+                  <div className="flex items-end">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => removeItem(index)}
+                      disabled={fields.length === 1}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   </div>
-
-                  <div className="col-span-2 flex justify-end">
-                    {isEditing && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => removeItem(index)}
-                        disabled={items.length === 1}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-
-                  {selectedProduct && (
-                    <div className="col-span-12 text-sm text-gray-600">
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>SKU: {selectedProduct.sku}</div>
-                        <div>Вес: {selectedProduct.weight} г</div>
-                        <div>Штрихкод: {selectedProduct.barcode}</div>
-                      </div>
-                    </div>
-                  )}
                 </div>
-              );
-            })}
-
-            <div className="flex justify-between items-center pt-4 border-t">
-              <div className="text-lg font-semibold">
-                Общая сумма: {items.reduce((total, item) => total + (Number(item.quantity || 0) * Number(item.price || 0)), 0).toFixed(2)} ₽
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
-
-
       </form>
     </div>
   );

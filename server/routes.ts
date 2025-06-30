@@ -462,7 +462,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const itemsData = validatedData.items.map(item => ({
         productId: item.productId,
         quantity: item.quantity.toString(),
-        price: item.price.toString(),
+        price: item.price ? item.price.toString() : "0",
       }));
       
       console.log("📋 Данные документа:", documentData);

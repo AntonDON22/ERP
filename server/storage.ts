@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, documents, inventory, documentItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type InsertDocumentItem, type Inventory } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, inventory, documentItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -37,7 +37,7 @@ export interface IStorage {
   deleteDocument(id: number): Promise<boolean>;
   
   // Receipt Documents with FIFO
-  createReceiptDocument(document: InsertDocument, items: InsertDocumentItem[]): Promise<DocumentRecord>;
+  createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord>;
 }
 
 export class MemStorage implements IStorage {
@@ -226,7 +226,7 @@ export class MemStorage implements IStorage {
     return false;
   }
 
-  async createReceiptDocument(document: InsertDocument, items: InsertDocumentItem[]): Promise<DocumentRecord> {
+  async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
     throw new Error("Receipt documents not supported in MemStorage");
   }
 }
@@ -459,7 +459,7 @@ export class DatabaseStorage implements IStorage {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async createReceiptDocument(document: InsertDocument, items: InsertDocumentItem[]): Promise<DocumentRecord> {
+  async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
     try {
       return await db.transaction(async (tx) => {
         // 1. Создаем документ

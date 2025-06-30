@@ -143,13 +143,18 @@ export const documentItems = pgTable("document_items", {
 
 export const insertDocumentItemSchema = createInsertSchema(documentItems).omit({
   id: true,
+  documentId: true,
 }).extend({
   productId: z.number().min(1, "Товар обязателен"),
   quantity: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Количество должно быть больше 0"),
   price: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Некорректная цена"),
 });
 
-export type InsertDocumentItem = z.infer<typeof insertDocumentItemSchema>;
+// Type for items when creating receipts (without documentId)
+export type CreateDocumentItem = z.infer<typeof insertDocumentItemSchema>;
+
+// Type for items with documentId (for full CRUD operations)  
+export type InsertDocumentItem = CreateDocumentItem & { documentId?: number };
 export type DocumentItem = typeof documentItems.$inferSelect;
 
 export type Inventory = typeof inventory.$inferSelect;

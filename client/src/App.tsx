@@ -7,6 +7,7 @@ import Navigation from "@/components/Navigation";
 import Dashboard from "@/pages/Dashboard";
 import ProductsList from "@/pages/ProductsList";
 import SuppliersList from "@/pages/SuppliersList";
+import ContractorsList from "@/pages/ContractorsList";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
               <Route path="/" component={Dashboard} />
               <Route path="/products" component={ProductsList} />
               <Route path="/suppliers" component={SuppliersList} />
+              <Route path="/contractors" component={ContractorsList} />
             </Switch>
           </div>
         </Router>

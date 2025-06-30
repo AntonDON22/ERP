@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, insertSupplierSchema } from "@shared/schema";
+import { insertProductSchema, insertSupplierSchema, insertContractorSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products
@@ -158,6 +158,80 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting multiple suppliers:", error);
       res.status(500).json({ message: "Ошибка при удалении поставщиков" });
+    }
+  });
+
+  // Get all contractors
+  app.get("/api/contractors", async (req, res) => {
+    try {
+      const contractors = await storage.getContractors();
+      res.json(contractors);
+    } catch (error) {
+      console.error("Error fetching contractors:", error);
+      res.status(500).json({ message: "Ошибка при загрузке контрагентов" });
+    }
+  });
+
+  // Delete contractor
+  app.delete("/api/contractors/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Некорректный ID контрагента" });
+      }
+
+      const success = await storage.deleteContractor(id);
+      if (success) {
+        res.json({ message: "Контрагент удален" });
+      } else {
+        res.status(404).json({ message: "Контрагент не найден" });
+      }
+    } catch (error) {
+      console.error("Error deleting contractor:", error);
+      res.status(500).json({ message: "Ошибка при удалении контрагента" });
+    }
+  });
+
+  // Delete multiple contractors
+  app.post("/api/contractors/delete-multiple", async (req, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Укажите массив ID контрагентов для удаления" });
+      }
+
+      const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
+      if (validIds.length !== ids.length) {
+        return res.status(400).json({ message: "Некорректные ID контрагентов" });
+      }
+
+      let deletedCount = 0;
+      const results = [];
+
+      for (const id of validIds) {
+        try {
+          const success = await storage.deleteContractor(id);
+          if (success) {
+            deletedCount++;
+            results.push({ id, status: 'deleted' });
+          } else {
+            results.push({ id, status: 'not_found' });
+          }
+        } catch (error) {
+          console.error(`Error deleting contractor ${id}:`, error);
+          results.push({ id, status: 'error', error: error.message });
+        }
+      }
+
+      res.json({ 
+        message: `Удалено контрагентов: ${deletedCount} из ${ids.length}`,
+        deletedCount,
+        results 
+      });
+    } catch (error) {
+      console.error("Error deleting multiple contractors:", error);
+      res.status(500).json({ message: "Ошибка при удалении контрагентов" });
     }
   });
 

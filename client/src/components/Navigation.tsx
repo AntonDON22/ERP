@@ -8,6 +8,7 @@ export default function Navigation() {
   const isHomeActive = location === "/";
   const isProductsActive = location === "/products";
   const isSuppliersActive = location === "/suppliers";
+  const isContractorsActive = location === "/contractors";
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
@@ -54,6 +55,16 @@ export default function Navigation() {
                 }`}
               >
                 Поставщики
+              </Link>
+              <Link 
+                href="/contractors"
+                className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  isContractorsActive 
+                    ? "border-blue-600 text-blue-600" 
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                }`}
+              >
+                Контрагенты
               </Link>
             </div>
           </div>

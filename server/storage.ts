@@ -1,4 +1,4 @@
-import { users, products, suppliers, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier } from "@shared/schema";
+import { users, products, suppliers, contractors, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
 
@@ -21,6 +21,13 @@ export interface IStorage {
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: number, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: number): Promise<boolean>;
+  
+  // Contractors
+  getContractors(): Promise<Contractor[]>;
+  getContractor(id: number): Promise<Contractor | undefined>;
+  createContractor(contractor: InsertContractor): Promise<Contractor>;
+  updateContractor(id: number, contractor: Partial<InsertContractor>): Promise<Contractor | undefined>;
+  deleteContractor(id: number): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -260,6 +267,51 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(suppliers)
       .where(eq(suppliers.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  async getContractors(): Promise<Contractor[]> {
+    console.log(`[DB] Starting getContractors query...`);
+    const startTime = Date.now();
+    
+    try {
+      const result = await db.select().from(contractors);
+      const endTime = Date.now();
+      console.log(`[DB] getContractors completed in ${endTime - startTime}ms, returned ${result.length} contractors`);
+      return result;
+    } catch (error) {
+      const endTime = Date.now();
+      console.error(`[DB] getContractors failed in ${endTime - startTime}ms:`, error);
+      throw error;
+    }
+  }
+
+  async getContractor(id: number): Promise<Contractor | undefined> {
+    const [contractor] = await db.select().from(contractors).where(eq(contractors.id, id));
+    return contractor || undefined;
+  }
+
+  async createContractor(insertContractor: InsertContractor): Promise<Contractor> {
+    const [contractor] = await db
+      .insert(contractors)
+      .values(insertContractor)
+      .returning();
+    return contractor;
+  }
+
+  async updateContractor(id: number, updateData: Partial<InsertContractor>): Promise<Contractor | undefined> {
+    const [contractor] = await db
+      .update(contractors)
+      .set(updateData)
+      .where(eq(contractors.id, id))
+      .returning();
+    return contractor || undefined;
+  }
+
+  async deleteContractor(id: number): Promise<boolean> {
+    const result = await db
+      .delete(contractors)
+      .where(eq(contractors.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

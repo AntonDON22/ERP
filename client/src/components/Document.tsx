@@ -317,9 +317,9 @@ export default function Document({ config, mode = 'create', documentData }: Docu
                     <Input
                       id={`quantity-${index}`}
                       type="number"
-                      step="0.001"
-                      min="0.001"
-                      placeholder="0"
+                      step="1"
+                      min="1"
+                      placeholder="1"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, "quantity", e.target.value)}
                       disabled={!isEditing}

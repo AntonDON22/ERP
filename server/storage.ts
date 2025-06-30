@@ -508,10 +508,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteDocument(id: number): Promise<boolean> {
-    const result = await db
-      .delete(documents)
-      .where(eq(documents.id, id));
-    return (result.rowCount ?? 0) > 0;
+    console.log(`[DB] Starting deleteDocument for ID ${id}...`);
+    const startTime = Date.now();
+    
+    try {
+      // Сначала удаляем связанные записи из inventory
+      const inventoryResult = await db
+        .delete(inventory)
+        .where(eq(inventory.documentId, id));
+      console.log(`[DB] Deleted ${inventoryResult.rowCount ?? 0} inventory records for document ${id}`);
+
+      // Затем удаляем связанные записи из document_items  
+      const itemsResult = await db
+        .delete(documentItems)
+        .where(eq(documentItems.documentId, id));
+      console.log(`[DB] Deleted ${itemsResult.rowCount ?? 0} document items for document ${id}`);
+
+      // Наконец удаляем сам документ
+      const documentResult = await db
+        .delete(documents)
+        .where(eq(documents.id, id));
+      
+      const endTime = Date.now();
+      const success = (documentResult.rowCount ?? 0) > 0;
+      console.log(`[DB] deleteDocument completed in ${endTime - startTime}ms, success: ${success}`);
+      
+      return success;
+    } catch (error) {
+      const endTime = Date.now();
+      console.error(`[DB] deleteDocument failed in ${endTime - startTime}ms:`, error);
+      throw error;
+    }
   }
 
   async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {

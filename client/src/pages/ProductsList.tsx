@@ -317,23 +317,19 @@ export default function ProductsList() {
     localStorage.setItem('productTableColumnWidths', JSON.stringify(columnWidths));
   }, [columnWidths]);
 
-  // Обработчики изменения размера колонок
-  const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
+  // Обработчики изменения размера колонок (поддержка мыши и touch)
+  const handleResizeStart = useCallback((startX: number, column: keyof ColumnWidths) => {
     console.log('Resize started for column:', column);
-    e.preventDefault();
-    e.stopPropagation();
     setIsResizing(true);
     
-    const startX = e.clientX;
     const startWidth = columnWidths[column];
     
     // Добавляем класс для предотвращения выделения текста
     document.body.classList.add('table-resizing');
     document.body.style.cursor = 'col-resize';
     
-    const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      const deltaX = e.clientX - startX;
+    const handleMove = (currentX: number) => {
+      const deltaX = currentX - startX;
       const newWidth = Math.max(80, startWidth + deltaX);
       
       console.log(`Resizing ${column} to width: ${newWidth}`);
@@ -348,18 +344,61 @@ export default function ProductsList() {
       });
     };
     
-    const handleMouseUp = () => {
+    const handleEnd = () => {
       console.log('Resize ended for column:', column);
       setIsResizing(false);
       document.body.classList.remove('table-resizing');
       document.body.style.cursor = '';
+    };
+
+    return { handleMove, handleEnd };
+  }, [columnWidths]);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const { handleMove, handleEnd } = handleResizeStart(e.clientX, column);
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
+      handleMove(e.clientX);
+    };
+    
+    const handleMouseUp = () => {
+      handleEnd();
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [columnWidths]);
+  }, [handleResizeStart]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent, column: keyof ColumnWidths) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    const { handleMove, handleEnd } = handleResizeStart(touch.clientX, column);
+    
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (touch) {
+        handleMove(touch.clientX);
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      handleEnd();
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+    document.addEventListener('touchend', handleTouchEnd);
+  }, [handleResizeStart]);
 
   if (error) {
     return (
@@ -466,6 +505,7 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'name')}
+                      onTouchStart={(e) => handleTouchStart(e, 'name')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -485,6 +525,7 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'sku')}
+                      onTouchStart={(e) => handleTouchStart(e, 'sku')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -504,6 +545,7 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'price')}
+                      onTouchStart={(e) => handleTouchStart(e, 'price')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -523,6 +565,7 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
+                      onTouchStart={(e) => handleTouchStart(e, 'purchasePrice')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -542,6 +585,7 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'barcode')}
+                      onTouchStart={(e) => handleTouchStart(e, 'barcode')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
@@ -561,6 +605,7 @@ export default function ProductsList() {
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'weight')}
+                      onTouchStart={(e) => handleTouchStart(e, 'weight')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>

@@ -32,33 +32,19 @@ This is a full-stack web application for managing products with a modern React f
   - Media (image_url, barcode)
 
 ### API Endpoints
-
-#### Products
 - `GET /api/products` - Fetch all products
 - `GET /api/products/:id` - Fetch single product
 - `POST /api/products` - Create new product with image upload
 - `PUT /api/products/:id` - Update existing product
 - `DELETE /api/products/:id` - Delete product
-- `POST /api/products/delete-multiple` - Bulk delete products
-- `POST /api/products/import` - Bulk import products from Excel
 - `GET /uploads/*` - Serve uploaded images
-
-#### Suppliers
-- `GET /api/suppliers` - Fetch all suppliers
-- `GET /api/suppliers/:id` - Fetch single supplier
-- `POST /api/suppliers` - Create new supplier
-- `PUT /api/suppliers/:id` - Update existing supplier
-- `DELETE /api/suppliers/:id` - Delete supplier
-- `POST /api/suppliers/delete-multiple` - Bulk delete suppliers
-- `POST /api/suppliers/import` - Bulk import suppliers from Excel
 
 ### Frontend Pages
 - **ProductsList**: Main product listing with search, filter, and sort functionality
-- **SuppliersList**: Supplier listing with search, filter, and sort functionality
-- **AddProduct**: Form for creating new products with image upload (removed)
-- **EditProduct**: Form for updating existing products (removed)
-- **ProductDetail**: Detailed view of individual products (removed)
-- **NotFound**: 404 error page (removed)
+- **AddProduct**: Form for creating new products with image upload
+- **EditProduct**: Form for updating existing products
+- **ProductDetail**: Detailed view of individual products
+- **NotFound**: 404 error page
 
 ### Storage Strategy
 The application uses a dual storage approach:
@@ -114,13 +100,6 @@ The application uses a dual storage approach:
 - June 30, 2025. Implemented column width resizing with localStorage persistence
 - June 30, 2025. Added product selection with checkboxes and bulk delete functionality
 - June 30, 2025. Cleaned up codebase - removed unused pages (AddProduct, EditProduct, ProductDetail, NotFound) and unnecessary backend routes
-- June 30, 2025. Added copy-to-clipboard functionality with icons for product name, SKU, and barcode columns
-- June 30, 2025. Optimized database performance with connection pooling and query caching
-- June 30, 2025. Added touch event support for mobile devices (iPhone) to enable column resizing on touchscreens
-- June 30, 2025. Created new Suppliers section with identical interface to Products - single "Name" column with full CRUD operations, search, Excel import/export, and mobile support
-- June 30, 2025. Added "Website" field to suppliers with copy functionality, search, import/export support
-- June 30, 2025. Restructured routing: moved products to /products, created main dashboard at / with automatic system updates
-- June 30, 2025. Fixed inconsistent button positioning between Products and Suppliers tables by standardizing layout structure
 
 ## User Preferences
 

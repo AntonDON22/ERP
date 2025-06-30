@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema } from "@shared/schema";
+import { insertProductSchema, insertSupplierSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products
@@ -103,6 +103,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error importing products:", error);
       res.status(500).json({ message: "Ошибка при импорте товаров" });
+    }
+  });
+
+  // Suppliers API routes
+  // Get all suppliers
+  app.get("/api/suppliers", async (req, res) => {
+    try {
+      const suppliers = await storage.getSuppliers();
+      res.json(suppliers);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      res.status(500).json({ message: "Ошибка при загрузке поставщиков" });
+    }
+  });
+
+  // Delete multiple suppliers
+  app.post("/api/suppliers/delete-multiple", async (req, res) => {
+    try {
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ message: "Укажите массив ID поставщиков для удаления" });
+      }
+
+      const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
+      if (validIds.length !== ids.length) {
+        return res.status(400).json({ message: "Некорректные ID поставщиков" });
+      }
+
+      let deletedCount = 0;
+      const results = [];
+
+      for (const id of validIds) {
+        try {
+          const success = await storage.deleteSupplier(id);
+          if (success) {
+            deletedCount++;
+            results.push({ id, status: 'deleted' });
+          } else {
+            results.push({ id, status: 'not_found' });
+          }
+        } catch (error) {
+          console.error(`Error deleting supplier ${id}:`, error);
+          results.push({ id, status: 'error', error: error.message });
+        }
+      }
+
+      res.json({ 
+        message: `Удалено поставщиков: ${deletedCount} из ${ids.length}`,
+        deletedCount,
+        results 
+      });
+    } catch (error) {
+      console.error("Error deleting multiple suppliers:", error);
+      res.status(500).json({ message: "Ошибка при удалении поставщиков" });
     }
   });
 

@@ -10,33 +10,11 @@ import { apiRequest } from "@/lib/queryClient";
 // import { type Product, type InsertProduct } from "@shared/schema";
 import * as XLSX from 'xlsx';
 
-// Типы для поставщиков
-interface Supplier {
-  id: number;
-  name: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  taxId: string;
-}
-
-interface InsertSupplier {
-  name: string;
-  contactPerson: string;
-  email: string;
-  phone: string;
-  address: string;
-  taxId: string;
-}
+import { type Supplier, type InsertSupplier } from "@shared/schema";
 
 interface ColumnWidths {
   name: number;
-  contactPerson: number;
-  email: number;
-  phone: number;
-  address: number;
-  taxId: number;
+  website: number;
 }
 
 export default function SuppliersList() {
@@ -51,12 +29,8 @@ export default function SuppliersList() {
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('supplierTableColumnWidths');
     return saved ? JSON.parse(saved) : {
-      name: 300,
-      contactPerson: 200,
-      email: 250,
-      phone: 150,
-      address: 300,
-      taxId: 150,
+      name: 400,
+      website: 300,
     };
   });
 
@@ -107,35 +81,22 @@ export default function SuppliersList() {
     {
       id: 1,
       name: "ООО \"Глобал Трейд\"",
-      contactPerson: "Иванов Иван Иванович",
-      email: "info@globaltrade.ru",
-      phone: "+7 (495) 123-45-67",
-      address: "г. Москва, ул. Тверская, д. 1",
-      taxId: "7701234567"
+      website: "https://globaltrade.ru"
     },
     {
       id: 2,
       name: "ИП Петров А.С.",
-      contactPerson: "Петров Алексей Сергеевич",
-      email: "petrov@example.com",
-      phone: "+7 (812) 987-65-43",
-      address: "г. Санкт-Петербург, пр. Невский, д. 100",
-      taxId: "781098765432"
+      website: "https://petrov-company.com"
     },
     {
       id: 3,
       name: "ООО \"Северная компания\"",
-      contactPerson: "Сидорова Мария Александровна",
-      email: "maria@northcompany.ru",
-      phone: "+7 (383) 555-12-34",
-      address: "г. Новосибирск, ул. Красный проспект, д. 50",
-      taxId: "5404123456"
+      website: "https://northcompany.ru"
     }
   ];
 
-  const { data: suppliers = mockSuppliers, isLoading, error } = useQuery<Supplier[]>({
+  const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
-    enabled: false, // Отключаем запрос, используем заглушку
   });
 
   // Мутации для удаления поставщиков
@@ -166,10 +127,7 @@ export default function SuppliersList() {
       const query = searchQuery.toLowerCase();
       return (
         supplier.name.toLowerCase().includes(query) ||
-        supplier.contactPerson.toLowerCase().includes(query) ||
-        supplier.email.toLowerCase().includes(query) ||
-        supplier.phone.toLowerCase().includes(query) ||
-        supplier.taxId.toLowerCase().includes(query)
+        (supplier.website && supplier.website.toLowerCase().includes(query))
       );
     });
   }, [suppliers, searchQuery]);
@@ -245,11 +203,7 @@ export default function SuppliersList() {
 
     const exportData = suppliers.map(supplier => ({
       'Название': supplier.name,
-      'Контактное лицо': supplier.contactPerson,
-      'Email': supplier.email,
-      'Телефон': supplier.phone,
-      'Адрес': supplier.address,
-      'ИНН': supplier.taxId,
+      'Вебсайт': supplier.website || '',
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -397,7 +351,7 @@ export default function SuppliersList() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
-                placeholder="Поиск по названию, контактному лицу, email, телефону или ИНН..."
+                placeholder="Поиск по названию или вебсайту..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -483,94 +437,14 @@ export default function SuppliersList() {
                   </div>
                 </th>
                 <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.contactPerson}px`, minWidth: `${columnWidths.contactPerson}px`, maxWidth: `${columnWidths.contactPerson}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("contactPerson")}
-                    >
-                      <span>Контактное лицо</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'contactPerson')}
-                      onTouchStart={(e) => handleTouchStart(e, 'contactPerson')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.email}px`, minWidth: `${columnWidths.email}px`, maxWidth: `${columnWidths.email}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("email")}
-                    >
-                      <span>Email</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'email')}
-                      onTouchStart={(e) => handleTouchStart(e, 'email')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.phone}px`, minWidth: `${columnWidths.phone}px`, maxWidth: `${columnWidths.phone}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("phone")}
-                    >
-                      <span>Телефон</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'phone')}
-                      onTouchStart={(e) => handleTouchStart(e, 'phone')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.address}px`, minWidth: `${columnWidths.address}px`, maxWidth: `${columnWidths.address}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("address")}
-                    >
-                      <span>Адрес</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'address')}
-                      onTouchStart={(e) => handleTouchStart(e, 'address')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={{ width: `${columnWidths.taxId}px`, minWidth: `${columnWidths.taxId}px`, maxWidth: `${columnWidths.taxId}px` }}
+                  style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}
                 >
                   <button
                     className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort("taxId")}
+                    onClick={() => handleSort("website")}
                   >
-                    <span>ИНН</span>
+                    <span>Вебсайт</span>
                     <ArrowUpDown className="w-3 h-3" />
                   </button>
                 </th>
@@ -579,13 +453,13 @@ export default function SuppliersList() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                     Загрузка поставщиков...
                   </td>
                 </tr>
               ) : sortedSuppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
                     {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
                   </td>
                 </tr>
@@ -602,19 +476,18 @@ export default function SuppliersList() {
                       <CopyableCell value={supplier.name} type="Название" />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={supplier.contactPerson} type="Контактное лицо" />
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={supplier.email} type="Email" />
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {supplier.phone}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {supplier.address}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={supplier.taxId} type="ИНН" />
+                      {supplier.website ? (
+                        <a 
+                          href={supplier.website} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-blue-600 hover:text-blue-800 underline"
+                        >
+                          {supplier.website}
+                        </a>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                   </tr>
                 ))

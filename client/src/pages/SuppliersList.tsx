@@ -5,26 +5,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Supplier, InsertSupplier } from "@shared/schema";
+import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
+import { Product, InsertProduct } from "@shared/schema";
 import * as XLSX from "xlsx";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ColumnWidths {
   name: number;
-  website: number;
+  sku: number;
+  price: number;
+  purchasePrice: number;
+  barcode: number;
+  weight: number;
+  dimensions: number;
 }
 
 export default function SuppliersList() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<keyof Supplier>("name");
+  const [sortField, setSortField] = useState<keyof Product>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [selectedSuppliers, setSelectedSuppliers] = useState<Set<number>>(new Set());
+  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
   const [isResizing, setIsResizing] = useState(false);
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
-    const saved = localStorage.getItem('supplierTableColumnWidths');
+    const saved = localStorage.getItem('productTableColumnWidths');
     return saved ? JSON.parse(saved) : {
-      name: 300,
-      website: 250
+      name: 200,
+      sku: 120,
+      price: 100,
+      purchasePrice: 120,
+      barcode: 140,
+      weight: 100,
+      dimensions: 140
     };
   });
 
@@ -70,23 +81,23 @@ export default function SuppliersList() {
     );
   };
 
-  const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
-    queryKey: ["/api/suppliers"],
+  const { data: products = [], isLoading, error } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
   });
 
   const importMutation = useMutation({
-    mutationFn: async (suppliers: InsertSupplier[]) => {
-      const response = await fetch("/api/suppliers/import", {
+    mutationFn: async (products: InsertProduct[]) => {
+      const response = await fetch("/api/products/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ suppliers }),
+        body: JSON.stringify({ products }),
       });
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Ошибка при импорте поставщиков");
+        throw new Error(error.message || "Ошибка при импорте товаров");
       }
       
       return response.json();
@@ -94,32 +105,32 @@ export default function SuppliersList() {
     onSuccess: () => {
       toast({
         title: "Успешно",
-        description: "Поставщики импортированы",
+        description: "Товары импортированы",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: error.message || "Не удалось импортировать поставщиков",
+        description: error.message || "Не удалось импортировать товары",
         variant: "destructive",
       });
     },
   });
 
   const deleteSelectedMutation = useMutation({
-    mutationFn: async (supplierIds: number[]) => {
-      const response = await fetch("/api/suppliers/delete-multiple", {
+    mutationFn: async (productIds: number[]) => {
+      const response = await fetch("/api/products/delete-multiple", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ supplierIds }),
+        body: JSON.stringify({ productIds }),
       });
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.message || "Ошибка при удалении поставщиков");
+        throw new Error(error.message || "Ошибка при удалении товаров");
       }
       
       return response.json();
@@ -127,37 +138,38 @@ export default function SuppliersList() {
     onSuccess: () => {
       toast({
         title: "Успешно",
-        description: "Выбранные поставщики удалены",
+        description: "Выбранные товары удалены",
       });
-      setSelectedSuppliers(new Set());
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      setSelectedProducts(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
     onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: error.message || "Не удалось удалить поставщиков",
+        description: error.message || "Не удалось удалить товары",
         variant: "destructive",
       });
     },
   });
 
-  // Мемоизированная фильтрация и сортировка поставщиков
-  const filteredSuppliers = useMemo(() => {
-    if (!suppliers) return [];
+  // Мемоизированная фильтрация и сортировка товаров
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
     
-    return suppliers.filter(supplier => {
+    return products.filter(product => {
       if (!searchQuery.trim()) return true;
       
       const query = searchQuery.toLowerCase();
       return (
-        supplier.name?.toLowerCase().includes(query) ||
-        supplier.website?.toLowerCase().includes(query)
+        product.name?.toLowerCase().includes(query) ||
+        product.sku?.toLowerCase().includes(query) ||
+        product.barcode?.toLowerCase().includes(query)
       );
     });
-  }, [suppliers, searchQuery]);
+  }, [products, searchQuery]);
 
-  const sortedSuppliers = useMemo(() => {
-    return filteredSuppliers.sort((a, b) => {
+  const sortedProducts = useMemo(() => {
+    return filteredProducts.sort((a, b) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
       
@@ -175,12 +187,12 @@ export default function SuppliersList() {
       
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [filteredSuppliers, sortField, sortDirection]);
+  }, [filteredProducts, sortField, sortDirection]);
 
   // Мемоизированные вычисления состояния выбора
   const selectionState = useMemo(() => {
-    const totalVisible = filteredSuppliers.length;
-    const selectedCount = selectedSuppliers.size;
+    const totalVisible = filteredProducts.length;
+    const selectedCount = selectedProducts.size;
     const isAllSelected = totalVisible > 0 && selectedCount === totalVisible;
     const isIndeterminate = selectedCount > 0 && selectedCount < totalVisible;
     
@@ -190,35 +202,35 @@ export default function SuppliersList() {
       isAllSelected,
       isIndeterminate
     };
-  }, [filteredSuppliers.length, selectedSuppliers.size]);
+  }, [filteredProducts.length, selectedProducts.size]);
 
-  // Функции для работы с выбором поставщиков
+  // Функции для работы с выбором товаров
   const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
-      setSelectedSuppliers(new Set(filteredSuppliers.map(s => s.id)));
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
     } else {
-      setSelectedSuppliers(new Set());
+      setSelectedProducts(new Set());
     }
-  }, [filteredSuppliers]);
+  }, [filteredProducts]);
 
-  const handleSelectSupplier = useCallback((supplierId: number, checked: boolean) => {
-    setSelectedSuppliers(prev => {
+  const handleSelectProduct = useCallback((productId: number, checked: boolean) => {
+    setSelectedProducts(prev => {
       const newSelected = new Set(prev);
       if (checked) {
-        newSelected.add(supplierId);
+        newSelected.add(productId);
       } else {
-        newSelected.delete(supplierId);
+        newSelected.delete(productId);
       }
       return newSelected;
     });
   }, []);
 
   const handleDeleteSelected = useCallback(() => {
-    if (selectedSuppliers.size === 0) return;
-    deleteSelectedMutation.mutate(Array.from(selectedSuppliers));
-  }, [selectedSuppliers, deleteSelectedMutation]);
+    if (selectedProducts.size === 0) return;
+    deleteSelectedMutation.mutate(Array.from(selectedProducts));
+  }, [selectedProducts, deleteSelectedMutation]);
 
-  const handleSort = (field: keyof Supplier) => {
+  const handleSort = (field: keyof Product) => {
     if (sortField === field) {
       setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
@@ -228,20 +240,27 @@ export default function SuppliersList() {
   };
 
   const handleExportToExcel = () => {
-    if (!suppliers || suppliers.length === 0) {
+    if (!products || products.length === 0) {
       return;
     }
 
-    const exportData = suppliers.map(supplier => ({
-      'Название': supplier.name,
-      'Веб-сайт': supplier.website || ''
+    const exportData = products.map(product => ({
+      'Название': product.name,
+      'Артикул': product.sku,
+      'Цена': product.price,
+      'Цена закупки': product.purchasePrice,
+      'Штрихкод': product.barcode || '',
+      'Вес (г)': product.weight || '',
+      'Длина (мм)': product.length || '',
+      'Ширина (мм)': product.width || '',
+      'Высота (мм)': product.height || ''
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Поставщики');
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Товары');
     
-    const fileName = `поставщики_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
+    const fileName = `товары_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
   };
 
@@ -259,21 +278,28 @@ export default function SuppliersList() {
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      const suppliersToImport: InsertSupplier[] = jsonData.map((row: any) => ({
+      const productsToImport: InsertProduct[] = jsonData.map((row: any) => ({
         name: row['Название'] || row['название'] || '',
-        website: row['Веб-сайт'] || row['веб-сайт'] || row['website'] || undefined,
-      })).filter(supplier => supplier.name);
+        sku: row['Артикул'] || row['артикул'] || '',
+        price: String(row['Цена'] || row['цена'] || '0'),
+        purchasePrice: String(row['Цена закупки'] || row['цена закупки'] || '0'),
+        barcode: row['Штрихкод'] || row['штрихкод'] || null,
+        weight: String(row['Вес (г)'] || row['вес'] || '') || undefined,
+        length: String(row['Длина (мм)'] || row['длина'] || '') || undefined,
+        width: String(row['Ширина (мм)'] || row['ширина'] || '') || undefined,
+        height: String(row['Высота (мм)'] || row['высота'] || '') || undefined,
+      })).filter(product => product.name && product.sku);
 
-      if (suppliersToImport.length === 0) {
+      if (productsToImport.length === 0) {
         toast({
           title: "Ошибка",
-          description: "Не найдено поставщиков для импорта. Проверьте формат файла.",
+          description: "Не найдено товаров для импорта. Проверьте формат файла.",
           variant: "destructive",
         });
         return;
       }
 
-      importMutation.mutate(suppliersToImport);
+      importMutation.mutate(productsToImport);
     } catch (error) {
       toast({
         title: "Ошибка",
@@ -288,7 +314,7 @@ export default function SuppliersList() {
 
   // Сохраняем ширину колонок в localStorage
   useEffect(() => {
-    localStorage.setItem('supplierTableColumnWidths', JSON.stringify(columnWidths));
+    localStorage.setItem('productTableColumnWidths', JSON.stringify(columnWidths));
   }, [columnWidths]);
 
   // Обработчики изменения размера колонок (поддержка мыши и touch)
@@ -379,7 +405,7 @@ export default function SuppliersList() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-red-50 border border-red-200 rounded-md p-4">
           <div className="text-red-800">
-            Ошибка при загрузке поставщиков. Пожалуйста, попробуйте еще раз.
+            Ошибка при загрузке товаров. Пожалуйста, попробуйте еще раз.
           </div>
         </div>
       </div>
@@ -396,7 +422,7 @@ export default function SuppliersList() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 type="text"
-                placeholder="Поиск по названию или веб-сайту..."
+                placeholder="Поиск по названию, артикулу или штрихкоду..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10 h-10"
@@ -404,12 +430,12 @@ export default function SuppliersList() {
             </div>
             {searchQuery && (
               <p className="text-sm text-gray-500 mt-2">
-                Найдено поставщиков: {sortedSuppliers.length} из {suppliers.length}
+                Найдено товаров: {sortedProducts.length} из {products.length}
               </p>
             )}
           </div>
           <div className="flex space-x-3">
-            {selectedSuppliers.size > 0 && (
+            {selectedProducts.size > 0 && (
               <Button 
                 variant="destructive" 
                 className="inline-flex items-center h-10"
@@ -417,7 +443,7 @@ export default function SuppliersList() {
                 disabled={deleteSelectedMutation.isPending}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Удалить выбранные ({selectedSuppliers.size})
+                Удалить выбранные ({selectedProducts.size})
               </Button>
             )}
             <Button
@@ -433,7 +459,7 @@ export default function SuppliersList() {
               variant="outline"
               className="inline-flex items-center h-10"
               onClick={handleExportToExcel}
-              disabled={!suppliers || suppliers.length === 0}
+              disabled={!products || products.length === 0}
             >
               <Download className="w-4 h-4 mr-2" />
               Экспорт
@@ -451,94 +477,195 @@ export default function SuppliersList() {
         className="hidden"
       />
 
-      {/* Suppliers Table */}
+      {/* Products Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <th className="w-12 px-6 py-3 text-left">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
-                    {...(selectionState.isIndeterminate && { "data-state": "indeterminate" })}
+                    className={selectionState.isIndeterminate ? "indeterminate" : ""}
                   />
                 </th>
-                
-                {/* Название */}
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150 relative group"
-                  style={{ width: `${columnWidths.name}px` }}
-                  onClick={() => handleSort('name')}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
                 >
-                  <div className="flex items-center justify-between select-none">
-                    <div className="flex items-center">
-                      <span>Название</span>
-                      <ArrowUpDown className="ml-1 h-3 w-3" />
-                    </div>
-                    <div 
-                      className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize bg-transparent hover:bg-blue-300 group-hover:bg-blue-200 ${isResizing ? 'bg-blue-400' : ''}`}
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>Наименование</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'name')}
                       onTouchStart={(e) => handleTouchStart(e, 'name')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
                 </th>
-
-                {/* Веб-сайт */}
                 <th 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors duration-150 relative group"
-                  style={{ width: `${columnWidths.website}px` }}
-                  onClick={() => handleSort('website')}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
                 >
-                  <div className="flex items-center justify-between select-none">
-                    <div className="flex items-center">
-                      <span>Веб-сайт</span>
-                      <ArrowUpDown className="ml-1 h-3 w-3" />
-                    </div>
-                    <div 
-                      className={`absolute right-0 top-0 bottom-0 w-1 cursor-col-resize bg-transparent hover:bg-blue-300 group-hover:bg-blue-200 ${isResizing ? 'bg-blue-400' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'website')}
-                      onTouchStart={(e) => handleTouchStart(e, 'website')}
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("sku")}
+                    >
+                      <span>Артикул</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'sku')}
+                      onTouchStart={(e) => handleTouchStart(e, 'sku')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("price")}
+                    >
+                      <span>Цена</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'price')}
+                      onTouchStart={(e) => handleTouchStart(e, 'price')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("purchasePrice")}
+                    >
+                      <span>Цена закупки</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
+                      onTouchStart={(e) => handleTouchStart(e, 'purchasePrice')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("barcode")}
+                    >
+                      <span>Штрихкод</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'barcode')}
+                      onTouchStart={(e) => handleTouchStart(e, 'barcode')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("weight")}
+                    >
+                      <span>Вес (г)</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
+                      onMouseDown={(e) => handleMouseDown(e, 'weight')}
+                      onTouchStart={(e) => handleTouchStart(e, 'weight')}
+                      title="Потяните для изменения ширины столбца"
+                    />
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("length")}
+                  >
+                    <span>Габариты (мм)</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                    Загрузка поставщиков...
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    Загрузка товаров...
                   </td>
                 </tr>
-              ) : sortedSuppliers.length === 0 ? (
+              ) : sortedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={3} className="px-6 py-4 text-center text-gray-500">
-                    {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    {searchQuery ? "Товары не найдены" : "Нет товаров для отображения"}
                   </td>
                 </tr>
               ) : (
-                sortedSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="hover:bg-gray-50 transition-colors duration-150">
-                    <td className="px-6 py-4 w-12">
+                sortedProducts.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 w-12">
                       <Checkbox
-                        checked={selectedSuppliers.has(supplier.id)}
-                        onCheckedChange={(checked) => handleSelectSupplier(supplier.id, checked as boolean)}
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                       />
                     </td>
-                    <td 
-                      className="px-6 py-4 text-sm text-gray-900"
-                      style={{ width: `${columnWidths.name}px` }}
-                    >
-                      <CopyableCell value={supplier.name} type="Название" />
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <CopyableCell value={product.name} type="Название" />
                     </td>
-                    <td 
-                      className="px-6 py-4 text-sm text-gray-900"
-                      style={{ width: `${columnWidths.website}px` }}
-                    >
-                      <CopyableCell value={supplier.website} type="Веб-сайт" />
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <CopyableCell value={product.sku} type="Артикул" />
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatPrice(product.price)}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatPrice(product.purchasePrice)}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <CopyableCell value={product.barcode} type="Штрихкод" />
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatWeight(product.weight)}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatDimensions(product.length, product.width, product.height)}
                     </td>
                   </tr>
                 ))
@@ -549,10 +676,10 @@ export default function SuppliersList() {
       </div>
 
       {/* Summary */}
-      <div className="mt-4 text-sm text-gray-600">
-        Всего поставщиков: {suppliers.length}
-        {searchQuery && ` (отображено: ${sortedSuppliers.length})`}
-        {selectedSuppliers.size > 0 && ` | Выбрано: ${selectedSuppliers.size}`}
+      <div className="mt-6 text-sm text-gray-500">
+        Всего товаров: {products.length}
+        {searchQuery && ` • Показано: ${sortedProducts.length}`}
+        {selectedProducts.size > 0 && ` • Выбрано: ${selectedProducts.size}`}
       </div>
     </div>
   );

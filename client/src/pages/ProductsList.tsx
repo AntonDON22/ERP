@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpDown, Download, Upload, Search, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
+import { Product, InsertProduct } from "@shared/schema";
+import * as XLSX from "xlsx";
 import { apiRequest } from "@/lib/queryClient";
-import type { Product, InsertProduct } from "@shared/schema";
-import * as XLSX from 'xlsx';
 
 interface ColumnWidths {
   name: number;
@@ -21,114 +21,54 @@ interface ColumnWidths {
 }
 
 export default function ProductsList() {
-  const [sortField, setSortField] = useState<keyof Product>("id");
-  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortField, setSortField] = useState<keyof Product>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [isResizing, setIsResizing] = useState(false);
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
-    const saved = localStorage.getItem('productColumnWidths');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        console.error('Error parsing saved column widths:', e);
-      }
-    }
-    return {
-      name: 250,
-      sku: 150,
-      price: 120,
-      purchasePrice: 140,
-      barcode: 150,
+    const saved = localStorage.getItem('productTableColumnWidths');
+    return saved ? JSON.parse(saved) : {
+      name: 200,
+      sku: 120,
+      price: 100,
+      purchasePrice: 120,
+      barcode: 140,
       weight: 100,
-      dimensions: 180
+      dimensions: 140
     };
   });
-  const [isResizing, setIsResizing] = useState<string | null>(null);
-  const [startX, setStartX] = useState(0);
-  const [startWidth, setStartWidth] = useState(0);
-  const [wasResizing, setWasResizing] = useState(false);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const queryClient = useQueryClient();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  // Функции для изменения размера столбцов
-  const handleMouseDown = useCallback((columnName: keyof ColumnWidths, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation(); // Предотвращаем всплытие события
-    setIsResizing(columnName);
-    setWasResizing(true);
-    setStartX(e.clientX);
-    setStartWidth(columnWidths[columnName]);
-  }, [columnWidths]);
-
-  // Добавляем глобальные обработчики событий мыши
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return;
-      
-      const diff = e.clientX - startX;
-      const newWidth = Math.max(50, startWidth + diff); // Минимальная ширина 50px
-      
-      setColumnWidths(prev => {
-        const newWidths = {
-          ...prev,
-          [isResizing]: newWidth
-        };
-        // Сохраняем в localStorage
-        localStorage.setItem('productColumnWidths', JSON.stringify(newWidths));
-        return newWidths;
-      });
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(null);
-      // Задержка для предотвращения срабатывания сортировки
-      setTimeout(() => {
-        setWasResizing(false);
-      }, 100);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isResizing, startX, startWidth]);
-  
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ["/api/products"],
   });
 
   const importMutation = useMutation({
     mutationFn: async (products: InsertProduct[]) => {
-      const results = [];
-      for (const product of products) {
-        try {
-          const result = await apiRequest("POST", "/api/products", product);
-          results.push(result);
-        } catch (error) {
-          console.error('Error importing product:', product, error);
-        }
-      }
-      return results;
+      const response = await apiRequest("/api/products/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ products }),
+      });
+      return response.json();
     },
-    onSuccess: (results) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    onSuccess: () => {
       toast({
         title: "Успешно",
-        description: `Импортировано ${results.length} товаров`,
+        description: "Товары импортированы",
       });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
-    onError: () => {
+    onError: (error: Error) => {
       toast({
         title: "Ошибка",
-        description: "Не удалось импортировать товары",
+        description: error.message || "Не удалось импортировать товары",
         variant: "destructive",
       });
     },
@@ -136,17 +76,22 @@ export default function ProductsList() {
 
   const deleteSelectedMutation = useMutation({
     mutationFn: async (productIds: number[]) => {
-      await Promise.all(productIds.map(id => 
-        apiRequest('DELETE', `/api/products/${id}`)
-      ));
+      const response = await apiRequest("/api/products/delete-multiple", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productIds }),
+      });
+      return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      setSelectedProducts(new Set());
       toast({
         title: "Успешно",
         description: "Выбранные товары удалены",
       });
+      setSelectedProducts(new Set());
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
     onError: (error: Error) => {
       toast({
@@ -157,29 +102,83 @@ export default function ProductsList() {
     },
   });
 
+  // Мемоизированная фильтрация и сортировка товаров
+  const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    
+    return products.filter(product => {
+      if (!searchQuery.trim()) return true;
+      
+      const query = searchQuery.toLowerCase();
+      return (
+        product.name?.toLowerCase().includes(query) ||
+        product.sku?.toLowerCase().includes(query) ||
+        product.barcode?.toLowerCase().includes(query)
+      );
+    });
+  }, [products, searchQuery]);
+
+  const sortedProducts = useMemo(() => {
+    return filteredProducts.sort((a, b) => {
+      const aValue = a[sortField];
+      const bValue = b[sortField];
+      
+      if (aValue === null || aValue === undefined) return 1;
+      if (bValue === null || bValue === undefined) return -1;
+      
+      let comparison = 0;
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        comparison = aValue.localeCompare(bValue);
+      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
+        comparison = aValue - bValue;
+      } else {
+        comparison = String(aValue).localeCompare(String(bValue));
+      }
+      
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [filteredProducts, sortField, sortDirection]);
+
+  // Мемоизированные вычисления состояния выбора
+  const selectionState = useMemo(() => {
+    const totalVisible = filteredProducts.length;
+    const selectedCount = selectedProducts.size;
+    const isAllSelected = totalVisible > 0 && selectedCount === totalVisible;
+    const isIndeterminate = selectedCount > 0 && selectedCount < totalVisible;
+    
+    return {
+      totalVisible,
+      selectedCount,
+      isAllSelected,
+      isIndeterminate
+    };
+  }, [filteredProducts.length, selectedProducts.size]);
+
   // Функции для работы с выбором товаров
-  const handleSelectAll = (checked: boolean) => {
+  const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
-      setSelectedProducts(new Set(sortedProducts.map(p => p.id)));
+      setSelectedProducts(new Set(filteredProducts.map(p => p.id)));
     } else {
       setSelectedProducts(new Set());
     }
-  };
+  }, [filteredProducts]);
 
-  const handleSelectProduct = (productId: number, checked: boolean) => {
-    const newSelected = new Set(selectedProducts);
-    if (checked) {
-      newSelected.add(productId);
-    } else {
-      newSelected.delete(productId);
-    }
-    setSelectedProducts(newSelected);
-  };
+  const handleSelectProduct = useCallback((productId: number, checked: boolean) => {
+    setSelectedProducts(prev => {
+      const newSelected = new Set(prev);
+      if (checked) {
+        newSelected.add(productId);
+      } else {
+        newSelected.delete(productId);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const handleDeleteSelected = () => {
+  const handleDeleteSelected = useCallback(() => {
     if (selectedProducts.size === 0) return;
     deleteSelectedMutation.mutate(Array.from(selectedProducts));
-  };
+  }, [selectedProducts, deleteSelectedMutation]);
 
   const handleSort = (field: keyof Product) => {
     if (sortField === field) {
@@ -263,37 +262,38 @@ export default function ProductsList() {
     event.target.value = '';
   };
 
-  // Фильтрация товаров по поисковому запросу
-  const filteredProducts = products.filter(product => {
-    if (!searchQuery.trim()) return true;
-    
-    const query = searchQuery.toLowerCase();
-    return (
-      product.name?.toLowerCase().includes(query) ||
-      product.sku?.toLowerCase().includes(query) ||
-      product.barcode?.toLowerCase().includes(query)
-    );
-  });
+  // Сохраняем ширину колонок в localStorage
+  useEffect(() => {
+    localStorage.setItem('productTableColumnWidths', JSON.stringify(columnWidths));
+  }, [columnWidths]);
 
-  const sortedProducts = filteredProducts
-    .sort((a, b) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
+  // Обработчики изменения размера колонок
+  const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
+    e.preventDefault();
+    setIsResizing(true);
+    
+    const startX = e.clientX;
+    const startWidth = columnWidths[column];
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      const deltaX = e.clientX - startX;
+      const newWidth = Math.max(80, startWidth + deltaX);
       
-      if (aValue === null || aValue === undefined) return 1;
-      if (bValue === null || bValue === undefined) return -1;
-      
-      let comparison = 0;
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        comparison = aValue.localeCompare(bValue);
-      } else if (typeof aValue === 'number' && typeof bValue === 'number') {
-        comparison = aValue - bValue;
-      } else {
-        comparison = String(aValue).localeCompare(String(bValue));
-      }
-      
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
+      setColumnWidths(prev => ({
+        ...prev,
+        [column]: newWidth
+      }));
+    };
+    
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+    
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  }, [columnWidths]);
 
   if (error) {
     return (
@@ -338,308 +338,247 @@ export default function ProductsList() {
                 disabled={deleteSelectedMutation.isPending}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                {deleteSelectedMutation.isPending ? 'Удаление...' : `Удалить (${selectedProducts.size})`}
+                Удалить выбранные ({selectedProducts.size})
               </Button>
             )}
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="inline-flex items-center h-10"
               onClick={handleImportClick}
               disabled={importMutation.isPending}
             >
               <Upload className="w-4 h-4 mr-2" />
-              {importMutation.isPending ? 'Загрузка...' : 'Импорт из Excel'}
+              Импорт
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="inline-flex items-center h-10"
               onClick={handleExportToExcel}
               disabled={!products || products.length === 0}
             >
               <Download className="w-4 h-4 mr-2" />
-              Экспорт в Excel
+              Экспорт
             </Button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".xlsx,.xls"
-              onChange={handleFileChange}
-              className="hidden"
-            />
           </div>
         </div>
       </div>
 
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".xlsx,.xls"
+        onChange={handleFileChange}
+        className="hidden"
+      />
+
       {/* Products Table */}
-      <div className="bg-white shadow-sm rounded-lg overflow-hidden">
-        {isLoading ? (
-          <div className="p-8 text-center">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-500">Загрузка товаров...</p>
-          </div>
-        ) : sortedProducts.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-gray-500">
-              {searchQuery ? 'Товары не найдены по запросу' : 'Нет товаров'}
-            </p>
-            {searchQuery && (
-              <p className="text-sm text-gray-400 mt-1">
-                Попробуйте изменить поисковый запрос или очистить фильтр
-              </p>
-            )}
-          </div>
-        ) : (
-          <>
-            <div className={`overflow-x-auto ${isResizing ? 'resizing' : ''}`} style={{ cursor: isResizing ? 'col-resize' : 'default' }}>
-              <table 
-                className="divide-y divide-gray-200" 
-                style={{ 
-                  tableLayout: 'fixed',
-                  width: `${Object.values(columnWidths).reduce((sum, width) => sum + width, 0)}px`,
-                  minWidth: '100%'
-                }}
-              >
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left w-12">
+      <div className="bg-white rounded-lg border shadow-sm">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                  <Checkbox
+                    checked={selectionState.isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                    ref={(ref) => {
+                      if (ref) {
+                        ref.indeterminate = selectionState.isIndeterminate;
+                      }
+                    }}
+                  />
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: columnWidths.name }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("name")}
+                    >
+                      <span>Наименование</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      onMouseDown={(e) => handleMouseDown(e, 'name')}
+                    >
+                      <div className="w-px h-4 bg-gray-300"></div>
+                    </div>
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: columnWidths.sku }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("sku")}
+                    >
+                      <span>Артикул</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      onMouseDown={(e) => handleMouseDown(e, 'sku')}
+                    >
+                      <div className="w-px h-4 bg-gray-300"></div>
+                    </div>
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: columnWidths.price }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("price")}
+                    >
+                      <span>Цена</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      onMouseDown={(e) => handleMouseDown(e, 'price')}
+                    >
+                      <div className="w-px h-4 bg-gray-300"></div>
+                    </div>
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: columnWidths.purchasePrice }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("purchasePrice")}
+                    >
+                      <span>Цена закупки</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
+                    >
+                      <div className="w-px h-4 bg-gray-300"></div>
+                    </div>
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: columnWidths.barcode }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("barcode")}
+                    >
+                      <span>Штрихкод</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      onMouseDown={(e) => handleMouseDown(e, 'barcode')}
+                    >
+                      <div className="w-px h-4 bg-gray-300"></div>
+                    </div>
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
+                  style={{ width: columnWidths.weight }}
+                >
+                  <div className="flex items-center justify-between">
+                    <button
+                      className="flex items-center space-x-1 hover:text-gray-700"
+                      onClick={() => handleSort("weight")}
+                    >
+                      <span>Вес (г)</span>
+                      <ArrowUpDown className="w-3 h-3" />
+                    </button>
+                    <div
+                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      onMouseDown={(e) => handleMouseDown(e, 'weight')}
+                    >
+                      <div className="w-px h-4 bg-gray-300"></div>
+                    </div>
+                  </div>
+                </th>
+                <th 
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  style={{ width: columnWidths.dimensions }}
+                >
+                  <button
+                    className="flex items-center space-x-1 hover:text-gray-700"
+                    onClick={() => handleSort("length")}
+                  >
+                    <span>Габариты (мм)</span>
+                    <ArrowUpDown className="w-3 h-3" />
+                  </button>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    Загрузка товаров...
+                  </td>
+                </tr>
+              ) : sortedProducts.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
+                    {searchQuery ? "Товары не найдены" : "Нет товаров для отображения"}
+                  </td>
+                </tr>
+              ) : (
+                sortedProducts.map((product) => (
+                  <tr key={product.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4 w-12">
                       <Checkbox
-                        checked={selectedProducts.size === sortedProducts.length && sortedProducts.length > 0}
-                        onCheckedChange={(checked) => handleSelectAll(checked === true)}
-                        aria-label="Выбрать все товары"
+                        checked={selectedProducts.has(product.id)}
+                        onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                       />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={(e) => {
-                        if (!isResizing && !wasResizing) {
-                          handleSort("name");
-                        }
-                      }}
-                      style={{ 
-                        width: `${columnWidths.name}px`,
-                        minWidth: `${columnWidths.name}px`,
-                        maxWidth: `${columnWidths.name}px`
-                      }}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Название</span>
-                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div 
-                        className={`column-resizer ${isResizing === 'name' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('name', e)}
-                      />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={(e) => {
-                        if (!isResizing && !wasResizing) {
-                          handleSort("sku");
-                        }
-                      }}
-                      style={{ 
-                        width: `${columnWidths.sku}px`,
-                        minWidth: `${columnWidths.sku}px`,
-                        maxWidth: `${columnWidths.sku}px`
-                      }}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Артикул</span>
-                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div 
-                        className={`column-resizer ${isResizing === 'sku' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('sku', e)}
-                      />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={(e) => {
-                        if (!isResizing && !wasResizing) {
-                          handleSort("price");
-                        }
-                      }}
-                      style={{ 
-                        width: `${columnWidths.price}px`,
-                        minWidth: `${columnWidths.price}px`,
-                        maxWidth: `${columnWidths.price}px`
-                      }}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Цена</span>
-                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div 
-                        className={`column-resizer ${isResizing === 'price' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('price', e)}
-                      />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={(e) => {
-                        if (!isResizing && !wasResizing) {
-                          handleSort("purchasePrice");
-                        }
-                      }}
-                      style={{ 
-                        width: `${columnWidths.purchasePrice}px`,
-                        minWidth: `${columnWidths.purchasePrice}px`,
-                        maxWidth: `${columnWidths.purchasePrice}px`
-                      }}
-                    >
-                      <div className="flex items-center space-x-1">
-                        <span>Цена закупки</span>
-                        <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                      </div>
-                      <div 
-                        className={`column-resizer ${isResizing === 'purchasePrice' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('purchasePrice', e)}
-                      />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                      style={{ 
-                        width: `${columnWidths.barcode}px`,
-                        minWidth: `${columnWidths.barcode}px`,
-                        maxWidth: `${columnWidths.barcode}px`
-                      }}
-                    >
-                      Штрихкод
-                      <div 
-                        className={`column-resizer ${isResizing === 'barcode' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('barcode', e)}
-                      />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                      style={{ 
-                        width: `${columnWidths.weight}px`,
-                        minWidth: `${columnWidths.weight}px`,
-                        maxWidth: `${columnWidths.weight}px`
-                      }}
-                    >
-                      Вес (г)
-                      <div 
-                        className={`column-resizer ${isResizing === 'weight' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('weight', e)}
-                      />
-                    </th>
-                    <th 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                      style={{ 
-                        width: `${columnWidths.dimensions}px`,
-                        minWidth: `${columnWidths.dimensions}px`,
-                        maxWidth: `${columnWidths.dimensions}px`
-                      }}
-                    >
-                      Габариты (мм)
-                      <div 
-                        className={`column-resizer ${isResizing === 'dimensions' ? 'active' : ''}`}
-                        onMouseDown={(e) => handleMouseDown('dimensions', e)}
-                      />
-                    </th>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {product.name}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {product.sku}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatPrice(product.price)}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatPrice(product.purchasePrice)}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {product.barcode || "-"}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatWeight(product.weight)}
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      {formatDimensions(product.length, product.width, product.height)}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedProducts.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap w-12">
-                        <Checkbox
-                          checked={selectedProducts.has(product.id)}
-                          onCheckedChange={(checked) => handleSelectProduct(product.id, checked === true)}
-                          aria-label={`Выбрать товар ${product.name}`}
-                        />
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap"
-                        style={{ 
-                          width: `${columnWidths.name}px`,
-                          minWidth: `${columnWidths.name}px`,
-                          maxWidth: `${columnWidths.name}px`
-                        }}
-                      >
-                        <div className="text-sm font-medium text-gray-900">
-                          {product.name}
-                        </div>
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        style={{ 
-                          width: `${columnWidths.sku}px`,
-                          minWidth: `${columnWidths.sku}px`,
-                          maxWidth: `${columnWidths.sku}px`
-                        }}
-                      >
-                        {product.sku}
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        style={{ 
-                          width: `${columnWidths.price}px`,
-                          minWidth: `${columnWidths.price}px`,
-                          maxWidth: `${columnWidths.price}px`
-                        }}
-                      >
-                        {formatPrice(product.price)}
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        style={{ 
-                          width: `${columnWidths.purchasePrice}px`,
-                          minWidth: `${columnWidths.purchasePrice}px`,
-                          maxWidth: `${columnWidths.purchasePrice}px`
-                        }}
-                      >
-                        {formatPrice(product.purchasePrice)}
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        style={{ 
-                          width: `${columnWidths.barcode}px`,
-                          minWidth: `${columnWidths.barcode}px`,
-                          maxWidth: `${columnWidths.barcode}px`
-                        }}
-                      >
-                        {product.barcode || "—"}
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        style={{ 
-                          width: `${columnWidths.weight}px`,
-                          minWidth: `${columnWidths.weight}px`,
-                          maxWidth: `${columnWidths.weight}px`
-                        }}
-                      >
-                        {formatWeight(product.weight)}
-                      </td>
-                      <td 
-                        className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        style={{ 
-                          width: `${columnWidths.dimensions}px`,
-                          minWidth: `${columnWidths.dimensions}px`,
-                          maxWidth: `${columnWidths.dimensions}px`
-                        }}
-                      >
-                        {formatDimensions(product.length, product.width, product.height)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            
-            {/* Summary */}
-            <div className="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-700">
-                    Всего товаров: <span className="font-medium">{sortedProducts.length}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Summary */}
+      <div className="mt-6 text-sm text-gray-500">
+        Всего товаров: {products.length}
+        {searchQuery && ` • Показано: ${sortedProducts.length}`}
+        {selectedProducts.size > 0 && ` • Выбрано: ${selectedProducts.size}`}
       </div>
     </div>
   );

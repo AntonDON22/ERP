@@ -146,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (error) {
           console.error(`Error deleting supplier ${id}:`, error);
-          results.push({ id, status: 'error', error: error.message });
+          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
         }
       }
 
@@ -220,7 +220,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         } catch (error) {
           console.error(`Error deleting contractor ${id}:`, error);
-          results.push({ id, status: 'error', error: error.message });
+          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
         }
       }
 

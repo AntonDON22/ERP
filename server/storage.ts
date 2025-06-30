@@ -34,17 +34,21 @@ export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private products: Map<number, Product>;
   private suppliers: Map<number, Supplier>;
+  private contractors: Map<number, Contractor>;
   private currentUserId: number;
   private currentProductId: number;
   private currentSupplierId: number;
+  private currentContractorId: number;
 
   constructor() {
     this.users = new Map();
     this.products = new Map();
     this.suppliers = new Map();
+    this.contractors = new Map();
     this.currentUserId = 1;
     this.currentProductId = 1;
     this.currentSupplierId = 1;
+    this.currentContractorId = 1;
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -152,6 +156,43 @@ export class MemStorage implements IStorage {
 
   async deleteSupplier(id: number): Promise<boolean> {
     return this.suppliers.delete(id);
+  }
+
+  // Contractors methods
+  async getContractors(): Promise<Contractor[]> {
+    return Array.from(this.contractors.values());
+  }
+
+  async getContractor(id: number): Promise<Contractor | undefined> {
+    return this.contractors.get(id);
+  }
+
+  async createContractor(insertContractor: InsertContractor): Promise<Contractor> {
+    const id = this.currentContractorId++;
+    const contractor: Contractor = { 
+      ...insertContractor,
+      website: insertContractor.website || null,
+      id 
+    };
+    this.contractors.set(id, contractor);
+    return contractor;
+  }
+
+  async updateContractor(id: number, updateData: Partial<InsertContractor>): Promise<Contractor | undefined> {
+    const existingContractor = this.contractors.get(id);
+    if (!existingContractor) return undefined;
+    
+    const updatedContractor: Contractor = {
+      ...existingContractor,
+      ...updateData,
+      id,
+    };
+    this.contractors.set(id, updatedContractor);
+    return updatedContractor;
+  }
+
+  async deleteContractor(id: number): Promise<boolean> {
+    return this.contractors.delete(id);
   }
 }
 

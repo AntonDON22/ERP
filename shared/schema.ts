@@ -123,15 +123,20 @@ export type Contractor = typeof contractors.$inferSelect;
 export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type DocumentRecord = typeof documents.$inferSelect;
 
-// Таблица остатков товаров (для FIFO)
+// Таблица складских движений (FIFO инвентарь)
 export const inventory = pgTable("inventory", {
   id: serial("id").primaryKey(),
   productId: integer("product_id").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull().default("0"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // положительное для прихода, отрицательное для расхода
+  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"), // закупочная цена (только для приходов)
+  movementType: text("movement_type").notNull(), // 'IN' для прихода, 'OUT' для расхода
   documentId: integer("document_id").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Индексы для оптимизации FIFO-выборок
+  productDateIdx: index("inventory_product_date_idx").on(table.productId, table.createdAt),
+  productTypeIdx: index("inventory_product_type_idx").on(table.productId, table.movementType),
+}));
 
 // Таблица позиций документов оприходования
 export const documentItems = pgTable("document_items", {

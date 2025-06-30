@@ -1,6 +1,6 @@
 import { users, products, suppliers, contractors, documents, inventory, documentItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, asc } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -567,20 +567,22 @@ export class DatabaseStorage implements IStorage {
               documentId: createdDocument.id,
             });
 
-          // 3. Добавляем в инвентарь (FIFO)
-          // Для документов списания используем отрицательное количество
-          const inventoryQuantity = updatedDocument.type === 'Списание' 
-            ? `-${item.quantity}` 
-            : item.quantity;
-            
-          await tx
-            .insert(inventory)
-            .values({
-              productId: item.productId,
-              quantity: inventoryQuantity,
-              price: item.price,
-              documentId: createdDocument.id,
-            });
+          // 3. Обрабатываем движения инвентаря по FIFO
+          if (updatedDocument.type === 'Оприходование') {
+            // Приход товара - просто добавляем запись
+            await tx
+              .insert(inventory)
+              .values({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+                movementType: 'IN',
+                documentId: createdDocument.id,
+              });
+          } else if (updatedDocument.type === 'Списание') {
+            // Списание товара - используем FIFO логику
+            await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price ?? "0", createdDocument.id);
+          }
         }
 
         return updatedDocument;
@@ -589,6 +591,72 @@ export class DatabaseStorage implements IStorage {
       console.error("Error creating receipt document:", error);
       throw error;
     }
+  }
+
+  // Метод для обработки списания по FIFO
+  private async processWriteoffFIFO(
+    tx: any, 
+    productId: number, 
+    quantityToWriteoff: number, 
+    writeoffPrice: string, 
+    documentId: number
+  ): Promise<void> {
+    console.log(`🔄 FIFO-списание товара ${productId}, количество: ${quantityToWriteoff}`);
+    
+    // 1. Получаем все приходы товара в порядке FIFO (по дате создания)
+    const availableStock = await tx
+      .select()
+      .from(inventory)
+      .where(and(
+        eq(inventory.productId, productId),
+        eq(inventory.movementType, 'IN')
+      ))
+      .orderBy(asc(inventory.createdAt));
+
+    console.log(`📦 Найдено приходов: ${availableStock.length}`);
+
+    let remainingToWriteoff = quantityToWriteoff;
+
+    // 2. Списываем из самых старых партий
+    for (const stockItem of availableStock) {
+      if (remainingToWriteoff <= 0) break;
+
+      const availableQuantity = Number(stockItem.quantity);
+      const quantityToTakeFromThisBatch = Math.min(remainingToWriteoff, availableQuantity);
+
+      if (quantityToTakeFromThisBatch > 0) {
+        // Создаем запись о списании из этой партии
+        await tx
+          .insert(inventory)
+          .values({
+            productId: productId,
+            quantity: `-${quantityToTakeFromThisBatch}`,
+            price: stockItem.price, // Используем цену из партии прихода
+            movementType: 'OUT',
+            documentId: documentId,
+          });
+
+        remainingToWriteoff -= quantityToTakeFromThisBatch;
+        console.log(`📤 Списано ${quantityToTakeFromThisBatch} из партии ${stockItem.id}, остается списать: ${remainingToWriteoff}`);
+      }
+    }
+
+    // 3. Если остались несписанные товары - создаем запись о списании в минус
+    if (remainingToWriteoff > 0) {
+      console.log(`⚠️ Списание в минус: ${remainingToWriteoff} единиц`);
+      
+      await tx
+        .insert(inventory)
+        .values({
+          productId: productId,
+          quantity: `-${remainingToWriteoff}`,
+          price: writeoffPrice, // Используем цену из документа списания
+          movementType: 'OUT',
+          documentId: documentId,
+        });
+    }
+
+    console.log(`✅ FIFO-списание завершено`);
   }
 }
 

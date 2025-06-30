@@ -1,7 +1,14 @@
-import { Clock, Package, Users, Database, Wrench, CheckCircle } from "lucide-react";
+import { Clock, Wrench, CheckCircle } from "lucide-react";
 
 export default function Dashboard() {
   const updates = [
+    {
+      date: "30 июня 2025",
+      time: "16:16",
+      type: "improvement",
+      title: "Упрощение главной страницы",
+      description: "Убраны лишние блоки с описанием системы. Теперь главная страница содержит только историю обновлений для удобства просмотра изменений."
+    },
     {
       date: "30 июня 2025",
       time: "16:11",
@@ -102,9 +109,9 @@ export default function Dashboard() {
       case "fix": 
         return <Wrench className="w-4 h-4 text-blue-600" />;
       case "improvement":
-        return <Package className="w-4 h-4 text-orange-600" />;
+        return <Wrench className="w-4 h-4 text-orange-600" />;
       case "database":
-        return <Database className="w-4 h-4 text-purple-600" />;
+        return <CheckCircle className="w-4 h-4 text-purple-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
@@ -142,47 +149,6 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Система управления товарами и поставщиками
-        </h1>
-        <p className="text-gray-600">
-          ERP-модуль с расширенным функционалом навигации и поиска
-        </p>
-      </div>
-
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white rounded-lg border p-6 shadow-sm">
-          <div className="flex items-center">
-            <Package className="w-8 h-8 text-blue-600 mr-3" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Товары</h3>
-              <p className="text-gray-600">Управление каталогом</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border p-6 shadow-sm">
-          <div className="flex items-center">
-            <Users className="w-8 h-8 text-green-600 mr-3" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Поставщики</h3>
-              <p className="text-gray-600">База контрагентов</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border p-6 shadow-sm">
-          <div className="flex items-center">
-            <Database className="w-8 h-8 text-purple-600 mr-3" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">PostgreSQL</h3>
-              <p className="text-gray-600">Надежное хранение</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Changelog */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="px-6 py-4 border-b">

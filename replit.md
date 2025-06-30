@@ -110,6 +110,7 @@ The application uses a dual storage approach:
 - June 30, 2025. Fixed UI jumping issue by removing all column resizing functionality and making tables fully static with fixed widths
 - June 30, 2025. Implemented multi-line text wrapping for long product and supplier names (2-line limit with proper overflow handling)
 - June 30, 2025. Created Dashboard homepage with comprehensive changelog displaying all system updates with dates, times, and descriptions
+- June 30, 2025. Simplified Dashboard page to show only changelog history, removed system overview blocks
 
 ## User Preferences
 

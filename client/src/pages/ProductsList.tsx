@@ -471,15 +471,22 @@ export default function ProductsList() {
                 </tr>
               ) : (
                 sortedProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50 h-16">
+                  <tr key={product.id} className="hover:bg-gray-50 h-20">
                     <td className="px-4 py-4 w-12">
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
                         onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
-                      <div className="truncate">
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <div className="leading-tight" style={{ 
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        wordBreak: 'break-word',
+                        hyphens: 'auto'
+                      }}>
                         <CopyableCell value={product.name} type="Название" />
                       </div>
                     </td>

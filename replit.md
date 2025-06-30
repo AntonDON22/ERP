@@ -107,6 +107,8 @@ The application uses a dual storage approach:
 - June 30, 2025. Simplified suppliers table to only show "Название" and "Вебсайт" columns
 - June 30, 2025. Created suppliers table in PostgreSQL database with name and website fields
 - June 30, 2025. Updated suppliers statistics format to match products page ("Всего поставщиков" instead of "Показано X из Y")
+- June 30, 2025. Fixed UI jumping issue by removing all column resizing functionality and making tables fully static with fixed widths
+- June 30, 2025. Implemented multi-line text wrapping for long product and supplier names (2-line limit with proper overflow handling)
 
 ## User Preferences
 

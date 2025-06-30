@@ -297,15 +297,22 @@ export default function SuppliersList() {
                 </tr>
               ) : (
                 sortedSuppliers.map((supplier) => (
-                  <tr key={supplier.id} className="hover:bg-gray-50 h-16">
+                  <tr key={supplier.id} className="hover:bg-gray-50 h-20">
                     <td className="px-4 py-4 w-12">
                       <Checkbox
                         checked={selectedSuppliers.has(supplier.id)}
                         onCheckedChange={(checked) => handleSelectSupplier(supplier.id, checked as boolean)}
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900 truncate">
-                      <div className="truncate" title={supplier.name}>
+                    <td className="px-4 py-4 text-sm text-gray-900">
+                      <div className="leading-tight" style={{ 
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        wordBreak: 'break-word',
+                        hyphens: 'auto'
+                      }} title={supplier.name}>
                         {supplier.name}
                       </div>
                     </td>

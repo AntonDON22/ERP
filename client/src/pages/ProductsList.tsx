@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpDown, Download, Upload, Search, Trash2 } from "lucide-react";
+import { ArrowUpDown, Download, Upload, Search, Trash2, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -42,6 +42,44 @@ export default function ProductsList() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Функция копирования в буфер обмена
+  const copyToClipboard = useCallback(async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Скопировано",
+        description: `${type} скопирован в буфер обмена`,
+      });
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось скопировать в буфер обмена",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  // Компонент для ячейки с возможностью копирования
+  const CopyableCell = ({ value, type }: { value: string | null | undefined; type: string }) => {
+    if (!value) return <span>-</span>;
+    
+    return (
+      <div className="flex items-center gap-2 group">
+        <span className="truncate">{value}</span>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            copyToClipboard(value, type);
+          }}
+          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-gray-100 rounded"
+          title={`Копировать ${type.toLowerCase()}`}
+        >
+          <Copy className="w-3 h-3 text-gray-500 hover:text-gray-700" />
+        </button>
+      </div>
+    );
+  };
 
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -564,10 +602,10 @@ export default function ProductsList() {
                       />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      {product.name}
+                      <CopyableCell value={product.name} type="Название" />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      {product.sku}
+                      <CopyableCell value={product.sku} type="Артикул" />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                       {formatPrice(product.price)}
@@ -576,7 +614,7 @@ export default function ProductsList() {
                       {formatPrice(product.purchasePrice)}
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      {product.barcode || "-"}
+                      <CopyableCell value={product.barcode} type="Штрихкод" />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
                       {formatWeight(product.weight)}

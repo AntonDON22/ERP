@@ -13,7 +13,7 @@ export default function Navigation() {
               <img 
                 src="/attached_assets/1_1751287471931.png" 
                 alt="iGrape Group Logo" 
-                className="h-8 w-8"
+                className="h-8 w-8 object-contain"
               />
               <h1 className="text-xl font-semibold text-gray-900">
                 ERP iGrape Group

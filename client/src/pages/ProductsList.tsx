@@ -43,29 +43,32 @@ export default function ProductsList() {
   const handleMouseDown = useCallback((columnName: keyof ColumnWidths, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation(); // Предотвращаем всплытие события
+    console.log('Starting resize for column:', columnName, 'at X:', e.clientX);
     setIsResizing(columnName);
     setStartX(e.clientX);
     setStartWidth(columnWidths[columnName]);
   }, [columnWidths]);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!isResizing) return;
-    
-    const diff = e.clientX - startX;
-    const newWidth = Math.max(50, startWidth + diff); // Минимальная ширина 50px
-    
-    setColumnWidths(prev => ({
-      ...prev,
-      [isResizing]: newWidth
-    }));
-  }, [isResizing, startX, startWidth]);
-
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(null);
-  }, []);
-
   // Добавляем глобальные обработчики событий мыши
   useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      
+      const diff = e.clientX - startX;
+      const newWidth = Math.max(50, startWidth + diff); // Минимальная ширина 50px
+      
+      console.log('Resizing column:', isResizing, 'diff:', diff, 'newWidth:', newWidth);
+      
+      setColumnWidths(prev => ({
+        ...prev,
+        [isResizing]: newWidth
+      }));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(null);
+    };
+
     if (isResizing) {
       document.addEventListener('mousemove', handleMouseMove);
       document.addEventListener('mouseup', handleMouseUp);
@@ -74,7 +77,7 @@ export default function ProductsList() {
         document.removeEventListener('mouseup', handleMouseUp);
       };
     }
-  }, [isResizing, handleMouseMove, handleMouseUp]);
+  }, [isResizing, startX, startWidth]);
   
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ["/api/products"],

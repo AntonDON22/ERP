@@ -6,7 +6,8 @@ export default function Navigation() {
   const [location] = useLocation();
 
   const tabs = [
-    { path: "/", label: "Товары" },
+    { path: "/", label: "Главная" },
+    { path: "/products", label: "Товары" },
     { path: "/suppliers", label: "Поставщики" }
   ];
 

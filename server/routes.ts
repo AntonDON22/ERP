@@ -5,6 +5,17 @@ import { storage } from "./storage";
 import { insertProductSchema, insertSupplierSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Get system updates
+  app.get("/api/system-updates", async (req, res) => {
+    try {
+      const updates = await storage.getSystemUpdates();
+      res.json(updates);
+    } catch (error) {
+      console.error("Error fetching system updates:", error);
+      res.status(500).json({ error: "Failed to fetch system updates" });
+    }
+  });
+
   // Get all products
   app.get("/api/products", async (req, res) => {
     try {

@@ -118,6 +118,9 @@ The application uses a dual storage approach:
 - June 30, 2025. Optimized database performance with connection pooling and query caching
 - June 30, 2025. Added touch event support for mobile devices (iPhone) to enable column resizing on touchscreens
 - June 30, 2025. Created new Suppliers section with identical interface to Products - single "Name" column with full CRUD operations, search, Excel import/export, and mobile support
+- June 30, 2025. Added "Website" field to suppliers with copy functionality, search, import/export support
+- June 30, 2025. Restructured routing: moved products to /products, created main dashboard at / with automatic system updates
+- June 30, 2025. Fixed inconsistent button positioning between Products and Suppliers tables by standardizing layout structure
 
 ## User Preferences
 

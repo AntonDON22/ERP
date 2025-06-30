@@ -363,34 +363,40 @@ export default function SuppliersList() {
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex items-center gap-4">
+          <div className="flex-1 max-w-md">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
-                placeholder="Поиск поставщиков..."
+                type="text"
+                placeholder="Поиск по названию или веб-сайту..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64"
+                className="pl-10 h-10"
               />
             </div>
+            {searchQuery && (
+              <p className="text-sm text-gray-500 mt-2">
+                Найдено поставщиков: {sortedSuppliers.length} из {suppliers.length}
+              </p>
+            )}
+          </div>
+          <div className="flex space-x-3">
             {selectedSuppliers.size > 0 && (
-              <Button
-                variant="destructive"
-                size="sm"
+              <Button 
+                variant="destructive" 
+                className="inline-flex items-center h-10"
                 onClick={handleDeleteSelected}
                 disabled={deleteSelectedMutation.isPending}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
-                Удалить ({selectedSuppliers.size})
+                Удалить выбранные ({selectedSuppliers.size})
               </Button>
             )}
-          </div>
-          
-          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               className="inline-flex items-center h-10"
               onClick={handleImportClick}
+              disabled={importMutation.isPending}
             >
               <Upload className="w-4 h-4 mr-2" />
               Импорт

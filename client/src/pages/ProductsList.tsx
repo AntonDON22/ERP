@@ -480,10 +480,10 @@ export default function ProductsList() {
       {/* Products Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
+          <table className="w-full min-w-[1200px]" style={{ tableLayout: 'fixed' }}>
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}>
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
@@ -640,31 +640,31 @@ export default function ProductsList() {
               ) : (
                 sortedProducts.map((product) => (
                   <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-4 w-12">
+                    <td className="px-4 py-4" style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}>
                       <Checkbox
                         checked={selectedProducts.has(product.id)}
                         onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
                       />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}>
                       <CopyableCell value={product.name} type="Название" />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}>
                       <CopyableCell value={product.sku} type="Артикул" />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}>
                       {formatPrice(product.price)}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}>
                       {formatPrice(product.purchasePrice)}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}>
                       <CopyableCell value={product.barcode} type="Штрихкод" />
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}>
                       {formatWeight(product.weight)}
                     </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
+                    <td className="px-4 py-4 text-sm text-gray-900" style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}>
                       {formatDimensions(product.length, product.width, product.height)}
                     </td>
                   </tr>

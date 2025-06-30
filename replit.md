@@ -123,6 +123,7 @@ The application uses a dual storage approach:
 - June 30, 2025. Added date column to Documents module: Enhanced documents table with date field in database schema and interface. Updated existing records with test dates (2025-06-25 to 2025-06-29). Date field included in search functionality and column layout redistributed as: Name (50%), Type (30%), Date (20%). Documents module now complete with all required fields.
 - June 30, 2025. Completely removed Excel export functionality from Documents module: Fixed issue where export button was showing on documents page. Made excelConfig parameter optional in DataTable component and added conditional check for export button display. Documents module is now truly view-only without any Excel import/export capabilities.
 - June 30, 2025. Standardized all button names across all modules: Changed default button names in DataTable component to simple forms - "Удалить", "Импорт", and "Excel". Removed all custom button label overrides from individual module pages. All four modules now use consistent, concise button naming throughout the system.
+- June 30, 2025. Added "Создать" button to Documents module: Enhanced DataTable component with optional onCreate parameter for creation functionality. Added create button positioned to the right of search field on same line. Currently implemented only in Documents module with placeholder handler for future document creation functionality.
 
 ## User Preferences
 

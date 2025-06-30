@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from "react";
-import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check } from "lucide-react";
+import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -39,6 +39,7 @@ export interface DataTableProps<T extends { id: number; name: string }> {
   onImport?: (data: any[]) => Promise<void>;
   deleteLabel?: string;
   importLabel?: string;
+  onCreate?: () => void;
 }
 
 // Компонент для копируемых ячеек
@@ -89,7 +90,8 @@ export default function DataTable<T extends { id: number; name: string }>({
   onDelete,
   onImport,
   deleteLabel = "Удалить",
-  importLabel = "Импорт"
+  importLabel = "Импорт",
+  onCreate
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof T>("name");
@@ -304,6 +306,18 @@ export default function DataTable<T extends { id: number; name: string }>({
         </div>
 
         <div className="flex items-center gap-2">
+          {onCreate && (
+            <Button
+              variant="default"
+              size="sm"
+              onClick={onCreate}
+              className="flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Создать
+            </Button>
+          )}
+
           {selectedItems.size > 0 && onDelete && (
             <Button
               variant="destructive"

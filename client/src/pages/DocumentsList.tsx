@@ -12,6 +12,11 @@ export default function DocumentsList() {
   const { data: documents = [], isLoading } = useDocuments();
   const deleteDocuments = useDeleteDocuments();
 
+  const handleCreate = () => {
+    console.log("Создание нового документа");
+    // TODO: Добавить логику создания документа
+  };
+
   return (
     <DataTable
       data={documents}
@@ -23,6 +28,7 @@ export default function DocumentsList() {
       onDelete={async (ids) => {
         await deleteDocuments.mutateAsync(ids);
       }}
+      onCreate={handleCreate}
     />
   );
 }

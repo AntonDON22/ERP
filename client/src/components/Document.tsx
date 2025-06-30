@@ -372,12 +372,12 @@ export default function Document({ config, mode = 'create', documentData }: Docu
                     )}
                   </div>
 
-                  {product && (
+                  {selectedProduct && (
                     <div className="col-span-12 text-sm text-gray-600">
                       <div className="grid grid-cols-3 gap-4">
-                        <div>SKU: {product.sku}</div>
-                        <div>Вес: {product.weight} г</div>
-                        <div>Штрихкод: {product.barcode}</div>
+                        <div>SKU: {selectedProduct.sku}</div>
+                        <div>Вес: {selectedProduct.weight} г</div>
+                        <div>Штрихкод: {selectedProduct.barcode}</div>
                       </div>
                     </div>
                   )}

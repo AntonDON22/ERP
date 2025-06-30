@@ -343,58 +343,54 @@ export default function SuppliersList() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
-      <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex-1 max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Поиск по названию или вебсайту..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 h-10"
-              />
-            </div>
-            <div className="h-6 mt-2">
-              {searchQuery && (
-                <p className="text-sm text-gray-500">
-                  Найдено поставщиков: {sortedSuppliers.length} из {suppliers.length}
-                </p>
-              )}
-            </div>
+      <div className="mb-4">
+        <div className="flex items-center gap-4">
+          <div className="relative flex-1 max-w-lg">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              type="text"
+              placeholder="Поиск по названию или вебсайту..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 h-10"
+            />
           </div>
-          <div className="flex space-x-3">
+          <div className="flex gap-2">
             {selectionState.selectedCount > 0 && (
               <Button
                 variant="destructive"
-                className="inline-flex items-center h-10"
+                size="sm"
                 onClick={handleDeleteSelected}
                 disabled={deleteSelectedMutation.isPending}
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Удалить выбранные ({selectionState.selectedCount})
+                <Trash2 className="w-4 h-4 mr-1" />
+                Удалить ({selectionState.selectedCount})
               </Button>
             )}
             <Button
               variant="outline"
-              className="inline-flex items-center h-10"
+              size="sm"
               onClick={handleImportClick}
             >
-              <Upload className="w-4 h-4 mr-2" />
+              <Upload className="w-4 h-4 mr-1" />
               Импорт
             </Button>
             <Button
               variant="outline"
-              className="inline-flex items-center h-10"
+              size="sm"
               onClick={handleExportToExcel}
               disabled={!suppliers || suppliers.length === 0}
             >
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-4 h-4 mr-1" />
               Экспорт
             </Button>
           </div>
         </div>
+        {searchQuery && (
+          <p className="text-xs text-gray-500 mt-2">
+            Найдено поставщиков: {sortedSuppliers.length} из {suppliers.length}
+          </p>
+        )}
       </div>
 
       {/* Hidden file input */}

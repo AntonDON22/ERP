@@ -275,16 +275,17 @@ export default function DataTable<T extends { id: number; name: string }>({
   const isIndeterminate = selectedItems.size > 0 && selectedItems.size < filteredAndSortedData.length;
 
   return (
-    <div className="space-y-6">
-      {/* Заголовок и статистика */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural}</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Всего {entityNamePlural.toLowerCase()}: {filteredAndSortedData.length}
-          </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="space-y-6">
+        {/* Заголовок и статистика */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural}</h1>
+            <p className="text-sm text-gray-600 mt-1">
+              Всего {entityNamePlural.toLowerCase()}: {filteredAndSortedData.length}
+            </p>
+          </div>
         </div>
-      </div>
 
       {/* Панель управления */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -431,6 +432,7 @@ export default function DataTable<T extends { id: number; name: string }>({
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

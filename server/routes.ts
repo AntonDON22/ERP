@@ -495,6 +495,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get inventory (products with their current stock levels)
+  app.get("/api/inventory", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      
+      const inventory = products.map(product => ({
+        id: product.id,
+        name: product.name,
+        quantity: 0 // For now, we'll show 0 quantity until we implement real inventory tracking
+      }));
+      
+      res.json(inventory);
+    } catch (error) {
+      console.error("Error fetching inventory:", error);
+      res.status(500).json({ message: "Ошибка при загрузке остатков" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

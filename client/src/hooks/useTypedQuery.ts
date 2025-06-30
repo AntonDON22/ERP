@@ -114,6 +114,13 @@ export const useDeleteDocuments = () => {
   });
 };
 
+// Типизированный хук для остатков
+export const useInventory = () => {
+  return useQuery<{ id: number; name: string; quantity: number }[]>({
+    queryKey: ["/api/inventory"],
+  });
+};
+
 let isCreatingDocument = false;
 let lastDocumentRequest: any = null;
 

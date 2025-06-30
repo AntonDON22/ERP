@@ -87,9 +87,6 @@ export default function Document({ config, mode = 'create', documentData }: Docu
   // Состояние для типа документа
   const [documentType, setDocumentType] = useState(documentData?.type || config.type);
   
-  // Состояние для названия документа
-  const [documentName, setDocumentName] = useState(documentData?.name || "");
-  
   // Состояние для даты документа
   const [documentDate, setDocumentDate] = useState(documentData?.date || new Date().toISOString().split('T')[0]);
 
@@ -266,17 +263,7 @@ export default function Document({ config, mode = 'create', documentData }: Docu
             </Select>
           </div>
           
-          <div>
-            <Label htmlFor="documentName">Название документа</Label>
-            <Input
-              id="documentName"
-              value={documentName}
-              onChange={(e) => setDocumentName(e.target.value)}
-              disabled={!isEditing || mode === 'create'}
-              placeholder="Название будет сгенерировано автоматически"
-            />
-          </div>
-          
+
           <div>
             <Label htmlFor="documentDate">Дата документа</Label>
             <Input

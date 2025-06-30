@@ -279,13 +279,24 @@ export default function ProductsList() {
         ) : (
           <>
             <div className={`overflow-x-auto ${isResizing ? 'resizing' : ''}`} style={{ cursor: isResizing ? 'col-resize' : 'default' }}>
-              <table className="min-w-full divide-y divide-gray-200" style={{ tableLayout: 'fixed' }}>
+              <table 
+                className="divide-y divide-gray-200" 
+                style={{ 
+                  tableLayout: 'fixed',
+                  width: `${Object.values(columnWidths).reduce((sum, width) => sum + width, 0)}px`,
+                  minWidth: '100%'
+                }}
+              >
                 <thead className="bg-gray-50">
                   <tr>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
                       onClick={() => handleSort("name")}
-                      style={{ width: `${columnWidths.name}px` }}
+                      style={{ 
+                        width: `${columnWidths.name}px`,
+                        minWidth: `${columnWidths.name}px`,
+                        maxWidth: `${columnWidths.name}px`
+                      }}
                     >
                       <div className="flex items-center space-x-1">
                         <span>Название</span>
@@ -299,7 +310,11 @@ export default function ProductsList() {
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
                       onClick={() => handleSort("sku")}
-                      style={{ width: `${columnWidths.sku}px` }}
+                      style={{ 
+                        width: `${columnWidths.sku}px`,
+                        minWidth: `${columnWidths.sku}px`,
+                        maxWidth: `${columnWidths.sku}px`
+                      }}
                     >
                       <div className="flex items-center space-x-1">
                         <span>Артикул</span>
@@ -313,7 +328,11 @@ export default function ProductsList() {
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
                       onClick={() => handleSort("price")}
-                      style={{ width: `${columnWidths.price}px` }}
+                      style={{ 
+                        width: `${columnWidths.price}px`,
+                        minWidth: `${columnWidths.price}px`,
+                        maxWidth: `${columnWidths.price}px`
+                      }}
                     >
                       <div className="flex items-center space-x-1">
                         <span>Цена</span>
@@ -327,7 +346,11 @@ export default function ProductsList() {
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
                       onClick={() => handleSort("purchasePrice")}
-                      style={{ width: `${columnWidths.purchasePrice}px` }}
+                      style={{ 
+                        width: `${columnWidths.purchasePrice}px`,
+                        minWidth: `${columnWidths.purchasePrice}px`,
+                        maxWidth: `${columnWidths.purchasePrice}px`
+                      }}
                     >
                       <div className="flex items-center space-x-1">
                         <span>Цена закупки</span>
@@ -340,7 +363,11 @@ export default function ProductsList() {
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                      style={{ width: `${columnWidths.barcode}px` }}
+                      style={{ 
+                        width: `${columnWidths.barcode}px`,
+                        minWidth: `${columnWidths.barcode}px`,
+                        maxWidth: `${columnWidths.barcode}px`
+                      }}
                     >
                       Штрихкод
                       <div 
@@ -350,7 +377,11 @@ export default function ProductsList() {
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                      style={{ width: `${columnWidths.weight}px` }}
+                      style={{ 
+                        width: `${columnWidths.weight}px`,
+                        minWidth: `${columnWidths.weight}px`,
+                        maxWidth: `${columnWidths.weight}px`
+                      }}
                     >
                       Вес (г)
                       <div 
@@ -360,7 +391,11 @@ export default function ProductsList() {
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                      style={{ width: `${columnWidths.dimensions}px` }}
+                      style={{ 
+                        width: `${columnWidths.dimensions}px`,
+                        minWidth: `${columnWidths.dimensions}px`,
+                        maxWidth: `${columnWidths.dimensions}px`
+                      }}
                     >
                       Габариты (мм)
                       <div 
@@ -375,7 +410,11 @@ export default function ProductsList() {
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td 
                         className="px-6 py-4 whitespace-nowrap"
-                        style={{ width: `${columnWidths.name}px` }}
+                        style={{ 
+                          width: `${columnWidths.name}px`,
+                          minWidth: `${columnWidths.name}px`,
+                          maxWidth: `${columnWidths.name}px`
+                        }}
                       >
                         <div className="text-sm font-medium text-gray-900">
                           {product.name}
@@ -383,37 +422,61 @@ export default function ProductsList() {
                       </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        style={{ width: `${columnWidths.sku}px` }}
+                        style={{ 
+                          width: `${columnWidths.sku}px`,
+                          minWidth: `${columnWidths.sku}px`,
+                          maxWidth: `${columnWidths.sku}px`
+                        }}
                       >
                         {product.sku}
                       </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        style={{ width: `${columnWidths.price}px` }}
+                        style={{ 
+                          width: `${columnWidths.price}px`,
+                          minWidth: `${columnWidths.price}px`,
+                          maxWidth: `${columnWidths.price}px`
+                        }}
                       >
                         {formatPrice(product.price)}
                       </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
-                        style={{ width: `${columnWidths.purchasePrice}px` }}
+                        style={{ 
+                          width: `${columnWidths.purchasePrice}px`,
+                          minWidth: `${columnWidths.purchasePrice}px`,
+                          maxWidth: `${columnWidths.purchasePrice}px`
+                        }}
                       >
                         {formatPrice(product.purchasePrice)}
                       </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        style={{ width: `${columnWidths.barcode}px` }}
+                        style={{ 
+                          width: `${columnWidths.barcode}px`,
+                          minWidth: `${columnWidths.barcode}px`,
+                          maxWidth: `${columnWidths.barcode}px`
+                        }}
                       >
                         {product.barcode || "—"}
                       </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        style={{ width: `${columnWidths.weight}px` }}
+                        style={{ 
+                          width: `${columnWidths.weight}px`,
+                          minWidth: `${columnWidths.weight}px`,
+                          maxWidth: `${columnWidths.weight}px`
+                        }}
                       >
                         {formatWeight(product.weight)}
                       </td>
                       <td 
                         className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                        style={{ width: `${columnWidths.dimensions}px` }}
+                        style={{ 
+                          width: `${columnWidths.dimensions}px`,
+                          minWidth: `${columnWidths.dimensions}px`,
+                          maxWidth: `${columnWidths.dimensions}px`
+                        }}
                       >
                         {formatDimensions(product.length, product.width, product.height)}
                       </td>

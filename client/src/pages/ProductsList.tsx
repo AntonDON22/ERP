@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowUpDown } from "lucide-react";
+import { ArrowUpDown, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
 import type { Product } from "@shared/schema";
+import * as XLSX from 'xlsx';
 
 export default function ProductsList() {
   const [sortField, setSortField] = useState<keyof Product>("id");
@@ -19,6 +21,31 @@ export default function ProductsList() {
       setSortField(field);
       setSortDirection("asc");
     }
+  };
+
+  const handleExportToExcel = () => {
+    if (!products || products.length === 0) {
+      return;
+    }
+
+    const exportData = products.map(product => ({
+      'Название': product.name,
+      'Артикул': product.sku,
+      'Цена': product.price,
+      'Цена закупки': product.purchasePrice,
+      'Штрихкод': product.barcode || '',
+      'Вес (кг)': product.weight || '',
+      'Длина (см)': product.length || '',
+      'Ширина (см)': product.width || '',
+      'Высота (см)': product.height || ''
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Товары');
+    
+    const fileName = `товары_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
   };
 
   const sortedProducts = products
@@ -57,8 +84,23 @@ export default function ProductsList() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Товары</h2>
-        <p className="mt-1 text-sm text-gray-500">Просмотр каталога товаров</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Товары</h2>
+            <p className="mt-1 text-sm text-gray-500">Просмотр каталога товаров</p>
+          </div>
+          <div className="mt-4 sm:mt-0">
+            <Button 
+              variant="outline" 
+              className="inline-flex items-center"
+              onClick={handleExportToExcel}
+              disabled={!products || products.length === 0}
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Экспорт в Excel
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Products Table */}

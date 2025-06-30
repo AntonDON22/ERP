@@ -300,10 +300,14 @@ export default function ProductsList() {
       
       console.log(`Resizing ${column} to width: ${newWidth}`);
       
-      setColumnWidths(prev => ({
-        ...prev,
-        [column]: newWidth
-      }));
+      setColumnWidths(prev => {
+        const newWidths = {
+          ...prev,
+          [column]: newWidth
+        };
+        console.log('New column widths:', newWidths);
+        return newWidths;
+      });
     };
     
     const handleMouseUp = () => {
@@ -399,7 +403,7 @@ export default function ProductsList() {
       {/* Products Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
@@ -411,7 +415,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: columnWidths.name }}
+                  style={{ width: `${columnWidths.name}px`, minWidth: `${columnWidths.name}px`, maxWidth: `${columnWidths.name}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -430,7 +434,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: columnWidths.sku }}
+                  style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -449,7 +453,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: columnWidths.price }}
+                  style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -468,7 +472,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: columnWidths.purchasePrice }}
+                  style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -487,7 +491,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: columnWidths.barcode }}
+                  style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -506,7 +510,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: columnWidths.weight }}
+                  style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
@@ -525,7 +529,7 @@ export default function ProductsList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={{ width: columnWidths.dimensions }}
+                  style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
                 >
                   <button
                     className="flex items-center space-x-1 hover:text-gray-700"

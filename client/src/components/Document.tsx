@@ -170,6 +170,8 @@ export default function Document({ config, mode = 'create', documentData }: Docu
 
   // Функция сохранения изменений
   const handleSave = async (data: FormDocument) => {
+    if (mutation.isPending) return; // Предотвращаем множественные отправки
+    
     try {
       const finalDocumentName = mode === 'create' ? generateDocumentName() : documentName;
       

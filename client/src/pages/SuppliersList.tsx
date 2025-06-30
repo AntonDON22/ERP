@@ -25,8 +25,8 @@ export default function SuppliersList() {
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
     const saved = localStorage.getItem('supplierTableColumnWidths');
     return saved ? JSON.parse(saved) : {
-      name: 300,
-      website: 250,
+      name: 600,
+      website: 552,
     };
   });
 
@@ -359,7 +359,7 @@ export default function SuppliersList() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-6" style={{ maxWidth: '1400px' }}>
       {/* Header */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -426,7 +426,7 @@ export default function SuppliersList() {
       {/* Suppliers Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1200px]" style={{ tableLayout: 'fixed' }}>
+          <table className="w-full" style={{ tableLayout: 'fixed', width: '1200px' }}>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '48px', minWidth: '48px', maxWidth: '48px' }}>

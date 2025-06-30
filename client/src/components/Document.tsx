@@ -294,23 +294,19 @@ export default function Document({ config, mode = 'create', documentData }: Docu
                 <div key={index} className="grid grid-cols-12 gap-4 items-end p-4 border rounded-lg">
                   <div className="col-span-4">
                     <Label htmlFor={`product-${index}`}>Товар</Label>
-                    <Select
-                      value={item.productId.toString()}
-                      onValueChange={(value) => handleProductChange(index, Number(value))}
+                    <select
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      value={item.productId}
+                      onChange={(e) => handleProductChange(index, Number(e.target.value))}
                       disabled={!isEditing}
                     >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Выберите товар" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="0">Выберите товар</SelectItem>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id.toString()}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      <option value={0}>Выберите товар</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="col-span-2">

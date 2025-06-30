@@ -76,13 +76,13 @@ export default function SuppliersList() {
   });
 
   const importMutation = useMutation({
-    mutationFn: async (products: InsertProduct[]) => {
+    mutationFn: async (suppliers: InsertSupplier[]) => {
       const response = await fetch("/api/suppliers/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ suppliers: products }),
+        body: JSON.stringify({ suppliers: suppliers }),
       });
       
       if (!response.ok) {

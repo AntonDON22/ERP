@@ -17,7 +17,7 @@ export default function Navigation() {
                 className="h-8 w-8"
               />
               <h1 className="text-xl font-semibold text-gray-900">
-                ERP iGrape Group
+                iGrape Group
               </h1>
             </div>
             <div className="hidden md:ml-8 md:flex md:space-x-8">

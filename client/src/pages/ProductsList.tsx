@@ -262,9 +262,8 @@ export default function ProductsList() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
       {/* Header */}
       <div className="mb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex-1 max-w-md">
-            <h2 className="text-2xl font-bold text-gray-900 mb-3">Товары</h2>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -272,7 +271,7 @@ export default function ProductsList() {
                 placeholder="Поиск по названию, артикулу или штрихкоду..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 h-10"
               />
             </div>
             {searchQuery && (
@@ -281,10 +280,10 @@ export default function ProductsList() {
               </p>
             )}
           </div>
-          <div className="mt-4 sm:mt-0 flex space-x-3">
+          <div className="flex space-x-3">
             <Button 
               variant="outline" 
-              className="inline-flex items-center"
+              className="inline-flex items-center h-10"
               onClick={handleImportClick}
               disabled={importMutation.isPending}
             >
@@ -293,7 +292,7 @@ export default function ProductsList() {
             </Button>
             <Button 
               variant="outline" 
-              className="inline-flex items-center"
+              className="inline-flex items-center h-10"
               onClick={handleExportToExcel}
               disabled={!products || products.length === 0}
             >

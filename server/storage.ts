@@ -436,11 +436,23 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDocument(insertDocument: InsertDocument): Promise<DocumentRecord> {
+    // Сначала создаем документ без имени, чтобы получить ID
     const [document] = await db
       .insert(documents)
       .values(insertDocument)
       .returning();
-    return document;
+    
+    // Генерируем название в формате "Тип+ID"
+    const name = `${document.type}${document.id}`;
+    
+    // Обновляем документ с сгенерированным названием
+    const [updatedDocument] = await db
+      .update(documents)
+      .set({ name })
+      .where(eq(documents.id, document.id))
+      .returning();
+    
+    return updatedDocument;
   }
 
   async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
@@ -468,6 +480,14 @@ export class DatabaseStorage implements IStorage {
           .values(document)
           .returning();
 
+        // 1.1. Генерируем название в формате "Тип+ID"
+        const name = `${createdDocument.type}${createdDocument.id}`;
+        const [updatedDocument] = await tx
+          .update(documents)
+          .set({ name })
+          .where(eq(documents.id, createdDocument.id))
+          .returning();
+
         // 2. Создаем позиции документа
         for (const item of items) {
           await tx
@@ -488,7 +508,7 @@ export class DatabaseStorage implements IStorage {
             });
         }
 
-        return createdDocument;
+        return updatedDocument;
       });
     } catch (error) {
       console.error("Error creating receipt document:", error);

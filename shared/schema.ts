@@ -39,6 +39,7 @@ export const documents = pgTable("documents", {
   name: text("name").notNull(),
   type: text("type"),
   date: text("date"),
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

@@ -64,11 +64,8 @@ export default function Document({ config, documentData }: DocumentProps) {
   const mutation = config.mutationHook();
   const { data: products = [] } = useProducts();
   
-  // Состояние для типа и даты документа
+  // Состояние для типа документа
   const [documentType, setDocumentType] = useState(documentData?.type || config.type);
-  const [documentDate, setDocumentDate] = useState(
-    documentData?.date || new Date().toISOString().split('T')[0]
-  );
 
   // Счетчик и ref для предотвращения дублей
   const submissionCounter = useRef(0);
@@ -119,7 +116,6 @@ export default function Document({ config, documentData }: DocumentProps) {
     try {
       const documentToSave = {
         type: documentType,
-        date: documentDate,
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
           quantity: item.quantity.toString(),
@@ -200,7 +196,7 @@ export default function Document({ config, documentData }: DocumentProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="documentType">Тип документа</Label>
             <Select
@@ -215,16 +211,6 @@ export default function Document({ config, documentData }: DocumentProps) {
                 <SelectItem value="Списание">Списание</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          
-          <div>
-            <Label htmlFor="documentDate">Дата документа</Label>
-            <Input
-              id="documentDate"
-              type="date"
-              value={documentDate}
-              onChange={(e) => setDocumentDate(e.target.value)}
-            />
           </div>
         </CardContent>
       </Card>

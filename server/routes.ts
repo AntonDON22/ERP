@@ -449,20 +449,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/documents/create-receipt", async (req, res) => {
     try {
       console.log("🔄 Создание документа:", req.body);
-      const validatedData = receiptDocumentSchema.parse(req.body);
       
-      // Создаем данные документа
+      // Создаем простую валидацию для нового формата данных
+      const { type, items } = req.body;
+      
+      if (!type || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ 
+          message: "Требуется указать тип документа и минимум один товар"
+        });
+      }
+      
+      // Валидируем элементы
+      for (const item of items) {
+        if (!item.productId || !item.quantity || !item.price) {
+          return res.status(400).json({ 
+            message: "Каждый товар должен содержать productId, quantity и price"
+          });
+        }
+      }
+      
+      // Создаем данные документа без name и date
       const documentData = {
-        name: validatedData.name,
-        type: "Оприходование" as const,
-        date: validatedData.date,
+        type: type,
+        name: "", // Будет заполнено автоматически в storage
+        date: new Date().toISOString().split('T')[0], // Текущая дата
       };
       
       // Преобразуем элементы в правильный формат
-      const itemsData = validatedData.items.map(item => ({
-        productId: item.productId,
+      const itemsData = items.map((item: any) => ({
+        productId: Number(item.productId),
         quantity: item.quantity.toString(),
-        price: item.price ? item.price.toString() : "0",
+        price: item.price.toString(),
       }));
       
       console.log("📋 Данные документа:", documentData);
@@ -474,12 +491,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(document);
     } catch (error) {
       console.error("Error creating receipt document:", error);
-      if (error instanceof Error && 'issues' in error) {
-        return res.status(400).json({ 
-          message: "Ошибка валидации данных",
-          errors: (error as any).issues
-        });
-      }
       res.status(500).json({ message: "Ошибка при создании документа" });
     }
   });

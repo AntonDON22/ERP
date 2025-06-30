@@ -69,10 +69,10 @@ export default function ProductsList() {
       'Цена': product.price,
       'Цена закупки': product.purchasePrice,
       'Штрихкод': product.barcode || '',
-      'Вес (кг)': product.weight || '',
-      'Длина (см)': product.length || '',
-      'Ширина (см)': product.width || '',
-      'Высота (см)': product.height || ''
+      'Вес (г)': product.weight || '',
+      'Длина (мм)': product.length || '',
+      'Ширина (мм)': product.width || '',
+      'Высота (мм)': product.height || ''
     }));
 
     const worksheet = XLSX.utils.json_to_sheet(exportData);
@@ -103,10 +103,10 @@ export default function ProductsList() {
         price: String(row['Цена'] || row['цена'] || '0'),
         purchasePrice: String(row['Цена закупки'] || row['цена закупки'] || '0'),
         barcode: row['Штрихкод'] || row['штрихкод'] || null,
-        weight: String(row['Вес (кг)'] || row['вес'] || '') || undefined,
-        length: String(row['Длина (см)'] || row['длина'] || '') || undefined,
-        width: String(row['Ширина (см)'] || row['ширина'] || '') || undefined,
-        height: String(row['Высота (см)'] || row['высота'] || '') || undefined,
+        weight: String(row['Вес (г)'] || row['вес'] || '') || undefined,
+        length: String(row['Длина (мм)'] || row['длина'] || '') || undefined,
+        width: String(row['Ширина (мм)'] || row['ширина'] || '') || undefined,
+        height: String(row['Высота (мм)'] || row['высота'] || '') || undefined,
       })).filter(product => product.name && product.sku);
 
       if (productsToImport.length === 0) {
@@ -259,10 +259,10 @@ export default function ProductsList() {
                       Штрихкод
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Вес (кг)
+                      Вес (г)
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Габариты (см)
+                      Габариты (мм)
                     </th>
                   </tr>
                 </thead>

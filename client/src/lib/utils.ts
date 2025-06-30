@@ -19,7 +19,7 @@ export function formatPrice(price: string | number | null | undefined): string {
 export function formatWeight(weight: string | number | null | undefined): string {
   if (!weight) return "—";
   const numWeight = typeof weight === 'string' ? parseFloat(weight) : weight;
-  return `${numWeight} кг`;
+  return `${numWeight} г`;
 }
 
 export function formatDimensions(
@@ -35,5 +35,5 @@ export function formatDimensions(
   
   if (!l && !w && !h) return "—";
   
-  return `${l || 0}×${w || 0}×${h || 0} см`;
+  return `${l || 0}×${w || 0}×${h || 0} мм`;
 }

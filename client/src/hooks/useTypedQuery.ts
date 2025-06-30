@@ -13,7 +13,7 @@ export const useDeleteProducts = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (productIds: number[]) => {
-      return apiRequest("/api/products/delete-multiple", "POST", { ids: productIds });
+      return apiRequest("/api/products/delete-multiple", "POST", { productIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
@@ -44,7 +44,7 @@ export const useDeleteSuppliers = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (supplierIds: number[]) => {
-      return apiRequest("/api/suppliers/delete-multiple", "POST", { ids: supplierIds });
+      return apiRequest("/api/suppliers/delete-multiple", "POST", { supplierIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
@@ -75,7 +75,7 @@ export const useDeleteContractors = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (contractorIds: number[]) => {
-      return apiRequest("/api/contractors/delete-multiple", "POST", { ids: contractorIds });
+      return apiRequest("/api/contractors/delete-multiple", "POST", { contractorIds });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });

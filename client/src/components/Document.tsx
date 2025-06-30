@@ -295,14 +295,14 @@ export default function Document({ config, mode = 'create', documentData }: Docu
                   <div className="col-span-4">
                     <Label htmlFor={`product-${index}`}>Товар</Label>
                     <Select
-                      value={item.productId.toString()}
+                      value={item.productId === 0 ? "" : item.productId.toString()}
                       onValueChange={(value) => handleProductChange(index, Number(value))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Выберите товар" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="0" disabled>Выберите товар</SelectItem>
                         {products.map((product) => (
                           <SelectItem key={product.id} value={product.id.toString()}>
                             {product.name}

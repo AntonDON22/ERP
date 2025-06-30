@@ -36,10 +36,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete multiple products
+  app.post("/api/products/delete-multiple", async (req, res) => {
+    try {
+      const { productIds } = req.body;
+      
+      if (!Array.isArray(productIds) || productIds.length === 0) {
+        return res.status(400).json({ message: "Укажите массив ID товаров для удаления" });
+      }
+
+      // Проверяем, что все ID являются числами
+      const validIds = productIds.filter(id => Number.isInteger(id) && id > 0);
+      if (validIds.length !== productIds.length) {
+        return res.status(400).json({ message: "Все ID товаров должны быть положительными числами" });
+      }
+
+      const results = [];
+      let deletedCount = 0;
+      
+      for (const id of validIds) {
+        try {
+          const success = await storage.deleteProduct(id);
+          if (success) {
+            deletedCount++;
+            results.push({ id, status: 'deleted' });
+          } else {
+            results.push({ id, status: 'not_found' });
+          }
+        } catch (error) {
+          console.error(`Error deleting product ${id}:`, error);
+          results.push({ id, status: 'error' });
+        }
+      }
+
+      res.json({ 
+        message: `Удалено товаров: ${deletedCount} из ${productIds.length}`,
+        deletedCount,
+        results 
+      });
+    } catch (error) {
+      console.error("Error deleting multiple products:", error);
+      res.status(500).json({ message: "Ошибка при удалении товаров" });
+    }
+  });
+
   // Bulk import products
   app.post("/api/products/import", async (req, res) => {
     try {
-      const products = req.body;
+      const { products } = req.body;
       if (!Array.isArray(products)) {
         return res.status(400).json({ message: "Ожидается массив товаров" });
       }

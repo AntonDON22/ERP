@@ -49,13 +49,19 @@ export default function ProductsList() {
 
   const importMutation = useMutation({
     mutationFn: async (products: InsertProduct[]) => {
-      const response = await apiRequest("/api/products/import", {
+      const response = await fetch("/api/products/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ products }),
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Ошибка при импорте товаров");
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -76,13 +82,19 @@ export default function ProductsList() {
 
   const deleteSelectedMutation = useMutation({
     mutationFn: async (productIds: number[]) => {
-      const response = await apiRequest("/api/products/delete-multiple", {
+      const response = await fetch("/api/products/delete-multiple", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ productIds }),
       });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Ошибка при удалении товаров");
+      }
+      
       return response.json();
     },
     onSuccess: () => {
@@ -382,11 +394,7 @@ export default function ProductsList() {
                   <Checkbox
                     checked={selectionState.isAllSelected}
                     onCheckedChange={handleSelectAll}
-                    ref={(ref) => {
-                      if (ref) {
-                        ref.indeterminate = selectionState.isIndeterminate;
-                      }
-                    }}
+                    className={selectionState.isIndeterminate ? "indeterminate" : ""}
                   />
                 </th>
                 <th 

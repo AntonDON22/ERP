@@ -38,6 +38,7 @@ export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type"),
+  date: text("date"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -103,6 +104,7 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
 }).extend({
   name: z.string().min(1, "Название обязательно"),
   type: z.string().optional(),
+  date: z.string().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;

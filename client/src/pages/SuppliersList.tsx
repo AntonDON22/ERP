@@ -341,7 +341,7 @@ export default function SuppliersList() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center gap-4">
@@ -404,8 +404,8 @@ export default function SuppliersList() {
 
       {/* Suppliers Table */}
       <div className="bg-white rounded-lg border shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
+        <div className="overflow-x-auto min-w-full">
+          <table className="w-full" style={{ tableLayout: 'fixed', width: '1400px', minWidth: '1400px' }}>
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">

@@ -1,17 +1,52 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowUpDown, Download } from "lucide-react";
+import { useState, useRef } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpDown, Download, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
-import type { Product } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
+import type { Product, InsertProduct } from "@shared/schema";
 import * as XLSX from 'xlsx';
 
 export default function ProductsList() {
   const [sortField, setSortField] = useState<keyof Product>("id");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   
   const { data: products = [], isLoading, error } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+  });
+
+  const importMutation = useMutation({
+    mutationFn: async (products: InsertProduct[]) => {
+      const results = [];
+      for (const product of products) {
+        try {
+          const result = await apiRequest("POST", "/api/products", product);
+          results.push(result);
+        } catch (error) {
+          console.error('Error importing product:', product, error);
+        }
+      }
+      return results;
+    },
+    onSuccess: (results) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({
+        title: "Успешно",
+        description: `Импортировано ${results.length} товаров`,
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось импортировать товары",
+        variant: "destructive",
+      });
+    },
   });
 
   const handleSort = (field: keyof Product) => {
@@ -46,6 +81,54 @@ export default function ProductsList() {
     
     const fileName = `товары_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`;
     XLSX.writeFile(workbook, fileName);
+  };
+
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data, { type: 'array' });
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+      const productsToImport: InsertProduct[] = jsonData.map((row: any) => ({
+        name: row['Название'] || row['название'] || '',
+        sku: row['Артикул'] || row['артикул'] || '',
+        price: String(row['Цена'] || row['цена'] || '0'),
+        purchasePrice: String(row['Цена закупки'] || row['цена закупки'] || '0'),
+        barcode: row['Штрихкод'] || row['штрихкод'] || null,
+        weight: String(row['Вес (кг)'] || row['вес'] || '') || undefined,
+        length: String(row['Длина (см)'] || row['длина'] || '') || undefined,
+        width: String(row['Ширина (см)'] || row['ширина'] || '') || undefined,
+        height: String(row['Высота (см)'] || row['высота'] || '') || undefined,
+      })).filter(product => product.name && product.sku);
+
+      if (productsToImport.length === 0) {
+        toast({
+          title: "Ошибка",
+          description: "Не найдено товаров для импорта. Проверьте формат файла.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      importMutation.mutate(productsToImport);
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось прочитать файл",
+        variant: "destructive",
+      });
+    }
+
+    // Очищаем input для возможности загрузки того же файла снова
+    event.target.value = '';
   };
 
   const sortedProducts = products
@@ -89,7 +172,16 @@ export default function ProductsList() {
             <h2 className="text-2xl font-bold text-gray-900">Товары</h2>
             <p className="mt-1 text-sm text-gray-500">Просмотр каталога товаров</p>
           </div>
-          <div className="mt-4 sm:mt-0">
+          <div className="mt-4 sm:mt-0 flex space-x-3">
+            <Button 
+              variant="outline" 
+              className="inline-flex items-center"
+              onClick={handleImportClick}
+              disabled={importMutation.isPending}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {importMutation.isPending ? 'Загрузка...' : 'Импорт из Excel'}
+            </Button>
             <Button 
               variant="outline" 
               className="inline-flex items-center"
@@ -99,6 +191,13 @@ export default function ProductsList() {
               <Download className="w-4 h-4 mr-2" />
               Экспорт в Excel
             </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls"
+              onChange={handleFileChange}
+              className="hidden"
+            />
           </div>
         </div>
       </div>

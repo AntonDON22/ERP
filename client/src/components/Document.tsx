@@ -234,25 +234,34 @@ export default function Document({ config, mode = 'create', documentData }: Docu
               variant="outline" 
               onClick={() => setLocation(config.backUrl)}
             >
-              {mode === 'view' ? "Назад" : "Отмена"}
+              Назад
             </Button>
-            {mode !== 'create' && (
+            {mode !== 'create' && !isEditing && (
               <Button 
                 type="button"
-                variant={isEditing ? "outline" : "default"}
+                variant="default"
                 onClick={toggleEditMode}
               >
-                {isEditing ? "Отменить" : "Редактировать"}
+                Редактировать
               </Button>
             )}
             {isEditing && (
-              <Button 
-                type="submit" 
-                form="document-form"
-                disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
-              >
-                {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
-              </Button>
+              <>
+                <Button 
+                  type="button"
+                  variant="outline"
+                  onClick={toggleEditMode}
+                >
+                  Отмена
+                </Button>
+                <Button 
+                  type="submit" 
+                  form="document-form"
+                  disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
+                >
+                  {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
+                </Button>
+              </>
             )}
           </div>
         </div>

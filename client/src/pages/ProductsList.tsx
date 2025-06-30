@@ -33,6 +33,7 @@ export default function ProductsList() {
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [startX, setStartX] = useState(0);
   const [startWidth, setStartWidth] = useState(0);
+  const [wasResizing, setWasResizing] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -43,8 +44,8 @@ export default function ProductsList() {
   const handleMouseDown = useCallback((columnName: keyof ColumnWidths, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation(); // Предотвращаем всплытие события
-    console.log('Starting resize for column:', columnName, 'at X:', e.clientX);
     setIsResizing(columnName);
+    setWasResizing(true);
     setStartX(e.clientX);
     setStartWidth(columnWidths[columnName]);
   }, [columnWidths]);
@@ -57,8 +58,6 @@ export default function ProductsList() {
       const diff = e.clientX - startX;
       const newWidth = Math.max(50, startWidth + diff); // Минимальная ширина 50px
       
-      console.log('Resizing column:', isResizing, 'diff:', diff, 'newWidth:', newWidth);
-      
       setColumnWidths(prev => ({
         ...prev,
         [isResizing]: newWidth
@@ -67,6 +66,10 @@ export default function ProductsList() {
 
     const handleMouseUp = () => {
       setIsResizing(null);
+      // Задержка для предотвращения срабатывания сортировки
+      setTimeout(() => {
+        setWasResizing(false);
+      }, 100);
     };
 
     if (isResizing) {
@@ -291,7 +294,11 @@ export default function ProductsList() {
                   <tr>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={() => handleSort("name")}
+                      onClick={(e) => {
+                        if (!isResizing && !wasResizing) {
+                          handleSort("name");
+                        }
+                      }}
                       style={{ 
                         width: `${columnWidths.name}px`,
                         minWidth: `${columnWidths.name}px`,
@@ -309,7 +316,11 @@ export default function ProductsList() {
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={() => handleSort("sku")}
+                      onClick={(e) => {
+                        if (!isResizing && !wasResizing) {
+                          handleSort("sku");
+                        }
+                      }}
                       style={{ 
                         width: `${columnWidths.sku}px`,
                         minWidth: `${columnWidths.sku}px`,
@@ -327,7 +338,11 @@ export default function ProductsList() {
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={() => handleSort("price")}
+                      onClick={(e) => {
+                        if (!isResizing && !wasResizing) {
+                          handleSort("price");
+                        }
+                      }}
                       style={{ 
                         width: `${columnWidths.price}px`,
                         minWidth: `${columnWidths.price}px`,
@@ -345,7 +360,11 @@ export default function ProductsList() {
                     </th>
                     <th 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 relative"
-                      onClick={() => handleSort("purchasePrice")}
+                      onClick={(e) => {
+                        if (!isResizing && !wasResizing) {
+                          handleSort("purchasePrice");
+                        }
+                      }}
                       style={{ 
                         width: `${columnWidths.purchasePrice}px`,
                         minWidth: `${columnWidths.purchasePrice}px`,

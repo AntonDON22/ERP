@@ -118,7 +118,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProducts(): Promise<Product[]> {
-    return await db.select().from(products);
+    const startTime = Date.now();
+    console.log('[DB] Starting getProducts query...');
+    
+    try {
+      const result = await db.select().from(products);
+      const endTime = Date.now();
+      console.log(`[DB] getProducts completed in ${endTime - startTime}ms, returned ${result.length} products`);
+      return result;
+    } catch (error) {
+      const endTime = Date.now();
+      console.error(`[DB] getProducts failed after ${endTime - startTime}ms:`, error);
+      throw error;
+    }
   }
 
   async getProduct(id: number): Promise<Product | undefined> {

@@ -21,14 +21,24 @@ interface ColumnWidths {
 export default function ProductsList() {
   const [sortField, setSortField] = useState<keyof Product>("id");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [columnWidths, setColumnWidths] = useState<ColumnWidths>({
-    name: 250,
-    sku: 150,
-    price: 120,
-    purchasePrice: 140,
-    barcode: 150,
-    weight: 100,
-    dimensions: 180
+  const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
+    const saved = localStorage.getItem('productColumnWidths');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing saved column widths:', e);
+      }
+    }
+    return {
+      name: 250,
+      sku: 150,
+      price: 120,
+      purchasePrice: 140,
+      barcode: 150,
+      weight: 100,
+      dimensions: 180
+    };
   });
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [startX, setStartX] = useState(0);
@@ -58,10 +68,15 @@ export default function ProductsList() {
       const diff = e.clientX - startX;
       const newWidth = Math.max(50, startWidth + diff); // Минимальная ширина 50px
       
-      setColumnWidths(prev => ({
-        ...prev,
-        [isResizing]: newWidth
-      }));
+      setColumnWidths(prev => {
+        const newWidths = {
+          ...prev,
+          [isResizing]: newWidth
+        };
+        // Сохраняем в localStorage
+        localStorage.setItem('productColumnWidths', JSON.stringify(newWidths));
+        return newWidths;
+      });
     };
 
     const handleMouseUp = () => {

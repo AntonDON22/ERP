@@ -153,3 +153,16 @@ export type InsertDocumentItem = z.infer<typeof insertDocumentItemSchema>;
 export type DocumentItem = typeof documentItems.$inferSelect;
 
 export type Inventory = typeof inventory.$inferSelect;
+
+// Схемы валидации для создания документов
+export const documentItemSchema = z.object({
+  productId: z.number().min(1, "Выберите товар"),
+  quantity: z.number().min(0.01, "Количество должно быть больше 0"),
+  price: z.number().min(0, "Цена не может быть отрицательной"),
+});
+
+export const receiptDocumentSchema = z.object({
+  name: z.string().min(1, "Название документа обязательно"),
+  date: z.string().min(1, "Дата документа обязательна"),
+  items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
+});

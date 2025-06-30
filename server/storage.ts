@@ -30,11 +30,14 @@ export interface IStorage {
   deleteContractor(id: number): Promise<boolean>;
   
   // Documents
-  getDocuments(): Promise<Document[]>;
-  getDocument(id: number): Promise<Document | undefined>;
-  createDocument(document: InsertDocument): Promise<Document>;
-  updateDocument(id: number, document: Partial<InsertDocument>): Promise<Document | undefined>;
+  getDocuments(): Promise<DocumentRecord[]>;
+  getDocument(id: number): Promise<DocumentRecord | undefined>;
+  createDocument(document: InsertDocument): Promise<DocumentRecord>;
+  updateDocument(id: number, document: Partial<InsertDocument>): Promise<DocumentRecord | undefined>;
   deleteDocument(id: number): Promise<boolean>;
+  
+  // Receipt Documents with FIFO
+  createReceiptDocument(document: InsertDocument, items: InsertDocumentItem[]): Promise<DocumentRecord>;
 }
 
 export class MemStorage implements IStorage {
@@ -200,6 +203,31 @@ export class MemStorage implements IStorage {
 
   async deleteContractor(id: number): Promise<boolean> {
     return this.contractors.delete(id);
+  }
+
+  // Document methods - not implemented in MemStorage
+  async getDocuments(): Promise<DocumentRecord[]> {
+    return [];
+  }
+
+  async getDocument(id: number): Promise<DocumentRecord | undefined> {
+    return undefined;
+  }
+
+  async createDocument(document: InsertDocument): Promise<DocumentRecord> {
+    throw new Error("Documents not supported in MemStorage");
+  }
+
+  async updateDocument(id: number, document: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
+    return undefined;
+  }
+
+  async deleteDocument(id: number): Promise<boolean> {
+    return false;
+  }
+
+  async createReceiptDocument(document: InsertDocument, items: InsertDocumentItem[]): Promise<DocumentRecord> {
+    throw new Error("Receipt documents not supported in MemStorage");
   }
 }
 
@@ -386,7 +414,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Documents
-  async getDocuments(): Promise<Document[]> {
+  async getDocuments(): Promise<DocumentRecord[]> {
     const startTime = Date.now();
     console.log('[DB] Starting getDocuments query...');
     
@@ -402,12 +430,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getDocument(id: number): Promise<Document | undefined> {
+  async getDocument(id: number): Promise<DocumentRecord | undefined> {
     const [document] = await db.select().from(documents).where(eq(documents.id, id));
     return document || undefined;
   }
 
-  async createDocument(insertDocument: InsertDocument): Promise<Document> {
+  async createDocument(insertDocument: InsertDocument): Promise<DocumentRecord> {
     const [document] = await db
       .insert(documents)
       .values(insertDocument)
@@ -415,7 +443,7 @@ export class DatabaseStorage implements IStorage {
     return document;
   }
 
-  async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<Document | undefined> {
+  async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
     const [document] = await db
       .update(documents)
       .set(updateData)
@@ -429,6 +457,43 @@ export class DatabaseStorage implements IStorage {
       .delete(documents)
       .where(eq(documents.id, id));
     return (result.rowCount ?? 0) > 0;
+  }
+
+  async createReceiptDocument(document: InsertDocument, items: InsertDocumentItem[]): Promise<DocumentRecord> {
+    try {
+      return await db.transaction(async (tx) => {
+        // 1. Создаем документ
+        const [createdDocument] = await tx
+          .insert(documents)
+          .values(document)
+          .returning();
+
+        // 2. Создаем позиции документа
+        for (const item of items) {
+          await tx
+            .insert(documentItems)
+            .values({
+              ...item,
+              documentId: createdDocument.id,
+            });
+
+          // 3. Добавляем в инвентарь (FIFO)
+          await tx
+            .insert(inventory)
+            .values({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+              documentId: createdDocument.id,
+            });
+        }
+
+        return createdDocument;
+      });
+    } catch (error) {
+      console.error("Error creating receipt document:", error);
+      throw error;
+    }
   }
 }
 

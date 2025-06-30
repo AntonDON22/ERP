@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertDocumentSchema } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertDocumentSchema, receiptDocumentSchema } from "@shared/schema";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
@@ -445,7 +445,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Create receipt document
+  app.post("/api/documents/create-receipt", async (req, res) => {
+    try {
+      const validatedData = receiptDocumentSchema.parse(req.body);
+      
+      // Создаем документ сначала для получения ID
+      const documentData = {
+        name: validatedData.name,
+        type: "Оприходование" as const,
+        date: validatedData.date,
+      };
+      
+      const tempDocument = await storage.createDocument(documentData);
+      
+      // Преобразуем элементы в правильный формат
+      const itemsData = validatedData.items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity.toString(),
+        price: item.price.toString(),
+        documentId: tempDocument.id,
+      }));
+      
+      // Создаем документ с элементами
+      const document = await storage.createReceiptDocument(documentData, itemsData);
+      res.status(201).json(document);
+    } catch (error) {
+      console.error("Error creating receipt document:", error);
+      if (error instanceof Error && 'issues' in error) {
+        return res.status(400).json({ 
+          message: "Ошибка валидации данных",
+          errors: (error as any).issues
+        });
+      }
+      res.status(500).json({ message: "Ошибка при создании документа" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

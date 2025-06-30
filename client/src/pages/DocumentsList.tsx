@@ -1,8 +1,9 @@
 import { useDocuments, useDeleteDocuments } from "@/hooks/useTypedQuery";
 import DataTable, { ColumnConfig } from "@/components/DataTable";
-import { Document } from "@shared/schema";
+import { DocumentRecord } from "@shared/schema";
+import { useLocation } from "wouter";
 
-const columns: ColumnConfig<Document>[] = [
+const columns: ColumnConfig<DocumentRecord>[] = [
   { key: 'name', label: 'Название', width: '50%', copyable: true, multiline: true },
   { key: 'type', label: 'Тип', width: '30%', copyable: true, multiline: true },
   { key: 'date', label: 'Дата', width: '20%', copyable: true },
@@ -11,10 +12,10 @@ const columns: ColumnConfig<Document>[] = [
 export default function DocumentsList() {
   const { data: documents = [], isLoading } = useDocuments();
   const deleteDocuments = useDeleteDocuments();
+  const [, setLocation] = useLocation();
 
   const handleCreate = () => {
-    console.log("Создание нового документа");
-    // TODO: Добавить логику создания документа
+    setLocation("/documents/create-receipt");
   };
 
   return (

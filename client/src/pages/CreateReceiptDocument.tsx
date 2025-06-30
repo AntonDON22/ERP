@@ -9,36 +9,36 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts } from "@/hooks/useTypedQuery";
-import { apiRequest } from "@/lib/queryClient";
+import { useProducts, useCreateReceiptDocument } from "@/hooks/useTypedQuery";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { documentItemSchema, receiptDocumentSchema } from "@shared/schema";
 
-// Схема для позиции документа
-const documentItemSchema = z.object({
+// Модифицированная схема для формы (с строковыми значениями)
+const formDocumentItemSchema = z.object({
   productId: z.number().min(1, "Выберите товар"),
   quantity: z.string().refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Количество должно быть больше 0"),
   price: z.string().refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Цена должна быть больше или равна 0"),
 });
 
-// Схема для всего документа
-const receiptDocumentSchema = z.object({
-  items: z.array(documentItemSchema).min(1, "Добавьте хотя бы одну позицию"),
+const formReceiptDocumentSchema = z.object({
+  items: z.array(formDocumentItemSchema).min(1, "Добавьте хотя бы одну позицию"),
 });
 
-type DocumentItem = z.infer<typeof documentItemSchema>;
-type ReceiptDocumentForm = z.infer<typeof receiptDocumentSchema>;
+type FormDocumentItem = z.infer<typeof formDocumentItemSchema>;
+type FormReceiptDocument = z.infer<typeof formReceiptDocumentSchema>;
 
 export default function Document() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: products = [] } = useProducts();
+  const createReceiptMutation = useCreateReceiptDocument();
   
-  const [items, setItems] = useState<DocumentItem[]>([
+  const [items, setItems] = useState<FormDocumentItem[]>([
     { productId: 0, quantity: "", price: "" }
   ]);
 
-  const form = useForm<ReceiptDocumentForm>({
-    resolver: zodResolver(receiptDocumentSchema),
+  const form = useForm<FormReceiptDocument>({
+    resolver: zodResolver(formReceiptDocumentSchema),
     defaultValues: {
       items: items,
     },
@@ -61,7 +61,7 @@ export default function Document() {
   };
 
   // Обновить позицию
-  const updateItem = (index: number, field: keyof DocumentItem, value: string | number) => {
+  const updateItem = (index: number, field: keyof FormDocumentItem, value: string | number) => {
     const newItems = [...items];
     newItems[index] = { ...newItems[index], [field]: value };
     setItems(newItems);
@@ -77,22 +77,21 @@ export default function Document() {
   };
 
   // Отправка формы
-  const onSubmit = async (data: ReceiptDocumentForm) => {
+  const onSubmit = async (data: FormReceiptDocument) => {
     try {
       const documentName = generateDocumentName();
       
       const documentData = {
         name: documentName,
-        type: "Оприходование",
         date: new Date().toISOString().split('T')[0],
-        items: data.items.map(item => ({
+        items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
-          quantity: item.quantity,
-          price: item.price || "0",
+          quantity: Number(item.quantity),
+          price: Number(item.price || "0"),
         })),
       };
 
-      await apiRequest("/api/documents/receipt", "POST", documentData);
+      await createReceiptMutation.mutateAsync(documentData);
 
       toast({
         title: "Успешно",

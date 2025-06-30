@@ -9,6 +9,7 @@ import ProductsList from "@/pages/ProductsList";
 import SuppliersList from "@/pages/SuppliersList";
 import ContractorsList from "@/pages/ContractorsList";
 import DocumentsList from "@/pages/DocumentsList";
+import CreateReceiptDocument from "@/pages/CreateReceiptDocument";
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/suppliers" component={SuppliersList} />
               <Route path="/contractors" component={ContractorsList} />
               <Route path="/documents" component={DocumentsList} />
+              <Route path="/documents/create-receipt" component={CreateReceiptDocument} />
             </Switch>
           </div>
         </Router>

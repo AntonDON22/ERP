@@ -32,10 +32,6 @@ export default function InventoryList() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Остатки</h1>
-      </div>
-      
       <DataTable
         data={inventory}
         columns={columns}
@@ -43,6 +39,7 @@ export default function InventoryList() {
         entityName="товар"
         entityNamePlural="товары"
         searchFields={["name"]}
+        hideSelectionColumn={true}
       />
     </div>
   );

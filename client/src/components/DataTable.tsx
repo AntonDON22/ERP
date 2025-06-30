@@ -41,6 +41,7 @@ export interface DataTableProps<T extends { id: number; name: string }> {
   importLabel?: string;
   onCreate?: () => void;
   onRowClick?: (item: T) => void;
+  hideSelectionColumn?: boolean;
 }
 
 // Компонент для копируемых ячеек
@@ -93,7 +94,8 @@ export default function DataTable<T extends { id: number; name: string }>({
   deleteLabel = "Удалить",
   importLabel = "Импорт",
   onCreate,
-  onRowClick
+  onRowClick,
+  hideSelectionColumn = false
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof T>("name");
@@ -320,7 +322,7 @@ export default function DataTable<T extends { id: number; name: string }>({
             </Button>
           )}
 
-          {selectedItems.size > 0 && onDelete && (
+          {selectedItems.size > 0 && onDelete && !hideSelectionColumn && (
             <Button
               variant="destructive"
               size="sm"
@@ -373,12 +375,14 @@ export default function DataTable<T extends { id: number; name: string }>({
           <table className="w-full">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
-                <th className="w-12 px-4 py-3 text-left">
-                  <Checkbox
-                    checked={isAllSelected}
-                    onCheckedChange={handleSelectAll}
-                  />
-                </th>
+                {!hideSelectionColumn && (
+                  <th className="w-12 px-4 py-3 text-left">
+                    <Checkbox
+                      checked={isAllSelected}
+                      onCheckedChange={handleSelectAll}
+                    />
+                  </th>
+                )}
                 {columns.map((column) => (
                   <th
                     key={String(column.key)}
@@ -414,12 +418,14 @@ export default function DataTable<T extends { id: number; name: string }>({
                     onRowClick?.(item);
                   }}
                 >
-                  <td className="px-4 py-3">
-                    <Checkbox
-                      checked={selectedItems.has(item.id)}
-                      onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
-                    />
-                  </td>
+                  {!hideSelectionColumn && (
+                    <td className="px-4 py-3">
+                      <Checkbox
+                        checked={selectedItems.has(item.id)}
+                        onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
+                      />
+                    </td>
+                  )}
                   {columns.map((column) => {
                     const value = item[column.key];
                     const formattedValue = column.format ? column.format(value) : value;

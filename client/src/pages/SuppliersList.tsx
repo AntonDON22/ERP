@@ -6,36 +6,26 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { formatPrice, formatWeight, formatDimensions } from "@/lib/utils";
-import { Product, InsertProduct } from "@shared/schema";
+import { Supplier, InsertSupplier } from "@shared/schema";
 import * as XLSX from "xlsx";
 import { apiRequest } from "@/lib/queryClient";
 
 interface ColumnWidths {
   name: number;
-  sku: number;
-  price: number;
-  purchasePrice: number;
-  barcode: number;
-  weight: number;
-  dimensions: number;
+  website: number;
 }
 
 export default function SuppliersList() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<keyof Product>("name");
+  const [sortField, setSortField] = useState<keyof Supplier>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
-  const [selectedProducts, setSelectedProducts] = useState<Set<number>>(new Set());
+  const [selectedSuppliers, setSelectedSuppliers] = useState<Set<number>>(new Set());
   const [isResizing, setIsResizing] = useState(false);
   const [columnWidths, setColumnWidths] = useState<ColumnWidths>(() => {
-    const saved = localStorage.getItem('productTableColumnWidths');
+    const saved = localStorage.getItem('supplierTableColumnWidths');
     return saved ? JSON.parse(saved) : {
-      name: 200,
-      sku: 120,
-      price: 100,
-      purchasePrice: 120,
-      barcode: 140,
-      weight: 100,
-      dimensions: 140
+      name: 300,
+      website: 250
     };
   });
 
@@ -81,7 +71,7 @@ export default function SuppliersList() {
     );
   };
 
-  const { data: products = [], isLoading, error } = useQuery<Product[]>({
+  const { data: suppliers = [], isLoading, error } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
   });
 
@@ -314,7 +304,7 @@ export default function SuppliersList() {
 
   // Сохраняем ширину колонок в localStorage
   useEffect(() => {
-    localStorage.setItem('productTableColumnWidths', JSON.stringify(columnWidths));
+    localStorage.setItem('supplierTableColumnWidths', JSON.stringify(columnWidths));
   }, [columnWidths]);
 
   // Обработчики изменения размера колонок (поддержка мыши и touch)
@@ -477,7 +467,7 @@ export default function SuppliersList() {
         className="hidden"
       />
 
-      {/* Products Table */}
+      {/* Suppliers Table */}
       <div className="bg-white rounded-lg border shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full" style={{ tableLayout: 'fixed', minWidth: Object.values(columnWidths).reduce((sum, width) => sum + width, 48) + 'px' }}>
@@ -512,160 +502,54 @@ export default function SuppliersList() {
                 </th>
                 <th 
                   className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.sku}px`, minWidth: `${columnWidths.sku}px`, maxWidth: `${columnWidths.sku}px` }}
+                  style={{ width: `${columnWidths.website}px`, minWidth: `${columnWidths.website}px`, maxWidth: `${columnWidths.website}px` }}
                 >
                   <div className="flex items-center justify-between">
                     <button
                       className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("sku")}
+                      onClick={() => handleSort("website")}
                     >
-                      <span>Артикул</span>
+                      <span>Веб-сайт</span>
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
                       className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'sku')}
-                      onTouchStart={(e) => handleTouchStart(e, 'sku')}
+                      onMouseDown={(e) => handleMouseDown(e, 'website')}
+                      onTouchStart={(e) => handleTouchStart(e, 'website')}
                       title="Потяните для изменения ширины столбца"
                     />
                   </div>
                 </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.price}px`, minWidth: `${columnWidths.price}px`, maxWidth: `${columnWidths.price}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("price")}
-                    >
-                      <span>Цена</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'price')}
-                      onTouchStart={(e) => handleTouchStart(e, 'price')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.purchasePrice}px`, minWidth: `${columnWidths.purchasePrice}px`, maxWidth: `${columnWidths.purchasePrice}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("purchasePrice")}
-                    >
-                      <span>Цена закупки</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
-                      onTouchStart={(e) => handleTouchStart(e, 'purchasePrice')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.barcode}px`, minWidth: `${columnWidths.barcode}px`, maxWidth: `${columnWidths.barcode}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("barcode")}
-                    >
-                      <span>Штрихкод</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'barcode')}
-                      onTouchStart={(e) => handleTouchStart(e, 'barcode')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative"
-                  style={{ width: `${columnWidths.weight}px`, minWidth: `${columnWidths.weight}px`, maxWidth: `${columnWidths.weight}px` }}
-                >
-                  <div className="flex items-center justify-between">
-                    <button
-                      className="flex items-center space-x-1 hover:text-gray-700"
-                      onClick={() => handleSort("weight")}
-                    >
-                      <span>Вес (г)</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                    <div
-                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
-                      onMouseDown={(e) => handleMouseDown(e, 'weight')}
-                      onTouchStart={(e) => handleTouchStart(e, 'weight')}
-                      title="Потяните для изменения ширины столбца"
-                    />
-                  </div>
-                </th>
-                <th 
-                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  style={{ width: `${columnWidths.dimensions}px`, minWidth: `${columnWidths.dimensions}px`, maxWidth: `${columnWidths.dimensions}px` }}
-                >
-                  <button
-                    className="flex items-center space-x-1 hover:text-gray-700"
-                    onClick={() => handleSort("length")}
-                  >
-                    <span>Габариты (мм)</span>
-                    <ArrowUpDown className="w-3 h-3" />
-                  </button>
-                </th>
+
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    Загрузка товаров...
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                    Загрузка поставщиков...
                   </td>
                 </tr>
               ) : sortedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
-                    {searchQuery ? "Товары не найдены" : "Нет товаров для отображения"}
+                  <td colSpan={3} className="px-4 py-8 text-center text-gray-500">
+                    {searchQuery ? "Поставщики не найдены" : "Нет поставщиков для отображения"}
                   </td>
                 </tr>
               ) : (
-                sortedProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
+                sortedProducts.map((supplier) => (
+                  <tr key={supplier.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4 w-12">
                       <Checkbox
-                        checked={selectedProducts.has(product.id)}
-                        onCheckedChange={(checked) => handleSelectProduct(product.id, checked as boolean)}
+                        checked={selectedProducts.has(supplier.id)}
+                        onCheckedChange={(checked) => handleSelectProduct(supplier.id, checked as boolean)}
                       />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={product.name} type="Название" />
+                      <CopyableCell value={supplier.name} type="Название" />
                     </td>
                     <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={product.sku} type="Артикул" />
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatPrice(product.price)}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatPrice(product.purchasePrice)}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <CopyableCell value={product.barcode} type="Штрихкод" />
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatWeight(product.weight)}
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      {formatDimensions(product.length, product.width, product.height)}
+                      <CopyableCell value={supplier.website} type="Веб-сайт" />
                     </td>
                   </tr>
                 ))

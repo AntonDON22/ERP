@@ -140,12 +140,15 @@ export default function Document({ config, mode = 'create', documentData }: Docu
 
   // Автозаполнение цены при выборе товара
   const handleProductChange = (index: number, productId: number) => {
+    console.log("handleProductChange called:", { index, productId });
     updateItem(index, "productId", productId);
     
     const product = getProductInfo(productId);
+    console.log("Found product:", product);
     if (product && product.price) {
       updateItem(index, "price", product.price.toString());
     }
+    console.log("Updated items:", items);
   };
 
   // Генерация названия документа

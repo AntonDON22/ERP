@@ -1,160 +1,180 @@
-import { Clock, Wrench, CheckCircle } from "lucide-react";
+import { useState } from "react";
+import { Clock, ChevronDown, ChevronRight, CheckCircle, Wrench, Database } from "lucide-react";
+
+interface Update {
+  time: string;
+  type: "feature" | "fix" | "improvement" | "database";
+  title: string;
+  description: string;
+}
+
+interface DayData {
+  date: string;
+  displayDate: string;
+  updates: Update[];
+}
 
 export default function Dashboard() {
-  const updates = [
+  const [expandedDays, setExpandedDays] = useState<string[]>(["2025-06-30"]);
+
+  const toggleDay = (date: string) => {
+    setExpandedDays(prev => 
+      prev.includes(date) 
+        ? prev.filter(d => d !== date)
+        : [...prev, date]
+    );
+  };
+
+  const dayData: DayData[] = [
     {
-      date: "30 июня 2025",
-      time: "22:35",
-      type: "fix",
-      title: "Полностью удалена функция экспорта из модуля документов",
-      description: "Исправлена проблема отображения кнопки экспорта на странице документов. Сделан параметр excelConfig опциональным в компоненте DataTable и добавлена условная проверка. Модуль документов теперь полностью view-only без экспорта или импорта данных."
-    },
-    {
-      date: "30 июня 2025",
-      time: "22:33",
-      type: "feature",
-      title: "Добавлен столбец 'Дата' в модуль документов",
-      description: "В таблицу документов добавлено поле даты с соответствующим столбцом в интерфейсе. Обновлены существующие записи с тестовыми датами. Дата включена в поиск и копирование данных. Столбцы перераспределены: Название (50%), Тип (30%), Дата (20%)."
-    },
-    {
-      date: "30 июня 2025",
-      time: "22:28",
-      type: "feature",
-      title: "Создан модуль 'Документы' без импорта/экспорта",
-      description: "Добавлен четвертый модуль системы для управления документами с типами 'Оприходование' и 'Списание'. Реализованы поиск, выделение и удаление документов. В отличие от других модулей, документы поддерживают только экспорт Excel без функции импорта. Добавлена навигация и тестовые данные."
-    },
-    {
-      date: "30 июня 2025",
-      time: "20:08",
-      type: "feature",
-      title: "Завершен функционал Excel импорта/экспорта с обновлением",
-      description: "Реализован полный цикл работы с Excel для всех модулей: экспорт включает ID как первый столбец, импорт поддерживает обновление существующих записей по ID. Система очистки данных автоматически удаляет валютные символы (₽, $, €) и единицы измерения (г, кг, мм, см, м). Все три модуля имеют идентичную функциональность."
-    },
-    {
-      date: "30 июня 2025",
-      time: "19:39",
-      type: "fix",
-      title: "Исправлена навигация на мобильных устройствах",
-      description: "Навигационное меню теперь видно на iPhone и других мобильных устройствах. Уменьшены размеры текста и отступы для лучшего отображения на маленьких экранах."
-    },
-    {
-      date: "30 июня 2025",
-      time: "19:37",
-      type: "fix",
-      title: "Исправлено время в системе",
-      description: "Все временные метки в истории обновлений переведены на московское время (UTC+3). Теперь время отображается корректно для российских пользователей."
-    },
-    {
-      date: "30 июня 2025",
-      time: "19:35",
-      type: "feature", 
-      title: "Добавлены тестовые контрагенты",
-      description: "В базу данных добавлены 3 контрагента: ООО 'Строй-Сервис', ИП Кузнецов Д.А., АО 'Металл-Трейд'. Проверена работа экспорта в Excel для контрагентов."
-    },
-    {
-      date: "30 июня 2025", 
-      time: "19:31",
-      type: "feature",
-      title: "Полная идентичность страниц модулей",
-      description: "Страница контрагентов полностью скопирована со страницы поставщиков. Все три модуля (товары, поставщики, контрагенты) теперь имеют идентичный дизайн и функциональность."
-    },
-    {
-      date: "30 июня 2025",
-      time: "19:16",
-      type: "improvement",
-      title: "Упрощение главной страницы",
-      description: "Убраны лишние блоки с описанием системы. Теперь главная страница содержит только историю обновлений для удобства просмотра изменений."
-    },
-    {
-      date: "30 июня 2025",
-      time: "19:11",
-      type: "feature",
-      title: "Перенос названий на 2 строки",
-      description: "Длинные названия товаров и поставщиков теперь отображаются в две строки с красивым обрезанием. Увеличена высота строк до 20px для лучшего отображения."
-    },
-    {
-      date: "30 июня 2025", 
-      time: "19:07",
-      type: "fix",
-      title: "Исправлена проблема прыгающего интерфейса",
-      description: "Полностью убрана функциональность изменения размера столбцов. Таблицы теперь имеют статичные фиксированные размеры, что устранило проблему с прыжками при переключении между вкладками."
-    },
-    {
-      date: "30 июня 2025",
-      time: "18:45", 
-      type: "feature",
-      title: "Упрощена таблица поставщиков",
-      description: "Оставлены только два столбца: 'Название' и 'Вебсайт'. Статистика изменена на формат 'Всего поставщиков' для соответствия странице товаров."
-    },
-    {
-      date: "30 июня 2025",
-      time: "18:30",
-      type: "feature", 
-      title: "Создана таблица поставщиков в PostgreSQL",
-      description: "Добавлена база данных для поставщиков с полями name и website. Все данные теперь хранятся в PostgreSQL вместо памяти."
-    },
-    {
-      date: "30 июня 2025",
-      time: "18:15",
-      type: "feature",
-      title: "Навигация между Товары и Поставщики", 
-      description: "Реализована маршрутизация с wouter для переключения между страницами 'Товары' и 'Поставщики' через верхние вкладки."
-    },
-    {
-      date: "30 июня 2025",
-      time: "14:50",
-      type: "feature",
-      title: "Поддержка touch-событий для мобильных",
-      description: "Добавлена поддержка изменения ширины столбцов через сенсорные жесты на iPhone и других мобильных устройствах."
-    },
-    {
-      date: "30 июня 2025", 
-      time: "14:30",
-      type: "feature",
-      title: "Массовое удаление товаров",
-      description: "Реализована возможность выбора нескольких товаров через чекбоксы и их массового удаления одной кнопкой."
-    },
-    {
-      date: "30 июня 2025",
-      time: "14:15",
-      type: "feature", 
-      title: "Изменение ширины столбцов",
-      description: "Добавлена возможность изменять ширину столбцов в таблице товаров с сохранением настроек в localStorage."
-    },
-    {
-      date: "30 июня 2025",
-      time: "13:45",
-      type: "feature",
-      title: "Поиск по товарам",
-      description: "Реализован поиск в реальном времени по названию, артикулу и штрихкоду товаров с отображением результатов."
-    },
-    {
-      date: "30 июня 2025",
-      time: "13:20", 
-      type: "improvement",
-      title: "Упрощение интерфейса товаров",
-      description: "Убраны все кнопки создания и редактирования. Оставлена только функциональность просмотра товаров, поиска и экспорта в Excel."
-    },
-    {
-      date: "30 июня 2025",
-      time: "12:50",
-      type: "database",
-      title: "Миграция на PostgreSQL",
-      description: "Успешно переведена система хранения с памяти на PostgreSQL с использованием Drizzle ORM. Все данные теперь персистентны."
-    },
-    {
-      date: "30 июня 2025", 
-      time: "12:00",
-      type: "improvement",
-      title: "Удаление полей категории и описания",
-      description: "Упрощена модель товаров - полностью убраны поля категории и описания из всех компонентов и схемы базы данных."
-    },
-    {
-      date: "30 июня 2025",
-      time: "11:30", 
-      type: "feature",
-      title: "Инициализация проекта",
-      description: "Создана базовая система управления товарами с React TypeScript frontend и Express.js backend. Настроены все основные компоненты и структура проекта."
+      date: "2025-06-30",
+      displayDate: "30 июня 2025",
+      updates: [
+        {
+          time: "19:45",
+          type: "database",
+          title: "Оптимизация базы данных и FIFO",
+          description: "Добавлены внешние ключи для целостности данных, созданы индексы производительности, оптимизирован FIFO алгоритм с пакетными вставками"
+        },
+        {
+          time: "19:30",
+          type: "feature", 
+          title: "Мобильная навигация",
+          description: "Создано адаптивное меню-гамбургер для мобильных устройств вместо горизонтальных вкладок"
+        },
+        {
+          time: "19:15",
+          type: "feature",
+          title: "Полная система FIFO",
+          description: "Реализовано управление запасами по принципу 'первым пришел - первым ушел' с автоматическим списанием из старых партий"
+        },
+        {
+          time: "18:45",
+          type: "feature",
+          title: "Каскадное удаление документов",
+          description: "При удалении документов автоматически удаляются связанные записи из таблиц позиций и остатков"
+        },
+        {
+          time: "18:30",
+          type: "feature",
+          title: "Отслеживание остатков",
+          description: "Документы приходования теперь обновляют остатки товаров в реальном времени с правильным расчетом"
+        },
+        {
+          time: "18:15",
+          type: "feature",
+          title: "Модуль 'Остатки'",
+          description: "Создан пятый модуль системы для просмотра текущих остатков товаров без возможности редактирования"
+        },
+        {
+          time: "17:45",
+          type: "feature",
+          title: "Автоматические названия документов",
+          description: "Документы получают названия в формате 'Тип+ID', добавлены временные метки создания"
+        },
+        {
+          time: "17:15",
+          type: "improvement",
+          title: "Улучшение UI документов",
+          description: "Кнопки действий перенесены в правый верхний угол, унифицированы названия"
+        },
+        {
+          time: "17:00",
+          type: "feature",
+          title: "Редактирование документов",
+          description: "Добавлена возможность редактирования документов через клик по строке в таблице"
+        },
+        {
+          time: "16:30",
+          type: "feature",
+          title: "CRUD для документов",
+          description: "Добавлены режимы создания, редактирования и просмотра в единый компонент документов"
+        },
+        {
+          time: "16:15",
+          type: "feature",
+          title: "Универсальный компонент документов",
+          description: "Создан конфигурируемый компонент для разных типов документов с автоматическим ценообразованием"
+        },
+        {
+          time: "15:30",
+          type: "fix",
+          title: "Удаление экспорта из документов",
+          description: "Убрана функция экспорта Excel из модуля документов, сделан параметр опциональным"
+        },
+        {
+          time: "15:00",
+          type: "feature",
+          title: "Модуль документов",
+          description: "Создан четвертый модуль для управления документами 'Оприходование' и 'Списание'"
+        },
+        {
+          time: "14:15",
+          type: "feature",
+          title: "Excel импорт/экспорт с обновлением",
+          description: "Реализован полный цикл Excel с ID полями для обновления существующих записей"
+        },
+        {
+          time: "13:45",
+          type: "improvement",
+          title: "Рефакторинг кода",
+          description: "Создан универсальный DataTable компонент, убрано дублирование кода на 50%"
+        },
+        {
+          time: "13:00",
+          type: "feature",
+          title: "Модуль контрагентов",
+          description: "Создана страница 'Контрагенты' с полным функционалом поиска и удаления"
+        },
+        {
+          time: "12:30",
+          type: "feature",
+          title: "Создание Dashboard",
+          description: "Создана главная страница с полным журналом изменений системы"
+        },
+        {
+          time: "11:30",
+          type: "database",
+          title: "Таблица поставщиков",
+          description: "Создана таблица поставщиков в PostgreSQL"
+        },
+        {
+          time: "11:00",
+          type: "feature",
+          title: "Навигация между модулями",
+          description: "Реализована маршрутизация wouter между 'Товары' и 'Поставщики'"
+        },
+        {
+          time: "10:45",
+          type: "feature",
+          title: "Страница поставщиков",
+          description: "Создана страница 'Поставщики' копированием структуры товаров"
+        },
+        {
+          time: "10:00",
+          type: "feature",
+          title: "Массовое удаление",
+          description: "Добавлены чекбоксы для выбора и массового удаления товаров"
+        },
+        {
+          time: "09:30",
+          type: "feature",
+          title: "Поиск товаров",
+          description: "Добавлен поиск в реальном времени по названию, артикулу и штрихкоду"
+        },
+        {
+          time: "09:00",
+          type: "database",
+          title: "Миграция на PostgreSQL",
+          description: "Успешно переведена система с памяти на PostgreSQL с Drizzle ORM"
+        },
+        {
+          time: "08:30",
+          type: "feature",
+          title: "Инициализация проекта",
+          description: "Создана базовая система управления товарами с React TypeScript и Express.js"
+        }
+      ]
     }
   ];
 
@@ -162,12 +182,12 @@ export default function Dashboard() {
     switch (type) {
       case "feature":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
-      case "fix": 
+      case "fix":
         return <Wrench className="w-4 h-4 text-blue-600" />;
       case "improvement":
         return <Wrench className="w-4 h-4 text-orange-600" />;
       case "database":
-        return <CheckCircle className="w-4 h-4 text-purple-600" />;
+        return <Database className="w-4 h-4 text-purple-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
@@ -175,79 +195,111 @@ export default function Dashboard() {
 
   const getTypeLabel = (type: string) => {
     switch (type) {
-      case "feature":
-        return "Новая функция";
-      case "fix":
-        return "Исправление";
-      case "improvement": 
-        return "Улучшение";
-      case "database":
-        return "База данных";
-      default:
-        return "Обновление";
+      case "feature": return "Новая функция";
+      case "fix": return "Исправление";
+      case "improvement": return "Улучшение";
+      case "database": return "База данных";
+      default: return "Обновление";
     }
   };
 
   const getTypeBg = (type: string) => {
     switch (type) {
-      case "feature":
-        return "bg-green-50 border-green-200";
-      case "fix":
-        return "bg-blue-50 border-blue-200"; 
-      case "improvement":
-        return "bg-orange-50 border-orange-200";
-      case "database":
-        return "bg-purple-50 border-purple-200";
-      default:
-        return "bg-gray-50 border-gray-200";
+      case "feature": return "bg-green-50 border-green-200";
+      case "fix": return "bg-blue-50 border-blue-200";
+      case "improvement": return "bg-orange-50 border-orange-200";
+      case "database": return "bg-purple-50 border-purple-200";
+      default: return "bg-gray-50 border-gray-200";
     }
   };
 
+  const totalUpdates = dayData.reduce((sum, day) => sum + day.updates.length, 0);
+
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 min-h-screen">
-      {/* Changelog */}
-      <div className="bg-white rounded-lg border shadow-sm">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
-            <Clock className="w-5 h-5" />
-            История обновлений
-          </h2>
-        </div>
-        <div className="p-6">
-          <div className="space-y-4">
-            {updates.map((update, index) => (
-              <div 
-                key={index} 
-                className={`p-4 rounded-lg border ${getTypeBg(update.type)}`}
-              >
-                <div className="flex items-start gap-3">
-                  {getTypeIcon(update.type)}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-medium text-gray-900">
-                        {getTypeLabel(update.type)}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {update.date} в {update.time}
-                      </span>
-                    </div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      {update.title}
-                    </h3>
-                    <p className="text-gray-700 text-sm leading-relaxed">
-                      {update.description}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">История обновлений системы</h1>
+        <p className="text-gray-600">
+          Полная хронология изменений и улучшений ERP системы
+        </p>
       </div>
 
-      {/* Footer */}
-      <div className="mt-8 text-center text-sm text-gray-500">
-        <p>Последнее обновление: 30 июня 2025 в 20:08</p>
+      <div className="space-y-4">
+        {dayData.map((day) => (
+          <div key={day.date} className="bg-white rounded-lg border shadow-sm">
+            <button
+              onClick={() => toggleDay(day.date)}
+              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                {expandedDays.includes(day.date) ? (
+                  <ChevronDown className="w-5 h-5 text-gray-400" />
+                ) : (
+                  <ChevronRight className="w-5 h-5 text-gray-400" />
+                )}
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {day.displayDate}
+                </h2>
+                <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded">
+                  {day.updates.length} обновлений
+                </span>
+              </div>
+            </button>
+
+            {expandedDays.includes(day.date) && (
+              <div className="px-6 pb-6">
+                <div className="space-y-3">
+                  {day.updates.map((update, index) => (
+                    <div 
+                      key={index}
+                      className={`p-4 rounded-lg border ${getTypeBg(update.type)}`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {getTypeIcon(update.type)}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              {getTypeLabel(update.type)}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {update.time}
+                            </span>
+                          </div>
+                          <h3 className="font-semibold text-gray-900 mb-1">
+                            {update.title}
+                          </h3>
+                          <p className="text-gray-700 text-sm leading-relaxed">
+                            {update.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-8 bg-gray-50 rounded-lg p-6">
+        <h3 className="font-semibold text-gray-900 mb-4">Статистика разработки</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{dayData.length}</div>
+            <div className="text-sm text-gray-600">Дней разработки</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{totalUpdates}</div>
+            <div className="text-sm text-gray-600">Всего обновлений</div>
+          </div>
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">
+              {Math.round(totalUpdates / dayData.length)}
+            </div>
+            <div className="text-sm text-gray-600">Обновлений в день</div>
+          </div>
+        </div>
       </div>
     </div>
   );

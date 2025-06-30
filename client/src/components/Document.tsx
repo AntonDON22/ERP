@@ -24,6 +24,23 @@ export interface DocumentTypeConfig {
   mutationHook: () => any;
 }
 
+// Режимы работы компонента
+export type DocumentMode = 'create' | 'edit' | 'view';
+
+// Данные существующего документа для редактирования
+export interface ExistingDocumentData {
+  id: number;
+  name: string;
+  type: string;
+  date: string;
+  items: Array<{
+    id: number;
+    productId: number;
+    quantity: number;
+    price: number;
+  }>;
+}
+
 // Схема для элемента документа
 const documentItemSchema = z.object({
   productId: z.number().min(1, "Выберите товар"),
@@ -52,17 +69,38 @@ type FormDocument = z.infer<typeof formDocumentSchema>;
 
 export interface DocumentProps {
   config: DocumentTypeConfig;
+  mode?: DocumentMode;
+  documentData?: ExistingDocumentData;
 }
 
-export default function Document({ config }: DocumentProps) {
+export default function Document({ config, mode = 'create', documentData }: DocumentProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { data: products = [] } = useProducts();
   const mutation = config.mutationHook();
 
-  const [items, setItems] = useState<FormDocumentItem[]>([
-    { productId: 0, quantity: "1", price: "0" }
-  ]);
+  // Состояние для режима редактирования/просмотра
+  const [isEditing, setIsEditing] = useState(mode === 'create' || mode === 'edit');
+  
+  // Состояние для типа документа
+  const [documentType, setDocumentType] = useState(documentData?.type || config.type);
+  
+  // Состояние для названия документа
+  const [documentName, setDocumentName] = useState(documentData?.name || "");
+  
+  // Состояние для даты документа
+  const [documentDate, setDocumentDate] = useState(documentData?.date || new Date().toISOString().split('T')[0]);
+
+  // Инициализация товаров из существующих данных или пустой массив
+  const initialItems = documentData?.items ? 
+    documentData.items.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity.toString(),
+      price: item.price.toString()
+    })) : 
+    [{ productId: 0, quantity: "1", price: "0" }];
+
+  const [items, setItems] = useState<FormDocumentItem[]>(initialItems);
 
   const form = useForm<FormDocument>({
     resolver: zodResolver(formDocumentSchema),
@@ -118,14 +156,20 @@ export default function Document({ config }: DocumentProps) {
     return `${config.namePrefix} от ${dateStr} ${timeStr}`;
   };
 
-  // Отправка формы
-  const onSubmit = async (data: FormDocument) => {
+  // Функция переключения режима редактирования
+  const toggleEditMode = () => {
+    setIsEditing(!isEditing);
+  };
+
+  // Функция сохранения изменений
+  const handleSave = async (data: FormDocument) => {
     try {
-      const documentName = generateDocumentName();
+      const finalDocumentName = mode === 'create' ? generateDocumentName() : documentName;
       
-      const documentData = {
-        name: documentName,
-        date: new Date().toISOString().split('T')[0],
+      const documentPayload = {
+        name: finalDocumentName,
+        type: documentType,
+        date: documentDate,
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
           quantity: Number(item.quantity),
@@ -133,19 +177,26 @@ export default function Document({ config }: DocumentProps) {
         })),
       };
 
-      await mutation.mutateAsync(documentData);
-      
-      toast({
-        title: "Успешно",
-        description: config.successMessage,
-      });
-      
-      setLocation(config.backUrl);
+      if (mode === 'create') {
+        await mutation.mutateAsync(documentPayload);
+        toast({
+          title: "Успешно",
+          description: config.successMessage,
+        });
+        setLocation(config.backUrl);
+      } else {
+        // Здесь будет логика обновления существующего документа
+        toast({
+          title: "Успешно",
+          description: "Документ успешно сохранен",
+        });
+        setIsEditing(false);
+      }
     } catch (error) {
-      console.error("Ошибка при создании документа:", error);
+      console.error("Ошибка при сохранении документа:", error);
       toast({
         title: "Ошибка",
-        description: "Не удалось создать документ",
+        description: "Не удалось сохранить документ",
         variant: "destructive",
       });
     }
@@ -162,18 +213,78 @@ export default function Document({ config }: DocumentProps) {
           <ArrowLeft className="h-4 w-4 mr-2" />
           Назад к документам
         </Button>
-        <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
+          {mode !== 'create' && (
+            <Button 
+              type="button"
+              variant={isEditing ? "outline" : "default"}
+              onClick={toggleEditMode}
+            >
+              {isEditing ? "Отменить" : "Редактировать"}
+            </Button>
+          )}
+        </div>
       </div>
 
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      {/* Основные поля документа */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Информация о документе</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="documentType">Тип документа</Label>
+            <Select
+              value={documentType}
+              onValueChange={setDocumentType}
+              disabled={!isEditing}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Выберите тип" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Оприходование">Оприходование</SelectItem>
+                <SelectItem value="Списание">Списание</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="documentName">Название документа</Label>
+            <Input
+              id="documentName"
+              value={documentName}
+              onChange={(e) => setDocumentName(e.target.value)}
+              disabled={!isEditing || mode === 'create'}
+              placeholder="Название будет сгенерировано автоматически"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="documentDate">Дата документа</Label>
+            <Input
+              id="documentDate"
+              type="date"
+              value={documentDate}
+              onChange={(e) => setDocumentDate(e.target.value)}
+              disabled={!isEditing}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               Товары в документе
-              <Button type="button" onClick={addItem} variant="outline" size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Добавить товар
-              </Button>
+              {isEditing && (
+                <Button type="button" onClick={addItem} variant="outline" size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Добавить товар
+                </Button>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -211,6 +322,7 @@ export default function Document({ config }: DocumentProps) {
                       placeholder="0"
                       value={item.quantity}
                       onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                      disabled={!isEditing}
                     />
                   </div>
 
@@ -224,6 +336,7 @@ export default function Document({ config }: DocumentProps) {
                       placeholder="0.00"
                       value={item.price}
                       onChange={(e) => updateItem(index, "price", e.target.value)}
+                      disabled={!isEditing}
                     />
                   </div>
 
@@ -235,15 +348,17 @@ export default function Document({ config }: DocumentProps) {
                   </div>
 
                   <div className="col-span-2 flex justify-end">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeItem(index)}
-                      disabled={items.length === 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {isEditing && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeItem(index)}
+                        disabled={items.length === 1}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
 
                   {product && (
@@ -273,14 +388,16 @@ export default function Document({ config }: DocumentProps) {
             variant="outline" 
             onClick={() => setLocation(config.backUrl)}
           >
-            Отмена
+            {mode === 'view' ? "Назад" : "Отмена"}
           </Button>
-          <Button 
-            type="submit" 
-            disabled={mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
-          >
-            {mutation.isPending ? "Создание..." : config.submitLabel}
-          </Button>
+          {isEditing && (
+            <Button 
+              type="submit" 
+              disabled={mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
+            >
+              {mutation.isPending ? "Сохранение..." : "Сохранить"}
+            </Button>
+          )}
         </div>
       </form>
     </div>

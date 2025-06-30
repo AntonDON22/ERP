@@ -282,12 +282,17 @@ export default function ProductsList() {
   // Обработчики изменения размера колонок
   const handleMouseDown = useCallback((e: React.MouseEvent, column: keyof ColumnWidths) => {
     e.preventDefault();
+    e.stopPropagation();
     setIsResizing(true);
     
     const startX = e.clientX;
     const startWidth = columnWidths[column];
     
+    // Добавляем класс для предотвращения выделения текста
+    document.body.classList.add('table-resizing');
+    
     const handleMouseMove = (e: MouseEvent) => {
+      e.preventDefault();
       const deltaX = e.clientX - startX;
       const newWidth = Math.max(80, startWidth + deltaX);
       
@@ -299,6 +304,7 @@ export default function ProductsList() {
     
     const handleMouseUp = () => {
       setIsResizing(false);
+      document.body.classList.remove('table-resizing');
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
@@ -410,7 +416,7 @@ export default function ProductsList() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
-                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'name')}
                     >
                       <div className="w-px h-4 bg-gray-300"></div>
@@ -430,7 +436,7 @@ export default function ProductsList() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
-                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'sku')}
                     >
                       <div className="w-px h-4 bg-gray-300"></div>
@@ -450,7 +456,7 @@ export default function ProductsList() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
-                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'price')}
                     >
                       <div className="w-px h-4 bg-gray-300"></div>
@@ -470,7 +476,7 @@ export default function ProductsList() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
-                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'purchasePrice')}
                     >
                       <div className="w-px h-4 bg-gray-300"></div>
@@ -490,7 +496,7 @@ export default function ProductsList() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
-                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'barcode')}
                     >
                       <div className="w-px h-4 bg-gray-300"></div>
@@ -510,7 +516,7 @@ export default function ProductsList() {
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div
-                      className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize flex items-center justify-center hover:bg-gray-200"
+                      className={`resize-handle ${isResizing ? 'resizing' : ''}`}
                       onMouseDown={(e) => handleMouseDown(e, 'weight')}
                     >
                       <div className="w-px h-4 bg-gray-300"></div>

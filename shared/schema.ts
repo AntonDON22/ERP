@@ -22,6 +22,11 @@ export const products = pgTable("products", {
   imageUrl: text("image_url"),
 });
 
+export const suppliers = pgTable("suppliers", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+});
+
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
@@ -40,8 +45,17 @@ export const insertProductSchema = createInsertSchema(products).omit({
   height: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Некорректная высота"),
 });
 
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({
+  id: true,
+}).extend({
+  name: z.string().min(1, "Название поставщика обязательно"),
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
+
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Supplier = typeof suppliers.$inferSelect;

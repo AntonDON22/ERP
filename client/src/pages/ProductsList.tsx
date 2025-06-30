@@ -674,7 +674,7 @@ export default function ProductsList() {
       </div>
 
       {/* Summary */}
-      <div className="mt-6 text-sm text-gray-500">
+      <div className="mt-4 text-sm text-gray-500">
         Всего товаров: {products.length}
         {searchQuery && ` • Показано: ${sortedProducts.length}`}
         {selectedProducts.size > 0 && ` • Выбрано: ${selectedProducts.size}`}

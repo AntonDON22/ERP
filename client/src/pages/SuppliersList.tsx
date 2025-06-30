@@ -497,12 +497,10 @@ export default function SuppliersList() {
       </div>
 
       {/* Stats */}
-      {sortedSuppliers.length > 0 && (
-        <div className="mt-4 text-sm text-gray-500">
-          Всего поставщиков: {suppliers.length}
-          {selectionState.selectedCount > 0 && ` • Выбрано: ${selectionState.selectedCount}`}
-        </div>
-      )}
+      <div className="mt-4 text-sm text-gray-500">
+        Всего поставщиков: {suppliers.length}
+        {selectionState.selectedCount > 0 && ` • Выбрано: ${selectionState.selectedCount}`}
+      </div>
     </div>
   );
 }

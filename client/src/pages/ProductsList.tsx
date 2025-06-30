@@ -499,7 +499,7 @@ export default function ProductsList() {
                       className="flex items-center space-x-1 hover:text-gray-700"
                       onClick={() => handleSort("name")}
                     >
-                      <span>Наименование</span>
+                      <span>Название</span>
                       <ArrowUpDown className="w-3 h-3" />
                     </button>
                     <div

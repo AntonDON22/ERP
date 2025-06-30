@@ -100,6 +100,10 @@ The application uses a dual storage approach:
 - June 30, 2025. Implemented column width resizing with localStorage persistence
 - June 30, 2025. Added product selection with checkboxes and bulk delete functionality
 - June 30, 2025. Cleaned up codebase - removed unused pages (AddProduct, EditProduct, ProductDetail, NotFound) and unnecessary backend routes
+- June 30, 2025. Added touch support for column resizing on mobile devices (iPhone)
+- June 30, 2025. Created "Поставщики" (Suppliers) page by copying products page structure
+- June 30, 2025. Implemented routing with wouter for navigation between "Товары" and "Поставщики" tabs
+- June 30, 2025. Changed column header from "Наименование" to "Название" in products table
 
 ## User Preferences
 

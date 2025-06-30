@@ -300,7 +300,9 @@ export default function Document({ config, mode = 'create', documentData }: Docu
                       disabled={!isEditing}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Выберите товар" />
+                        <SelectValue placeholder="Выберите товар">
+                          {item.productId === 0 ? "Выберите товар" : getProductInfo(item.productId)?.name || "Выберите товар"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         {products.map((product) => (

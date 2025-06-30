@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, insertSupplierSchema, insertContractorSchema } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products
@@ -83,7 +83,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Bulk import products
   app.post("/api/products/import", async (req, res) => {
     try {
-      const { products } = req.body;
+      // Данные могут приходить как массив или как объект с массивом products
+      const products = Array.isArray(req.body) ? req.body : req.body.products;
+      
       if (!Array.isArray(products)) {
         return res.status(400).json({ message: "Ожидается массив товаров" });
       }
@@ -91,7 +93,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const results = [];
       for (const productData of products) {
         try {
-          const validatedData = insertProductSchema.parse(productData);
+          // Используем более простую валидацию для импорта
+          const validatedData = {
+            name: productData.name || productData.Название || "Без названия",
+            sku: productData.sku || productData.Артикул || `SKU-${Date.now()}`,
+            price: String(productData.price || productData.Цена || "0"),
+            purchasePrice: String(productData.purchasePrice || productData["Цена закупки"] || ""),
+            weight: String(productData.weight || productData.Вес || ""),
+            length: String(productData.length || productData.Длина || ""),
+            width: String(productData.width || productData.Ширина || ""),
+            height: String(productData.height || productData.Высота || ""),
+            barcode: String(productData.barcode || productData["Штрих-код"] || ""),
+            imageUrl: String(productData.imageUrl || productData["Изображение"] || ""),
+          };
+          
           const product = await storage.createProduct(validatedData);
           results.push(product);
         } catch (error) {

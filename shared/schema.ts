@@ -52,6 +52,32 @@ export const insertProductSchema = createInsertSchema(products).omit({
   height: z.string().optional().refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Некорректная высота"),
 });
 
+// Гибкая схема для импорта Excel
+export const importProductSchema = z.object({
+  name: z.string().optional().transform(val => val && val.trim() ? val.trim() : "Без названия"),
+  sku: z.string().optional().transform(val => val && val.trim() ? val.trim() : `SKU-${Date.now()}`),
+  price: z.union([z.string(), z.number()]).optional().transform(val => 
+    val ? String(val).replace(/[^\d.,]/g, '').replace(',', '.') || "0" : "0"
+  ),
+  purchasePrice: z.union([z.string(), z.number()]).optional().transform(val => 
+    val ? String(val).replace(/[^\d.,]/g, '').replace(',', '.') || "" : ""
+  ),
+  weight: z.union([z.string(), z.number()]).optional().transform(val => 
+    val ? String(val).replace(/[^\d.,]/g, '').replace(',', '.') || "" : ""
+  ),
+  length: z.union([z.string(), z.number()]).optional().transform(val => 
+    val ? String(val).replace(/[^\d]/g, '') || "" : ""
+  ),
+  width: z.union([z.string(), z.number()]).optional().transform(val => 
+    val ? String(val).replace(/[^\d]/g, '') || "" : ""
+  ),
+  height: z.union([z.string(), z.number()]).optional().transform(val => 
+    val ? String(val).replace(/[^\d]/g, '') || "" : ""
+  ),
+  barcode: z.string().optional().transform(val => val && val.trim() ? val.trim() : ""),
+  imageUrl: z.string().optional().transform(val => val && val.trim() ? val.trim() : ""),
+});
+
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({
   id: true,
 }).extend({

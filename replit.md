@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a full-stack web application for managing products with a modern React frontend and Express.js backend. The system allows users to create, read, update, and delete products with detailed information including images, pricing, dimensions, and categories.
+This is a full-stack web application for managing products with a modern React frontend and Express.js backend. The system allows users to create, read, update, and delete products with detailed information including images, pricing, and dimensions.
 
 ## System Architecture
 
@@ -26,7 +26,7 @@ This is a full-stack web application for managing products with a modern React f
 ### Database Schema
 - **Users Table**: Basic user authentication (id, username, password)
 - **Products Table**: Comprehensive product information including:
-  - Basic info (name, sku, description, category)
+  - Basic info (name, sku)
   - Pricing (price, purchase_price)
   - Physical attributes (weight, dimensions)
   - Media (image_url, barcode)
@@ -93,6 +93,7 @@ The application uses a dual storage approach:
 
 ## Changelog
 - June 30, 2025. Initial setup
+- June 30, 2025. Removed category and description fields completely from all products
 
 ## User Preferences
 

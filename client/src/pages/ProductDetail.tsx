@@ -169,26 +169,10 @@ export default function ProductDetail() {
                       {formatDimensions(product.length, product.width, product.height)}
                     </dd>
                   </div>
-                  {product.category && (
-                    <div>
-                      <dt className="text-sm font-medium text-gray-500">Категория</dt>
-                      <dd className="mt-1 text-sm text-gray-900">
-                        {product.category === "electronics" && "Электроника"}
-                        {product.category === "clothing" && "Одежда"}
-                        {product.category === "books" && "Книги"}
-                        {product.category === "home" && "Дом и сад"}
-                        {!["electronics", "clothing", "books", "home"].includes(product.category) && product.category}
-                      </dd>
-                    </div>
-                  )}
+
                 </div>
 
-                {product.description && (
-                  <div>
-                    <dt className="text-sm font-medium text-gray-500">Описание</dt>
-                    <dd className="mt-1 text-sm text-gray-900">{product.description}</dd>
-                  </div>
-                )}
+
               </div>
             </div>
           </div>

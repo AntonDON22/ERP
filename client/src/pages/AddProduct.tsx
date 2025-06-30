@@ -33,8 +33,6 @@ export default function AddProduct() {
       length: "",
       width: "",
       height: "",
-      description: "",
-      category: "",
     },
   });
 
@@ -196,30 +194,7 @@ export default function AddProduct() {
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name="category"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Категория</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Выберите категорию" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="none">Без категории</SelectItem>
-                            <SelectItem value="electronics">Электроника</SelectItem>
-                            <SelectItem value="clothing">Одежда</SelectItem>
-                            <SelectItem value="books">Книги</SelectItem>
-                            <SelectItem value="home">Дом и сад</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+
                 </div>
               </div>
 
@@ -418,24 +393,7 @@ export default function AddProduct() {
                 </div>
               </div>
 
-              {/* Description */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Описание товара</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        rows={4}
-                        placeholder="Введите подробное описание товара..."
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               {/* Form Actions */}
               <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">

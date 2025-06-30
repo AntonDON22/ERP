@@ -19,9 +19,7 @@ export const products = pgTable("products", {
   length: decimal("length", { precision: 8, scale: 1 }),
   width: decimal("width", { precision: 8, scale: 1 }),
   height: decimal("height", { precision: 8, scale: 1 }),
-  description: text("description"),
   imageUrl: text("image_url"),
-  category: varchar("category", { length: 100 }),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({

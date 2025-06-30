@@ -40,6 +40,7 @@ export interface DataTableProps<T extends { id: number; name: string }> {
   deleteLabel?: string;
   importLabel?: string;
   onCreate?: () => void;
+  onRowClick?: (item: T) => void;
 }
 
 // Компонент для копируемых ячеек
@@ -91,7 +92,8 @@ export default function DataTable<T extends { id: number; name: string }>({
   onImport,
   deleteLabel = "Удалить",
   importLabel = "Импорт",
-  onCreate
+  onCreate,
+  onRowClick
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof T>("name");
@@ -403,7 +405,14 @@ export default function DataTable<T extends { id: number; name: string }>({
                   key={item.id}
                   className={`hover:bg-gray-50 transition-colors ${
                     selectedItems.has(item.id) ? "bg-blue-50" : ""
-                  }`}
+                  } ${onRowClick ? "cursor-pointer" : ""}`}
+                  onClick={(e) => {
+                    // Не обрабатываем клик если это чекбокс
+                    if ((e.target as HTMLElement).closest('input[type="checkbox"]')) {
+                      return;
+                    }
+                    onRowClick?.(item);
+                  }}
                 >
                   <td className="px-4 py-3">
                     <Checkbox

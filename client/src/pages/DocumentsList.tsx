@@ -18,6 +18,10 @@ export default function DocumentsList() {
     setLocation("/documents/create-receipt");
   };
 
+  const handleRowClick = (document: DocumentRecord) => {
+    setLocation(`/documents/${document.id}`);
+  };
+
   return (
     <DataTable
       data={documents}
@@ -30,6 +34,7 @@ export default function DocumentsList() {
         await deleteDocuments.mutateAsync(ids);
       }}
       onCreate={handleCreate}
+      onRowClick={handleRowClick}
     />
   );
 }

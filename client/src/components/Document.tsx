@@ -170,28 +170,14 @@ export default function Document({ config, mode = 'create', documentData }: Docu
     setIsEditing(!isEditing);
   };
 
-  // Функция сохранения изменений - защищенная от дублирования
   const handleSave = async (data: FormDocument) => {
-    // Тройная защита от множественного вызова
     if (isSubmitting || mutation.isPending) {
-      console.log('⚠️ Отклонен: уже отправляется (isSubmitting:', isSubmitting, ', isPending:', mutation.isPending, ')');
       return;
     }
     
-    // Увеличиваем счетчик попыток отправки
-    submitCountRef.current += 1;
-    const currentSubmitId = submitCountRef.current;
-    
-    console.log(`🚀 Начинаем отправку #${currentSubmitId}`);
     setIsSubmitting(true);
     
     try {
-      // Дополнительная проверка - если другая отправка уже началась, прерываем эту
-      if (currentSubmitId !== submitCountRef.current) {
-        console.log(`❌ Отклонен: найден более новый запрос #${submitCountRef.current}`);
-        return;
-      }
-      
       if (mode === 'create') {
         const finalDocumentName = generateDocumentName();
         
@@ -206,9 +192,7 @@ export default function Document({ config, mode = 'create', documentData }: Docu
           })),
         };
         
-        console.log(`📤 Отправляем запрос #${currentSubmitId}:`, documentPayload);
-        const result = await mutation.mutateAsync(documentPayload);
-        console.log(`✅ Получен ответ #${currentSubmitId}:`, result);
+        await mutation.mutateAsync(documentPayload);
         
         toast({
           title: "Успешно",
@@ -216,7 +200,6 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         });
         setLocation(config.backUrl);
       } else {
-        // Логика для режима редактирования
         toast({
           title: "Успешно",
           description: "Документ успешно сохранен",
@@ -224,14 +207,13 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         setIsEditing(false);
       }
     } catch (error) {
-      console.error(`💥 Ошибка при отправке #${currentSubmitId}:`, error);
+      console.error("Ошибка при сохранении документа:", error);
       toast({
         title: "Ошибка",
         description: "Не удалось сохранить документ",
         variant: "destructive",
       });
     } finally {
-      console.log(`🏁 Завершение отправки #${currentSubmitId}`);
       setIsSubmitting(false);
     }
   };
@@ -308,14 +290,7 @@ export default function Document({ config, mode = 'create', documentData }: Docu
         </CardContent>
       </Card>
 
-      <form onSubmit={(e) => {
-        console.log('📝 Форма отправляется, событие:', e);
-        console.log('🔍 Данные формы:', form.getValues());
-        return form.handleSubmit((data) => {
-          console.log('📤 handleSubmit вызван с данными:', data);
-          return handleSave(data);
-        })(e);
-      }} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
@@ -439,10 +414,6 @@ export default function Document({ config, mode = 'create', documentData }: Docu
             <Button 
               type="submit" 
               disabled={isSubmitting || mutation.isPending || items.length === 0 || items.some(item => item.productId === 0)}
-              onClick={() => {
-                console.log('🔘 Кнопка "Сохранить" была нажата');
-                console.log('📊 Состояние:', { isSubmitting, isPending: mutation.isPending, itemsCount: items.length });
-              }}
             >
               {isSubmitting || mutation.isPending ? "Сохранение..." : "Сохранить"}
             </Button>

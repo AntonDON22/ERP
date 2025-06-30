@@ -34,7 +34,7 @@ export interface DataTableProps<T extends { id: number; name: string }> {
   entityName: string;
   entityNamePlural: string;
   searchFields: (keyof T)[];
-  excelConfig: ExcelExportConfig;
+  excelConfig?: ExcelExportConfig;
   onDelete?: (ids: number[]) => Promise<void>;
   onImport?: (data: any[]) => Promise<void>;
   deleteLabel?: string;
@@ -206,6 +206,8 @@ export default function DataTable<T extends { id: number; name: string }>({
 
   // Функция экспорта в Excel
   const handleExport = useCallback(() => {
+    if (!excelConfig) return;
+    
     const exportData = filteredAndSortedData.map((item) => {
       const exportItem: Record<string, any> = {};
       
@@ -314,15 +316,17 @@ export default function DataTable<T extends { id: number; name: string }>({
             </Button>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExport}
-            className="flex items-center gap-2"
-          >
-            <Download className="w-4 h-4" />
-            Экспорт
-          </Button>
+          {excelConfig && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="flex items-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              Экспорт
+            </Button>
+          )}
 
           {onImport && (
             <>

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { apiLogger } from '@shared/logger';
+import { apiLogger } from '../../shared/logger';
 
 // Интерфейсы для тестовых данных
 interface TestProduct {
@@ -320,7 +320,7 @@ describe('🧪 Системный интеграционный тест ERP', ()
 
     // Проверяем восстановление остатка (должно стать 60)
     const inventory = await api.getInventory();
-    const testProductInventory = inventory.find(item => item.id === testData.product!.id);
+    const testProductInventory = inventory.find(item => item.id === testData.product.id);
     
     expect(testProductInventory).toBeDefined();
     expect(testProductInventory!.quantity).toBe(60);
@@ -343,7 +343,7 @@ describe('🧪 Системный интеграционный тест ERP', ()
     console.log(`✅ Материализованные представления работают за ${responseTime}мс`);
     
     // Проверяем наличие нашего тестового товара
-    const testProductAvailability = availability.find(item => item.id === testData.product!.id);
+    const testProductAvailability = availability.find(item => item.id === testData.product.id);
     expect(testProductAvailability).toBeDefined();
     
     // Проверяем корректность данных о доступности

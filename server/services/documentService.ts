@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { insertDocumentSchema, insertDocumentItemSchema, type InsertDocument, type DocumentRecord, type CreateDocumentItem } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { getMoscowDateForDocument } from "../../shared/timeUtils";
+import { apiLogger } from "../../shared/logger";
 
 export class DocumentService {
   async getAll(): Promise<DocumentRecord[]> {
@@ -57,7 +58,7 @@ export class DocumentService {
           results.push({ id, status: 'not_found' });
         }
       } catch (error) {
-        console.error(`Error deleting document ${id}:`, error);
+        apiLogger.error(`Error deleting document ${id}`, { documentId: id, error: error instanceof Error ? error.message : String(error) });
         results.push({ id, status: 'error' });
       }
     }

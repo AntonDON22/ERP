@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import { insertProductSchema, type InsertProduct, type Product } from "../../shared/schema";
 import { DataCleanerService } from "./dataCleanerService";
+import { apiLogger } from "../../shared/logger";
 
 export class ProductService {
   async getAll(): Promise<Product[]> {
@@ -48,7 +49,7 @@ export class ProductService {
           results.push({ id, status: 'not_found' });
         }
       } catch (error) {
-        console.error(`Error deleting product ${id}:`, error);
+        apiLogger.error(`Error deleting product ${id}`, { productId: id, error: error instanceof Error ? error.message : String(error) });
         results.push({ id, status: 'error' });
       }
     }
@@ -85,7 +86,7 @@ export class ProductService {
         
         results.push(product);
       } catch (error) {
-        console.error('Error importing product:', productData, error);
+        apiLogger.error('Error importing product', { productData, error: error instanceof Error ? error.message : String(error) });
       }
     }
 

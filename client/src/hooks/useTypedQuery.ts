@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor, Warehouse, InsertWarehouse } from "@shared/schema";
+import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor, Warehouse, InsertWarehouse, Order, OrderItem } from "@shared/schema";
+import { OrderWithItems, DocumentWithItems, CreateOrderData, CreateDocumentData, UpdateOrderData, UpdateDocumentData, InventoryItem, InventoryAvailabilityItem } from "@shared/types";
 import { apiRequest, apiRequestJson, getQueryFn } from "@/lib/queryClient";
 import { useInvalidate } from "./useInvalidate";
 
@@ -168,7 +169,7 @@ export const useInventoryAvailability = (warehouseId?: number) => {
     ? `/api/inventory/availability?warehouseId=${warehouseId}` 
     : "/api/inventory/availability";
     
-  return useQuery<{ id: number; name: string; quantity: number; reserved: number; available: number }[]>({
+  return useQuery<InventoryAvailabilityItem[]>({
     queryKey: warehouseId ? ['inventory', 'availability', 'warehouse', warehouseId] : ['inventory', 'availability'],
     queryFn: async () => {
       const response = await fetch(url);
@@ -185,7 +186,7 @@ export const useInventoryAvailability = (warehouseId?: number) => {
 export const useCreateReceiptDocument = () => {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: async (documentData: any) => {
+    mutationFn: async (documentData: CreateDocumentData) => {
       return apiRequest("/api/documents/create-receipt", "POST", documentData);
     },
     onSuccess: () => {
@@ -194,9 +195,9 @@ export const useCreateReceiptDocument = () => {
   });
 };
 export const useDocument = (id: number) => {
-  return useQuery<any>({
+  return useQuery<DocumentWithItems>({
     queryKey: ['document', id],
-    queryFn: () => apiRequestJson<any>(`/api/documents/${id}`),
+    queryFn: () => apiRequestJson<DocumentWithItems>(`/api/documents/${id}`),
     enabled: !!id,
   });
 };
@@ -204,7 +205,7 @@ export const useDocument = (id: number) => {
 export const useUpdateDocument = () => {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({ id, data }: UpdateDocumentData) => {
       const response = await fetch(`/api/documents/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -224,9 +225,9 @@ export const useUpdateDocument = () => {
 
 // Типизированные хуки для заказов
 export const useOrders = () => {
-  return useQuery<any[]>({
+  return useQuery<OrderWithItems[]>({
     queryKey: ['orders'],
-    queryFn: () => apiRequestJson<any[]>('/api/orders'),
+    queryFn: () => apiRequestJson<OrderWithItems[]>('/api/orders'),
   });
 };
 
@@ -245,7 +246,7 @@ export const useDeleteOrders = () => {
 export const useCreateOrder = () => {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: async (orderData: any) => {
+    mutationFn: async (orderData: CreateOrderData) => {
       return apiRequest("/api/orders/create", "POST", orderData);
     },
     onSuccess: () => {
@@ -255,9 +256,9 @@ export const useCreateOrder = () => {
 };
 
 export const useOrder = (id: number) => {
-  return useQuery<any>({
+  return useQuery<OrderWithItems>({
     queryKey: ['order', id],
-    queryFn: () => apiRequestJson<any>(`/api/orders/${id}`),
+    queryFn: () => apiRequestJson<OrderWithItems>(`/api/orders/${id}`),
     enabled: !!id,
   });
 };
@@ -265,7 +266,7 @@ export const useOrder = (id: number) => {
 export const useUpdateOrder = () => {
   const invalidate = useInvalidate();
   return useMutation({
-    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+    mutationFn: async ({ id, data }: UpdateOrderData) => {
       const response = await fetch(`/api/orders/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },

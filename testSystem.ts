@@ -312,7 +312,7 @@ class SystemIntegrationTest {
 
       // Проверяем восстановление остатка
       const inventory = await this.api.getInventory();
-      const testProductInventory = inventory.find(item => item.id === this.testData.product!.id);
+      const testProductInventory = inventory.find(item => item.id === this.testData.product.id);
       
       if (!testProductInventory || testProductInventory.quantity !== 60) {
         throw new Error(`Отмена документа работает неверно: ожидалось 60, получено ${testProductInventory?.quantity || 0}`);
@@ -340,7 +340,7 @@ class SystemIntegrationTest {
       console.log(`   ✅ Ответ получен за ${responseTime}мс`);
       
       // Проверяем наличие нашего товара
-      const testProductAvailability = availability.find(item => item.id === this.testData.product!.id);
+      const testProductAvailability = availability.find(item => item.id === this.testData.product.id);
       if (!testProductAvailability) {
         throw new Error('Тестовый товар не найден в данных availability');
       }

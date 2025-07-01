@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { insertContractorSchema, type InsertContractor, type Contractor } from "../../shared/schema";
+import { apiLogger } from "../../shared/logger";
 
 export class ContractorService {
   async getAll(): Promise<Contractor[]> {
@@ -47,7 +48,7 @@ export class ContractorService {
           results.push({ id, status: 'not_found' });
         }
       } catch (error) {
-        console.error(`Error deleting contractor ${id}:`, error);
+        apiLogger.error(`Error deleting contractor ${id}`, { contractorId: id, error: error instanceof Error ? error.message : String(error) });
         results.push({ id, status: 'error' });
       }
     }
@@ -87,7 +88,7 @@ export class ContractorService {
         
         results.push(contractor);
       } catch (error) {
-        console.error('Error importing contractor:', contractorData, error);
+        apiLogger.error('Error importing contractor', { contractorData, error: error instanceof Error ? error.message : String(error) });
       }
     }
 

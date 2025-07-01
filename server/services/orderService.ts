@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import { insertOrderSchema, insertOrderItemSchema, type InsertOrder, type Order, type CreateOrderItem } from "../../shared/schema";
 import { transactionService } from "./transactionService";
+import { apiLogger } from "../../shared/logger";
 
 export class OrderService {
   async getAll(): Promise<Order[]> {
@@ -64,7 +65,7 @@ export class OrderService {
           results.push({ id, status: 'not_found' });
         }
       } catch (error) {
-        console.error(`Error deleting order ${id}:`, error);
+        apiLogger.error(`Error deleting order ${id}`, { orderId: id, error: error instanceof Error ? error.message : String(error) });
         results.push({ id, status: 'error' });
       }
     }

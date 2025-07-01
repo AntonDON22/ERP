@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { insertSupplierSchema, type InsertSupplier, type Supplier } from "../../shared/schema";
+import { apiLogger } from "../../shared/logger";
 
 export class SupplierService {
   async getAll(): Promise<Supplier[]> {
@@ -47,7 +48,7 @@ export class SupplierService {
           results.push({ id, status: 'not_found' });
         }
       } catch (error) {
-        console.error(`Error deleting supplier ${id}:`, error);
+        apiLogger.error(`Error deleting supplier ${id}`, { supplierId: id, error: error instanceof Error ? error.message : String(error) });
         results.push({ id, status: 'error' });
       }
     }
@@ -87,7 +88,7 @@ export class SupplierService {
         
         results.push(supplier);
       } catch (error) {
-        console.error('Error importing supplier:', supplierData, error);
+        apiLogger.error('Error importing supplier', { supplierData, error: error instanceof Error ? error.message : String(error) });
       }
     }
 

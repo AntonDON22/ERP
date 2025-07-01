@@ -16,6 +16,7 @@ import OrdersList from "@/pages/OrdersList";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
 import WarehousesList from "@/pages/WarehousesList";
+import AdminPanel from "@/pages/AdminPanel";
 
 function App() {
   return (
@@ -37,6 +38,7 @@ function App() {
               <Route path="/orders" component={OrdersList} />
               <Route path="/orders/create" component={CreateOrder} />
               <Route path="/orders/:id" component={EditOrder} />
+              <Route path="/admin" component={AdminPanel} />
             </Switch>
           </div>
         </Router>

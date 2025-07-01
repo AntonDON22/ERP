@@ -14,6 +14,7 @@ import { documentService } from "./services/documentService";
 import { inventoryService } from "./services/inventoryService";
 import { orderService } from "./services/orderService";
 import { transactionService } from "./services/transactionService";
+import { materializedViewService } from "./services/materializedViewService";
 
 // Импорт middleware валидации
 import { 
@@ -852,6 +853,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating order:", error);
       res.status(500).json({ message: "Ошибка при обновлении заказа" });
+    }
+  });
+
+  // Materialized Views API routes
+  // Initialize materialized views
+  app.post("/api/admin/materialized-views/init", async (req, res) => {
+    try {
+      await materializedViewService.initializeMaterializedViews();
+      res.json({ message: "Материализованные представления инициализированы" });
+    } catch (error) {
+      console.error("Error initializing materialized views:", error);
+      res.status(500).json({ message: "Ошибка при инициализации представлений" });
+    }
+  });
+
+  // Refresh all materialized views
+  app.post("/api/admin/materialized-views/refresh", async (req, res) => {
+    try {
+      await materializedViewService.refreshAllViews();
+      res.json({ message: "Все материализованные представления обновлены" });
+    } catch (error) {
+      console.error("Error refreshing materialized views:", error);
+      res.status(500).json({ message: "Ошибка при обновлении представлений" });
+    }
+  });
+
+  // Get materialized views status
+  app.get("/api/admin/materialized-views/status", async (req, res) => {
+    try {
+      const stats = await inventoryService.getPerformanceStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error getting materialized views status:", error);
+      res.status(500).json({ message: "Ошибка при получении статуса представлений" });
+    }
+  });
+
+  // Toggle materialized views usage
+  app.post("/api/admin/materialized-views/toggle", async (req, res) => {
+    try {
+      const { enabled } = req.body;
+      inventoryService.setUseMaterializedViews(enabled);
+      res.json({ 
+        message: `Материализованные представления ${enabled ? 'включены' : 'выключены'}`,
+        enabled 
+      });
+    } catch (error) {
+      console.error("Error toggling materialized views:", error);
+      res.status(500).json({ message: "Ошибка при переключении представлений" });
     }
   });
 

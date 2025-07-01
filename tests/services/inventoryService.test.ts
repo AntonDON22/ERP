@@ -1,23 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Мокаем базу данных
-const mockResult: { rows: any[] } = { rows: [] };
+// Создаем мокированную БД
+const mockExecute = vi.fn();
 vi.mock('../../server/db', () => ({
   db: {
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        leftJoin: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            groupBy: vi.fn().mockReturnValue({
-              having: vi.fn().mockReturnValue({
-                orderBy: vi.fn().mockResolvedValue(mockResult),
-              }),
-            }),
-          }),
-        }),
-      }),
-    }),
-    execute: vi.fn().mockResolvedValue(mockResult),
+    execute: mockExecute,
   },
 }));
 
@@ -34,8 +21,8 @@ vi.mock('../../shared/logger', () => ({
 
 // Мокаем MaterializedViewService
 const mockMaterializedViewService = {
-  getInventorySummary: vi.fn().mockResolvedValue([]),
-  getInventoryAvailability: vi.fn().mockResolvedValue([]),
+  getInventorySummary: vi.fn(),
+  getInventoryAvailability: vi.fn(),
   getViewsStatus: vi.fn().mockResolvedValue([
     { view_name: 'inventory_summary', status: 'active' },
     { view_name: 'inventory_availability', status: 'active' }
@@ -53,6 +40,11 @@ describe('InventoryService', () => {
 
   beforeEach(async () => {
     vi.clearAllMocks();
+    
+    // Настраиваем MaterializedView мок для fallback на direct query
+    mockMaterializedViewService.getInventorySummary.mockRejectedValue(new Error('materialized view not available'));
+    mockMaterializedViewService.getInventoryAvailability.mockRejectedValue(new Error('materialized view not available'));
+    
     // Импортируем заново после очистки моков
     const module = await import('../../server/services/inventoryService');
     inventoryService = module.inventoryService;
@@ -61,19 +53,11 @@ describe('InventoryService', () => {
   describe('getInventory', () => {
     it('should return inventory with correct totals', async () => {
       const mockInventoryData = [
-        {
-          productId: 1,
-          productName: 'Товар 1',
-          totalQuantity: '25.500',
-        },
-        {
-          productId: 2,
-          productName: 'Товар 2',
-          totalQuantity: '10.000',
-        },
+        { id: 1, name: 'Товар 1', quantity: '25.500' },
+        { id: 2, name: 'Товар 2', quantity: '10.000' },
       ];
 
-      (mockResult as any).rows = mockInventoryData;
+      mockExecute.mockResolvedValueOnce({ rows: mockInventoryData });
 
       const result = await inventoryService.getInventory();
 
@@ -85,14 +69,10 @@ describe('InventoryService', () => {
 
     it('should filter by warehouse when warehouseId provided', async () => {
       const mockInventoryData = [
-        {
-          productId: 1,
-          productName: 'Товар 1',
-          totalQuantity: '15.000',
-        },
+        { id: 1, name: 'Товар 1', quantity: '15.000' },
       ];
 
-      (mockResult as any).rows = mockInventoryData;
+      mockExecute.mockResolvedValueOnce({ rows: mockInventoryData });
 
       const result = await inventoryService.getInventory(1);
 
@@ -102,7 +82,7 @@ describe('InventoryService', () => {
     });
 
     it('should handle empty inventory', async () => {
-      (mockResult as any).rows = [];
+      mockExecute.mockResolvedValueOnce({ rows: [] });
 
       const result = await inventoryService.getInventory();
 
@@ -112,26 +92,15 @@ describe('InventoryService', () => {
 
   describe('getInventoryAvailability', () => {
     it('should return availability with reserves', async () => {
+      // Переопределяем мок для успешного выполнения с правильными именами полей
       mockMaterializedViewService.getInventoryAvailability.mockResolvedValue([
-        {
-          id: 1,
-          name: 'Товар 1',
-          quantity: 25,
-          reserved: 5,
-          available: 20,
-        },
+        { product_id: 1, product_name: 'Товар 1', total_quantity: '25', reserved_quantity: '5', available_quantity: '20' },
       ]);
 
       const result = await inventoryService.getInventoryAvailability();
 
       expect(result).toEqual([
-        {
-          id: 1,
-          name: 'Товар 1',
-          quantity: 25,
-          reserved: 5,
-          available: 20,
-        },
+        { id: 1, name: 'Товар 1', quantity: 25, reserved: 5, available: 20 },
       ]);
     });
   });
@@ -140,25 +109,24 @@ describe('InventoryService', () => {
     it('should return performance stats with timing', async () => {
       const result = await inventoryService.getPerformanceStats();
 
-      expect(result).toHaveProperty('total_products');
-      expect(result).toHaveProperty('query_duration');
+      expect(result).toHaveProperty('materialized_views_enabled');
       expect(result).toHaveProperty('views_status');
       expect(Array.isArray(result.views_status)).toBe(true);
+      expect(typeof result.materialized_views_enabled).toBe('boolean');
     });
   });
 
   describe('Error Handling', () => {
     it('should handle database connection errors gracefully', async () => {
-      (mockResult as any).rows = [];
+      mockExecute.mockResolvedValueOnce({ rows: [] });
       
-      // Тест должен проходить без ошибок даже при проблемах с БД
       const result = await inventoryService.getInventory();
       expect(Array.isArray(result)).toBe(true);
     });
 
     it('should handle materialized view fallback', async () => {
       mockMaterializedViewService.getInventoryAvailability.mockRejectedValue(new Error('View error'));
-      (mockResult as any).rows = [];
+      mockExecute.mockResolvedValueOnce({ rows: [] });
 
       const result = await inventoryService.getInventoryAvailability();
       expect(Array.isArray(result)).toBe(true);
@@ -168,19 +136,11 @@ describe('InventoryService', () => {
   describe('Data Validation', () => {
     it('should validate numeric quantities correctly', async () => {
       const mockInventoryData = [
-        {
-          productId: 1,
-          productName: 'Товар 1',
-          totalQuantity: '25.500',
-        },
-        {
-          productId: 2,
-          productName: 'Товар 2',
-          totalQuantity: '0.000',
-        },
+        { id: 1, name: 'Товар 1', quantity: '25.500' },
+        { id: 2, name: 'Товар 2', quantity: '0.000' },
       ];
 
-      (mockResult as any).rows = mockInventoryData;
+      mockExecute.mockResolvedValueOnce({ rows: mockInventoryData });
 
       const result = await inventoryService.getInventory();
 

@@ -16,6 +16,9 @@ import { orderService } from "./services/orderService";
 import { transactionService } from "./services/transactionService";
 import { materializedViewService } from "./services/materializedViewService";
 
+// Импорт логирования
+import { apiLogger, getErrorMessage } from "@shared/logger";
+
 // Импорт middleware валидации
 import { 
   validateBody, 

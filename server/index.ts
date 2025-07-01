@@ -1,10 +1,15 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { logRequests, logErrors } from "./middleware/logging";
+import { logger } from "@shared/logger";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Добавляем централизованное логирование для API запросов
+app.use('/api', logRequests);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -39,6 +44,9 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Middleware для обработки ошибок
+  app.use(logErrors);
+  
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -65,6 +73,11 @@ app.use((req, res, next) => {
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    logger.info(`Server started successfully`, { 
+      port, 
+      host: "0.0.0.0", 
+      environment: app.get("env"),
+      pid: process.pid 
+    });
   });
 })();

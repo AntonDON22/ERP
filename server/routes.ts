@@ -6,6 +6,13 @@ import { insertProductSchema, importProductSchema, insertSupplierSchema, insertC
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 
+// Импорт сервисов
+import { productService } from "./services/productService";
+import { supplierService } from "./services/supplierService";
+import { contractorService } from "./services/contractorService";
+import { documentService } from "./services/documentService";
+import { inventoryService } from "./services/inventoryService";
+
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
   if (value === null || value === undefined || value === "") {
@@ -40,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all products
   app.get("/api/products", async (req, res) => {
     try {
-      const products = await storage.getProducts();
+      const products = await productService.getAll();
       res.json(products);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -56,7 +63,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Некорректный ID товара" });
       }
 
-      const success = await storage.deleteProduct(id);
+      const success = await productService.delete(id);
       if (!success) {
         return res.status(404).json({ message: "Товар не найден" });
       }
@@ -72,100 +79,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/products/delete-multiple", async (req, res) => {
     try {
       const { productIds } = req.body;
+      const result = await productService.deleteMultiple(productIds);
       
-      if (!Array.isArray(productIds) || productIds.length === 0) {
-        return res.status(400).json({ message: "Укажите массив ID товаров для удаления" });
-      }
-
-      // Проверяем, что все ID являются числами
-      const validIds = productIds.filter(id => Number.isInteger(id) && id > 0);
-      if (validIds.length !== productIds.length) {
-        return res.status(400).json({ message: "Все ID товаров должны быть положительными числами" });
-      }
-
-      const results = [];
-      let deletedCount = 0;
-      
-      for (const id of validIds) {
-        try {
-          const success = await storage.deleteProduct(id);
-          if (success) {
-            deletedCount++;
-            results.push({ id, status: 'deleted' });
-          } else {
-            results.push({ id, status: 'not_found' });
-          }
-        } catch (error) {
-          console.error(`Error deleting product ${id}:`, error);
-          results.push({ id, status: 'error' });
-        }
-      }
-
       res.json({ 
-        message: `Удалено товаров: ${deletedCount} из ${productIds.length}`,
-        deletedCount,
-        results 
+        message: `Удалено товаров: ${result.deletedCount} из ${productIds.length}`,
+        deletedCount: result.deletedCount,
+        results: result.results 
       });
     } catch (error) {
       console.error("Error deleting multiple products:", error);
-      res.status(500).json({ message: "Ошибка при удалении товаров" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Ошибка при удалении товаров" });
     }
   });
 
   // Bulk import products
   app.post("/api/products/import", async (req, res) => {
     try {
-      // Данные приходят как объект с массивом products из фронтенда
-      const products = req.body.products;
-      
-      if (!Array.isArray(products)) {
-        return res.status(400).json({ message: "Ожидается массив товаров" });
-      }
-
-      const results = [];
-      for (const productData of products) {
-        try {
-          // Простая валидация для импорта с очисткой числовых значений
-          const validatedData = {
-            name: productData.name || productData.Название || "Без названия",
-            sku: productData.sku || productData.Артикул || `SKU-${Date.now()}`,
-            price: cleanNumericValue(productData.price || productData.Цена || "0") || "0",
-            purchasePrice: cleanNumericValue(productData.purchasePrice || productData["Закупочная цена"]) || undefined,
-            weight: cleanNumericValue(productData.weight || productData.Вес) || undefined,
-            length: cleanNumericValue(productData.length || productData.Длина) || undefined,
-            width: cleanNumericValue(productData.width || productData.Ширина) || undefined,
-            height: cleanNumericValue(productData.height || productData.Высота) || undefined,
-            barcode: String(productData.barcode || productData["Штрихкод"] || productData["Штрих-код"] || ""),
-            imageUrl: String(productData.imageUrl || productData["Изображение"] || ""),
-          };
-          
-          // Проверяем наличие ID для обновления
-          const id = productData.ID || productData.id;
-          let product;
-          
-          if (id && Number.isInteger(Number(id))) {
-            const numericId = Number(id);
-            // Обновляем существующий товар
-            product = await storage.updateProduct(numericId, validatedData);
-            if (!product) {
-              // Если товар с таким ID не найден, создаем новый
-              product = await storage.createProduct(validatedData);
-            }
-          } else {
-            // Создаем новый товар
-            product = await storage.createProduct(validatedData);
-          }
-          
-          results.push(product);
-        } catch (error) {
-          console.error('Error importing product:', productData, error);
-        }
-      }
-
+      const { products } = req.body;
+      const results = await productService.import(products);
       res.json(results);
     } catch (error) {
       console.error("Error importing products:", error);
-      res.status(500).json({ message: "Ошибка при импорте товаров" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Ошибка при импорте товаров" });
     }
   });
 
@@ -173,7 +108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all suppliers
   app.get("/api/suppliers", async (req, res) => {
     try {
-      const suppliers = await storage.getSuppliers();
+      const suppliers = await supplierService.getAll();
       res.json(suppliers);
     } catch (error) {
       console.error("Error fetching suppliers:", error);
@@ -185,42 +120,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/suppliers/delete-multiple", async (req, res) => {
     try {
       const { ids } = req.body;
+      const result = await supplierService.deleteMultiple(ids);
       
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: "Укажите массив ID поставщиков для удаления" });
-      }
-
-      const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
-      if (validIds.length !== ids.length) {
-        return res.status(400).json({ message: "Некорректные ID поставщиков" });
-      }
-
-      let deletedCount = 0;
-      const results = [];
-
-      for (const id of validIds) {
-        try {
-          const success = await storage.deleteSupplier(id);
-          if (success) {
-            deletedCount++;
-            results.push({ id, status: 'deleted' });
-          } else {
-            results.push({ id, status: 'not_found' });
-          }
-        } catch (error) {
-          console.error(`Error deleting supplier ${id}:`, error);
-          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
-        }
-      }
-
       res.json({ 
-        message: `Удалено поставщиков: ${deletedCount} из ${ids.length}`,
-        deletedCount,
-        results 
+        message: `Удалено поставщиков: ${result.deletedCount} из ${ids.length}`,
+        deletedCount: result.deletedCount,
+        results: result.results
       });
     } catch (error) {
       console.error("Error deleting multiple suppliers:", error);
-      res.status(500).json({ message: "Ошибка при удалении поставщиков" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Ошибка при удалении поставщиков" });
     }
   });
 
@@ -228,53 +137,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/suppliers/import", async (req, res) => {
     try {
       const { suppliers } = req.body;
-
-      if (!Array.isArray(suppliers)) {
-        return res.status(400).json({ message: "Ожидается массив поставщиков" });
-      }
-
-      const results = [];
-      for (const supplierData of suppliers) {
-        try {
-          const validatedData = {
-            name: supplierData.name || supplierData.Название || "Без названия",
-            website: String(supplierData.website || supplierData.Вебсайт || ""),
-          };
-          
-          // Проверяем наличие ID для обновления
-          const id = supplierData.ID || supplierData.id;
-          let supplier;
-          
-          if (id && Number.isInteger(Number(id))) {
-            const numericId = Number(id);
-            // Обновляем существующего поставщика
-            supplier = await storage.updateSupplier(numericId, validatedData);
-            if (!supplier) {
-              // Если поставщик с таким ID не найден, создаем нового
-              supplier = await storage.createSupplier(validatedData);
-            }
-          } else {
-            // Создаем нового поставщика
-            supplier = await storage.createSupplier(validatedData);
-          }
-          
-          results.push(supplier);
-        } catch (error) {
-          console.error('Error importing supplier:', supplierData, error);
-        }
-      }
-
+      const results = await supplierService.import(suppliers);
       res.json(results);
     } catch (error) {
       console.error("Error importing suppliers:", error);
-      res.status(500).json({ message: "Ошибка при импорте поставщиков" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "Ошибка при импорте поставщиков" });
     }
   });
 
   // Get all contractors
   app.get("/api/contractors", async (req, res) => {
     try {
-      const contractors = await storage.getContractors();
+      const contractors = await contractorService.getAll();
       res.json(contractors);
     } catch (error) {
       console.error("Error fetching contractors:", error);
@@ -290,7 +164,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Некорректный ID контрагента" });
       }
 
-      const success = await storage.deleteContractor(id);
+      const success = await contractorService.delete(id);
       if (success) {
         res.json({ message: "Контрагент удален" });
       } else {
@@ -321,7 +195,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       for (const id of validIds) {
         try {
-          const success = await storage.deleteContractor(id);
+          const success = await contractorService.delete(id);
           if (success) {
             deletedCount++;
             results.push({ id, status: 'deleted' });
@@ -369,14 +243,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (id && Number.isInteger(Number(id))) {
             const numericId = Number(id);
             // Обновляем существующего контрагента
-            contractor = await storage.updateContractor(numericId, validatedData);
+            contractor = await contractorService.update(numericId, validatedData);
             if (!contractor) {
               // Если контрагент с таким ID не найден, создаем нового
-              contractor = await storage.createContractor(validatedData);
+              contractor = await contractorService.create(validatedData);
             }
           } else {
             // Создаем нового контрагента
-            contractor = await storage.createContractor(validatedData);
+            contractor = await contractorService.create(validatedData);
           }
           
           results.push(contractor);

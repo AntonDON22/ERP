@@ -31,6 +31,12 @@ export default function Dashboard() {
       displayDate: "1 июля 2025",
       updates: [
         {
+          time: "10:50",
+          type: "feature",
+          title: "Рефакторинг routes.ts → services/",
+          description: "Создана архитектура сервисов: productService, supplierService, contractorService, documentService, inventoryService. Вынесена бизнес-логика из маршрутов для улучшения читаемости и тестируемости"
+        },
+        {
           time: "10:45",
           type: "fix",
           title: "Исправлен расчет отрицательной доступности",

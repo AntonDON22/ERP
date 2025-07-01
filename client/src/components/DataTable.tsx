@@ -156,6 +156,21 @@ export default function DataTable<T extends { id: number; name: string }>({
         console.warn("Failed to parse saved column widths");
       }
     }
+    // Очищаем все старые настройки ширины для сброса к минимальным значениям
+    // Этот код можно удалить после первого запуска на всех клиентах
+    const now = Date.now();
+    const resetKey = 'dataTable-reset-to-min-width';
+    const lastReset = localStorage.getItem(resetKey);
+    if (!lastReset || now - parseInt(lastReset) > 24 * 60 * 60 * 1000) { // 24 часа
+      // Очищаем только настройки ширины столбцов, сохраняем видимость
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('dataTable-') && key.includes('-columnWidths')) {
+          localStorage.removeItem(key);
+        }
+      });
+      localStorage.setItem(resetKey, now.toString());
+      setColumnWidths({});
+    }
   }, [widthStorageKey]);
 
   // Загрузка скрытых столбцов при монтировании
@@ -193,13 +208,12 @@ export default function DataTable<T extends { id: number; name: string }>({
     if (!isResizing || !tableRef.current) return;
 
     const table = tableRef.current;
-    const tableRect = table.getBoundingClientRect();
     const columnHeader = table.querySelector(`th[data-column="${isResizing}"]`) as HTMLElement;
     
     if (!columnHeader) return;
 
     const currentColumn = columns.find(col => String(col.key) === isResizing);
-    const minWidth = currentColumn?.minWidth || 100;
+    const minWidth = currentColumn?.minWidth || 150;
     
     const mouseX = event.clientX;
     const headerRect = columnHeader.getBoundingClientRect();
@@ -590,7 +604,8 @@ export default function DataTable<T extends { id: number; name: string }>({
                 )}
                 {visibleColumns.map((column, index) => {
                   const columnKey = String(column.key);
-                  const width = columnWidths[columnKey] || (column.width ? parseInt(column.width.replace(/\D/g, '')) || 200 : 200);
+                  const defaultWidth = column.minWidth || 150;
+                  const width = columnWidths[columnKey] || defaultWidth;
                   
                   return (
                     <th
@@ -655,7 +670,8 @@ export default function DataTable<T extends { id: number; name: string }>({
                     const value = item[column.key];
                     const formattedValue = column.format ? column.format(value) : value;
                     const columnKey = String(column.key);
-                    const width = columnWidths[columnKey] || (column.width ? parseInt(column.width.replace(/\D/g, '')) || 200 : 200);
+                    const defaultWidth = column.minWidth || 150;
+                    const width = columnWidths[columnKey] || defaultWidth;
                     
                     return (
                       <td

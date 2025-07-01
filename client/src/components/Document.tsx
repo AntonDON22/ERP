@@ -150,6 +150,7 @@ export default function Document({ config, documentData }: DocumentProps) {
         await updateMutation.mutateAsync({
           id: documentData.id,
           data: {
+            type: documentType,
             warehouseId: data.warehouseId,
             items: data.items.map((item: FormDocumentItem) => ({
               productId: item.productId,

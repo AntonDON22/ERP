@@ -541,14 +541,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Некорректный ID документа" });
       }
 
-      const { warehouseId, items } = req.body;
+      const { warehouseId, items, type } = req.body;
       
-      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, items });
+      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, items, type });
 
-      // Обновляем склад документа
+      // Обновляем документ (склад и тип)
       const [updatedDocument] = await db
         .update(documents)
-        .set({ warehouseId })
+        .set({ warehouseId, type })
         .where(eq(documents.id, id))
         .returning();
 
@@ -570,16 +570,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await db.insert(documentItems).values(documentItemsData);
 
-      // Создаем новые записи inventory
-      const inventoryData = items.map((item: any) => ({
-        documentId: id,
-        productId: item.productId,
-        quantity: item.quantity,
-        price: item.price,
-        movementType: 'IN'
-      }));
-
-      await db.insert(inventory).values(inventoryData);
+      // Создаем новые записи inventory в зависимости от типа
+      if (type === 'Оприходование') {
+        // Для оприходования - просто добавляем положительные записи
+        const inventoryData = items.map((item: any) => ({
+          documentId: id,
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+          movementType: 'IN'
+        }));
+        await db.insert(inventory).values(inventoryData);
+      } else if (type === 'Списание') {
+        // Для списания - добавляем отрицательные записи (FIFO будет обрабатывать позже)
+        const inventoryData = items.map((item: any) => ({
+          documentId: id,
+          productId: item.productId,
+          quantity: -Math.abs(item.quantity), // Отрицательное количество для списания
+          price: item.price,
+          movementType: 'OUT'
+        }));
+        await db.insert(inventory).values(inventoryData);
+      }
 
       console.log(`✅ Документ ${id} обновлен`);
       res.json(updatedDocument);

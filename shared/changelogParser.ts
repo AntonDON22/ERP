@@ -97,6 +97,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
       if (match) {
         const [, dateStr, content] = match;
         const isoDate = convertRussianDateToISO(dateStr);
+
         if (isoDate) {
           updates.push({
             date: isoDate,
@@ -107,6 +108,9 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
     }
   }
 
+  // Обращаем порядок записей - новые сверху 
+  updates.reverse();
+  
   // Группируем по датам
   const groupedByDate = new Map<string, Array<string>>();
   
@@ -133,7 +137,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
         title,
         description
       };
-    }).reverse(); // Новые записи сверху
+    }); // Порядок уже установлен в updates.reverse() выше
 
     dayData.push({
       date,

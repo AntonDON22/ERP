@@ -3,7 +3,7 @@ import { Warehouse } from "@shared/schema";
 import { apiRequest, getQueryFn } from "@/lib/queryClient";
 
 export const useWarehouses = () => {
-  return useQuery({
+  return useQuery<Warehouse[]>({
     queryKey: ["/api/warehouses"],
     queryFn: getQueryFn({ on401: "throw" }),
   });

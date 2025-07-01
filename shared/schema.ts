@@ -45,6 +45,7 @@ export const documents = pgTable("documents", {
   name: text("name").notNull(),
   type: text("type"),
   date: text("date"),
+  warehouseId: integer("warehouse_id").references(() => warehouses.id),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -119,6 +120,7 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   name: z.string().min(1, "Название обязательно"),
   type: z.string().optional(),
   date: z.string().optional(),
+  warehouseId: z.number().optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -191,5 +193,6 @@ export const documentItemSchema = z.object({
 export const receiptDocumentSchema = z.object({
   name: z.string().min(1, "Название документа обязательно"),
   date: z.string().min(1, "Дата документа обязательна"),
+  warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });

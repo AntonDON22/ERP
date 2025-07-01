@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/useTypedQuery";
+import { useWarehouses } from "@/hooks/useWarehouses";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { Product } from "@shared/schema";
+import { Product, Warehouse } from "@shared/schema";
 
 // Конфигурация для типов документов
 export interface DocumentTypeConfig {
@@ -30,6 +31,7 @@ export interface ExistingDocumentData {
   name: string;
   type: string;
   date: string;
+  warehouseId?: number;
   items: Array<{
     id: number;
     productId: number;
@@ -47,6 +49,7 @@ const documentItemSchema = z.object({
 
 // Схема для формы документа
 const documentSchema = z.object({
+  warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
@@ -63,6 +66,7 @@ export default function Document({ config, documentData }: DocumentProps) {
   const { toast } = useToast();
   const mutation = config.mutationHook();
   const { data: products = [] } = useProducts();
+  const { data: warehouses = [] } = useWarehouses();
   
   // Состояние для типа документа
   const [documentType, setDocumentType] = useState(documentData?.type || config.type);
@@ -75,6 +79,7 @@ export default function Document({ config, documentData }: DocumentProps) {
   const form = useForm<FormDocument>({
     resolver: zodResolver(documentSchema),
     defaultValues: {
+      warehouseId: documentData?.warehouseId || 0,
       items: documentData?.items?.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -116,6 +121,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     try {
       const documentToSave = {
         type: documentType,
+        warehouseId: data.warehouseId,
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
           quantity: item.quantity.toString(),
@@ -216,6 +222,39 @@ export default function Document({ config, documentData }: DocumentProps) {
       </Card>
 
       <form id="document-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Склад</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label>Склад</Label>
+                <Select
+                  value={form.watch('warehouseId')?.toString() || ""}
+                  onValueChange={(value) => form.setValue('warehouseId', parseInt(value))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Выберите склад" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {warehouses.map((warehouse: Warehouse) => (
+                      <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                        {warehouse.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {form.formState.errors.warehouseId && (
+                  <p className="text-sm text-red-500 mt-1">
+                    {form.formState.errors.warehouseId.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">

@@ -94,7 +94,7 @@ describe('InventoryService', () => {
     it('should return availability with reserves', async () => {
       // Переопределяем мок для успешного выполнения с правильными именами полей
       mockMaterializedViewService.getInventoryAvailability.mockResolvedValue([
-        { product_id: 1, product_name: 'Товар 1', total_quantity: '25', reserved_quantity: '5', available_quantity: '20' },
+        { id: 1, name: 'Товар 1', total_quantity: '25', reserved_quantity: '5', available_quantity: '20' },
       ]);
 
       const result = await inventoryService.getInventoryAvailability();

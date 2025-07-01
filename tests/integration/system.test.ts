@@ -1,4 +1,3 @@
-#!/usr/bin/env tsx
 /**
  * 🧪 Автоматический интеграционный тест системы ERP
  * 
@@ -7,10 +6,9 @@
  * - FIFO инвентарь (приходные и расходные документы)
  * - Материализованные представления
  * - Здоровье системы
- * 
- * Запуск: npx tsx tests/integration/system.test.ts
  */
 
+import { describe, it, expect } from 'vitest';
 import { testConfig } from '../config';
 import { logger } from '../logger';
 import { ErrorAggregator } from '../errorAggregator';
@@ -518,7 +516,29 @@ class SystemTester {
   }
 }
 
-// Запуск тестирования
+// Виtest тесты
+describe('System Integration Tests', () => {
+  it('should run full ERP system test', async () => {
+    const tester = new SystemTester();
+    
+    // Мокируем process.exit для vitest
+    const originalExit = process.exit;
+    let exitCode: number | undefined;
+    process.exit = ((code?: string | number) => {
+      exitCode = typeof code === 'number' ? code : Number(code) || 0;
+      return {} as never;
+    }) as typeof process.exit;
+
+    try {
+      await tester.runAllTests();
+      expect(exitCode).toBe(0); // Проверяем успешное завершение
+    } finally {
+      process.exit = originalExit;
+    }
+  }, 30000); // 30 секунд timeout
+});
+
+// Запуск тестирования через CLI
 if (import.meta.url === `file://${process.argv[1]}`) {
   const tester = new SystemTester();
   tester.runAllTests().catch(error => {

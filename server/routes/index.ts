@@ -111,6 +111,22 @@ router.delete("/contractors/:id", async (req, res) => {
   }
 });
 
+// POST /api/contractors/delete-multiple  
+router.post("/contractors/delete-multiple", async (req, res) => {
+  try {
+    const validatedData = deleteContractorsSchema.parse(req.body);
+    const result = await contractorService.deleteMultiple(validatedData.contractorIds);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
+    apiLogger.error("Failed to delete multiple contractors", { body: req.body, error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка удаления контрагентов" });
+  }
+});
+
 // Маршруты для складов
 router.get("/warehouses", async (req, res) => {
   try {
@@ -148,6 +164,22 @@ router.delete("/warehouses/:id", async (req, res) => {
   } catch (error) {
     apiLogger.error("Failed to delete warehouse", { warehouseId: req.params.id, error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка удаления склада" });
+  }
+});
+
+// POST /api/warehouses/delete-multiple
+router.post("/warehouses/delete-multiple", async (req, res) => {
+  try {
+    const validatedData = deleteWarehousesSchema.parse(req.body);
+    const result = await warehouseService.deleteMultiple(validatedData.warehouseIds);
+    res.json(result);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
+    apiLogger.error("Failed to delete multiple warehouses", { body: req.body, error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка удаления складов" });
   }
 });
 

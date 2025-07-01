@@ -1,15 +1,28 @@
 import { useDocuments, useDeleteDocuments } from "@/hooks/useTypedQuery";
+import { useWarehouses } from "@/hooks/useWarehouses";
 import DataTable, { ColumnConfig } from "@/components/DataTable";
 import { DocumentRecord } from "@shared/schema";
 import { useLocation } from "wouter";
 
-const columns: ColumnConfig<DocumentRecord>[] = [
-  { key: 'name', label: 'Название', width: '40%', copyable: true, multiline: true },
-  { key: 'type', label: 'Тип', width: '20%', copyable: true, multiline: true },
+// Создаем функцию для получения колонок с данными складов
+const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnConfig<DocumentRecord>[] => [
+  { key: 'name', label: 'Название', width: '35%', copyable: true, multiline: true },
+  { key: 'type', label: 'Тип', width: '15%', copyable: true, multiline: true },
+  { 
+    key: 'warehouseId', 
+    label: 'Склад', 
+    width: '20%', 
+    copyable: true,
+    format: (value: any) => {
+      if (!value) return 'Не указан';
+      const warehouse = warehouses.find(w => w.id === value);
+      return warehouse ? warehouse.name : `Склад ${value}`;
+    }
+  },
   { 
     key: 'createdAt', 
     label: 'Дата и время', 
-    width: '40%', 
+    width: '30%', 
     copyable: true,
     format: (value: any) => {
       if (!value) return '';
@@ -27,9 +40,13 @@ const columns: ColumnConfig<DocumentRecord>[] = [
 ];
 
 export default function DocumentsList() {
-  const { data: documents = [], isLoading } = useDocuments();
+  const { data: documents = [], isLoading: documentsLoading } = useDocuments();
+  const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
   const deleteDocuments = useDeleteDocuments();
   const [, setLocation] = useLocation();
+
+  // Создаем колонки с данными складов
+  const columns = createColumns(warehouses);
 
   const handleCreate = () => {
     setLocation("/documents/create-receipt");
@@ -43,7 +60,7 @@ export default function DocumentsList() {
     <DataTable
       data={documents}
       columns={columns}
-      isLoading={isLoading}
+      isLoading={documentsLoading || warehousesLoading}
       entityName="документ"
       entityNamePlural="Документы"
       searchFields={['name', 'type', 'date']}

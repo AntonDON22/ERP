@@ -782,9 +782,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create order
   app.post("/api/orders/create", async (req, res) => {
     try {
-      const { status, customerId, warehouseId, notes, items } = req.body;
+      const { status, customerId, warehouseId, items } = req.body;
       
-      console.log(`🔄 Создание заказа:`, { status, customerId, warehouseId, notes, items });
+      console.log(`🔄 Создание заказа:`, { status, customerId, warehouseId, items });
 
       // Создаем заказ в транзакции
       const order = await db.transaction(async (tx) => {
@@ -796,7 +796,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status,
             customerId: customerId || null,
             warehouseId,
-            notes: notes || "",
             date: new Date().toISOString().split('T')[0],
             totalAmount: "0",
           })
@@ -893,9 +892,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Некорректный ID заказа" });
       }
 
-      const { status, customerId, warehouseId, notes, items } = req.body;
+      const { status, customerId, warehouseId, items } = req.body;
       
-      console.log(`🔄 Обновление заказа ${id}:`, { status, customerId, warehouseId, notes, items });
+      console.log(`🔄 Обновление заказа ${id}:`, { status, customerId, warehouseId, items });
 
       // Обновляем заказ в транзакции
       const updatedOrder = await db.transaction(async (tx) => {
@@ -912,7 +911,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status,
             customerId: customerId || null,
             warehouseId,
-            notes: notes || "",
             totalAmount: totalAmount.toFixed(2)
           })
           .where(eq(orders.id, id))

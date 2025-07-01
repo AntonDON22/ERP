@@ -41,7 +41,6 @@ export default function CreateOrder() {
       customerId: 0,
       warehouseId: 0,
       status: "Новый",
-      notes: "",
       items: [{ productId: 0, quantity: 1, price: 0 }],
     },
   });
@@ -81,7 +80,6 @@ export default function CreateOrder() {
         status: orderStatus,
         customerId: data.customerId || null,
         warehouseId: data.warehouseId,
-        notes: data.notes || "",
         items: data.items.map((item: FormOrderItem) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -197,7 +195,7 @@ export default function CreateOrder() {
               )}
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
             <div>
               <Label>Заказчик</Label>
               <Select
@@ -216,14 +214,6 @@ export default function CreateOrder() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <Label>Примечания</Label>
-              <Textarea
-                {...form.register('notes')}
-                placeholder="Дополнительная информация о заказе"
-                className="min-h-[38px]"
-              />
             </div>
           </div>
         </CardContent>

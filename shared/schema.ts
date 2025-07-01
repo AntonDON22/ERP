@@ -248,6 +248,5 @@ export const orderSchema = z.object({
   customerId: z.number().optional(),
   warehouseId: z.number().min(1, "Склад обязателен"),
   status: z.string(),
-  notes: z.string().optional(),
   items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),
 });

@@ -38,37 +38,6 @@ export default function InventoryList() {
 
   return (
     <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>Фильтр по складам</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label>Склад</Label>
-              <Select
-                value={selectedWarehouseId?.toString() || "all"}
-                onValueChange={(value) => {
-                  setSelectedWarehouseId(value === "all" ? undefined : parseInt(value));
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Выберите склад" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Все склады</SelectItem>
-                  {warehouses.map((warehouse) => (
-                    <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
-                      {warehouse.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <DataTable
         data={inventory}
         columns={columns}
@@ -77,6 +46,11 @@ export default function InventoryList() {
         entityNamePlural="товары"
         searchFields={["name"]}
         hideSelectionColumn={true}
+        warehouseFilter={{
+          selectedWarehouseId,
+          warehouses,
+          onWarehouseChange: setSelectedWarehouseId,
+        }}
       />
     </div>
   );

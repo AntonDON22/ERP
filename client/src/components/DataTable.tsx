@@ -3,6 +3,7 @@ import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus } from
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { useDebounce } from "../hooks/useDebounce";
@@ -26,6 +27,12 @@ export interface ExcelExportConfig {
   headers: Record<string, string>;
 }
 
+export interface WarehouseFilterConfig {
+  selectedWarehouseId?: number;
+  warehouses: Array<{ id: number; name: string }>;
+  onWarehouseChange: (warehouseId: number | undefined) => void;
+}
+
 // Основные пропсы компонента
 export interface DataTableProps<T extends { id: number; name: string }> {
   data: T[];
@@ -42,6 +49,7 @@ export interface DataTableProps<T extends { id: number; name: string }> {
   onCreate?: () => void;
   onRowClick?: (item: T) => void;
   hideSelectionColumn?: boolean;
+  warehouseFilter?: WarehouseFilterConfig;
 }
 
 // Компонент для копируемых ячеек
@@ -95,7 +103,8 @@ export default function DataTable<T extends { id: number; name: string }>({
   importLabel = "Импорт",
   onCreate,
   onRowClick,
-  hideSelectionColumn = false
+  hideSelectionColumn = false,
+  warehouseFilter
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<keyof T>("name");
@@ -308,6 +317,29 @@ export default function DataTable<T extends { id: number; name: string }>({
             />
           </div>
         </div>
+
+        {warehouseFilter && (
+          <div className="min-w-48">
+            <Select
+              value={warehouseFilter.selectedWarehouseId?.toString() || "all"}
+              onValueChange={(value) => {
+                warehouseFilter.onWarehouseChange(value === "all" ? undefined : parseInt(value));
+              }}
+            >
+              <SelectTrigger className="h-10">
+                <SelectValue placeholder="Все склады" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Все склады</SelectItem>
+                {warehouseFilter.warehouses.map((warehouse) => (
+                  <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                    {warehouse.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         <div className="flex items-center gap-2">
           {onCreate && (

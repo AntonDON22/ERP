@@ -774,7 +774,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: item.name,
         quantity: item.quantity,
         reserved: reservesMap.get(item.id) || 0,
-        available: Math.max(0, item.quantity - (reservesMap.get(item.id) || 0))
+        available: item.quantity - (reservesMap.get(item.id) || 0) // Убрал Math.max(0, ...) чтобы показывать отрицательные значения
       }));
       
       const duration = Date.now() - startTime;

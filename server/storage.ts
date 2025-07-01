@@ -1,6 +1,6 @@
 import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, and, asc } from "drizzle-orm";
+import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -8,7 +8,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   
   // Inventory
-  getInventory(): Promise<Array<{id: number; name: string; quantity: number}>>;
+  getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>>;
   
   // Products
   getProducts(): Promise<Product[]>;
@@ -277,7 +277,7 @@ export class MemStorage implements IStorage {
     return false;
   }
 
-  async getInventory(): Promise<Array<{id: number; name: string; quantity: number}>> {
+  async getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
     const allProducts = Array.from(this.products.values());
     return allProducts.map(product => ({
       id: product.id,
@@ -292,24 +292,50 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getInventory(): Promise<Array<{id: number; name: string; quantity: number}>> {
-    console.log(`[DB] Starting getInventory query...`);
+  async getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
+    console.log(`[DB] Starting getInventory query${warehouseId ? ` for warehouse ${warehouseId}` : ''}...`);
     const startTime = Date.now();
     
     try {
-      // Получаем все товары с суммарными остатками из inventory
-      const result = await db
-        .select({
-          id: products.id,
-          name: products.name,
-          quantity: sql<number>`COALESCE(SUM(${inventory.quantity}), 0)`.as('quantity')
-        })
-        .from(products)
-        .leftJoin(inventory, eq(products.id, inventory.productId))
-        .groupBy(products.id, products.name);
+      let result;
+      
+      if (warehouseId) {
+        // Если указан склад, фильтруем по складу через documents
+        result = await db
+          .select({
+            id: products.id,
+            name: products.name,
+            quantity: sql<number>`
+              COALESCE(
+                SUM(
+                  CASE 
+                    WHEN documents.warehouse_id = ${warehouseId} OR documents.warehouse_id IS NULL 
+                    THEN inventory.quantity 
+                    ELSE 0 
+                  END
+                ), 0
+              )
+            `.as('quantity')
+          })
+          .from(products)
+          .leftJoin(inventory, eq(products.id, inventory.productId))
+          .leftJoin(documents, eq(inventory.documentId, documents.id))
+          .groupBy(products.id, products.name);
+      } else {
+        // Без фильтра по складу - показываем все остатки
+        result = await db
+          .select({
+            id: products.id,
+            name: products.name,
+            quantity: sql<number>`COALESCE(SUM(${inventory.quantity}), 0)`.as('quantity')
+          })
+          .from(products)
+          .leftJoin(inventory, eq(products.id, inventory.productId))
+          .groupBy(products.id, products.name);
+      }
       
       const endTime = Date.now();
-      console.log(`[DB] getInventory completed in ${endTime - startTime}ms, returned ${result.length} items`);
+      console.log(`[DB] getInventory completed in ${endTime - startTime}ms, returned ${result.length} items${warehouseId ? ` for warehouse ${warehouseId}` : ''}`);
       
       // Преобразуем результат, чтобы количество было числом
       return result.map(item => ({

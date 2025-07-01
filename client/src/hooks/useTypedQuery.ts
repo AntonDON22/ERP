@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor, Warehouse, InsertWarehouse } from "@shared/schema";
-import { apiRequest, apiRequestJson } from "@/lib/queryClient";
+import { apiRequest, apiRequestJson, getQueryFn } from "@/lib/queryClient";
 
 // Типизированные хуки для продуктов
 export const useProducts = () => {
@@ -116,9 +116,20 @@ export const useDeleteDocuments = () => {
 };
 
 // Типизированный хук для остатков
-export const useInventory = () => {
+export const useInventory = (warehouseId?: number) => {
+  const url = warehouseId 
+    ? `/api/inventory?warehouseId=${warehouseId}` 
+    : "/api/inventory";
+    
   return useQuery<{ id: number; name: string; quantity: number }[]>({
-    queryKey: ["/api/inventory"],
+    queryKey: ["/api/inventory", warehouseId],
+    queryFn: async () => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory');
+      }
+      return response.json();
+    },
   });
 };
 

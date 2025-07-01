@@ -560,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("🔄 Создание документа:", req.body);
       
       // Создаем простую валидацию для нового формата данных
-      const { type, items } = req.body;
+      const { type, warehouseId, items } = req.body;
       
       if (!type || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ 
@@ -580,6 +580,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Создаем данные документа без name и date
       const documentData = {
         type: type,
+        warehouseId: warehouseId,
         name: "", // Будет заполнено автоматически в storage
         date: new Date().toISOString().split('T')[0], // Текущая дата
       };
@@ -607,7 +608,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get inventory (products with their current stock levels)
   app.get("/api/inventory", async (req, res) => {
     try {
-      const inventory = await storage.getInventory();
+      const warehouseId = req.query.warehouseId ? Number(req.query.warehouseId) : undefined;
+      const inventory = await storage.getInventory(warehouseId);
       res.json(inventory);
     } catch (error) {
       console.error("Error fetching inventory:", error);

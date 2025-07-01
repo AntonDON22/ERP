@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "../components/DataTable";
 import { Warehouse } from "@shared/schema";
 import { useWarehouses } from "@/hooks/useWarehouses";
@@ -40,6 +41,9 @@ export default function WarehousesList() {
   const importWarehouses = useImportWarehouses();
   const { toast } = useToast();
 
+  const memoizedColumns = useMemo(() => columns, []);
+  const memoizedExcelConfig = useMemo(() => excelConfig, []);
+
   const handleDelete = async (ids: number[]) => {
     try {
       await deleteWarehouses.mutateAsync(ids);
@@ -75,12 +79,12 @@ export default function WarehousesList() {
   return (
     <DataTable
       data={warehouses}
-      columns={columns as any}
+      columns={memoizedColumns as any}
       isLoading={isLoading}
       entityName="склад"
       entityNamePlural="складов"
       searchFields={["name", "address"]}
-      excelConfig={excelConfig}
+      excelConfig={memoizedExcelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
       deleteLabel="Удалить"

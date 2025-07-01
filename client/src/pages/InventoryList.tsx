@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DataTable, { type ColumnConfig } from "@/components/DataTable";
 import { useInventory, useInventoryAvailability } from "@/hooks/useTypedQuery";
@@ -52,11 +52,13 @@ export default function InventoryList() {
   const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
   const { data: inventory = [], isLoading } = useInventoryAvailability(selectedWarehouseId);
 
+  const memoizedColumns = useMemo(() => columns, []);
+
   return (
     <div className="space-y-6">
       <DataTable
         data={inventory}
-        columns={columns as any}
+        columns={memoizedColumns as any}
         isLoading={isLoading || warehousesLoading}
         entityName="товар"
         entityNamePlural="товары"

@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import DataTable, { ColumnConfig } from "@/components/DataTable";
 import { useOrders, useDeleteOrders } from "@/hooks/useTypedQuery";
 import { Order } from "@shared/schema";
@@ -61,6 +62,8 @@ export default function OrdersList() {
   const deleteOrdersMutation = useDeleteOrders();
   const [, setLocation] = useLocation();
 
+  const memoizedColumns = useMemo(() => columns, []);
+
   const handleDelete = async (ids: number[]) => {
     await deleteOrdersMutation.mutateAsync(ids);
   };
@@ -76,7 +79,7 @@ export default function OrdersList() {
   return (
     <DataTable
       data={orders}
-      columns={columns as any}
+      columns={memoizedColumns as any}
       isLoading={isLoading}
       entityName="заказ"
       entityNamePlural="заказы"

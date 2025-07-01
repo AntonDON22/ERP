@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { useDocuments, useDeleteDocuments } from "@/hooks/useTypedQuery";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import DataTable, { ColumnConfig } from "@/components/DataTable";
@@ -75,7 +76,7 @@ export default function DocumentsList() {
   const [, setLocation] = useLocation();
 
   // Создаем колонки с данными складов
-  const columns = createColumns(warehouses);
+  const columns = useMemo(() => createColumns(warehouses), [warehouses]);
 
   const handleCreate = () => {
     setLocation("/documents/create-receipt");

@@ -1,5 +1,6 @@
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Router, Route, Switch } from "wouter";
@@ -42,6 +43,7 @@ function App() {
           </div>
         </Router>
         <Toaster />
+        <ReactQueryDevtools initialIsOpen={false} />
       </TooltipProvider>
     </QueryClientProvider>
   );

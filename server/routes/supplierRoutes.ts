@@ -3,13 +3,19 @@ import { SupplierService } from "../services/supplierService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
+import { insertSupplierSchema } from "../../shared/schema";
 
 const router = Router();
 const supplierService = new SupplierService();
 
-// Валидация для удаления поставщиков
+// Валидация схем
+const createSupplierSchema = insertSupplierSchema;
+const updateSupplierSchema = insertSupplierSchema.partial();
 const deleteSuppliersSchema = z.object({
   supplierIds: z.array(z.number()).min(1, "Укажите хотя бы одного поставщика для удаления"),
+});
+const getSupplierSchema = z.object({
+  id: z.string().transform(val => parseInt(val)).refine(val => !isNaN(val), "ID должен быть числом"),
 });
 
 // GET /api/suppliers
@@ -26,10 +32,7 @@ router.get("/", async (req, res) => {
 // GET /api/suppliers/:id
 router.get("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID поставщика" });
-    }
+    const { id } = getSupplierSchema.parse(req.params);
     
     const supplier = await supplierService.getById(id);
     if (!supplier) {
@@ -38,6 +41,10 @@ router.get("/:id", async (req, res) => {
     
     res.json(supplier);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
     apiLogger.error("Failed to get supplier", { supplierId: req.params.id, error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка получения поставщика" });
   }
@@ -46,9 +53,14 @@ router.get("/:id", async (req, res) => {
 // POST /api/suppliers
 router.post("/", async (req, res) => {
   try {
-    const supplier = await supplierService.create(req.body);
+    const validatedData = createSupplierSchema.parse(req.body);
+    const supplier = await supplierService.create(validatedData);
     res.status(201).json(supplier);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
     apiLogger.error("Failed to create supplier", { body: req.body, error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка создания поставщика" });
   }
@@ -57,18 +69,20 @@ router.post("/", async (req, res) => {
 // PUT /api/suppliers/:id
 router.put("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID поставщика" });
-    }
+    const { id } = getSupplierSchema.parse(req.params);
+    const validatedData = updateSupplierSchema.parse(req.body);
     
-    const supplier = await supplierService.update(id, req.body);
+    const supplier = await supplierService.update(id, validatedData);
     if (!supplier) {
       return res.status(404).json({ error: "Поставщик не найден" });
     }
     
     res.json(supplier);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
     apiLogger.error("Failed to update supplier", { supplierId: req.params.id, body: req.body, error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка обновления поставщика" });
   }

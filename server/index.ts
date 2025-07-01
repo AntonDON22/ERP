@@ -1,12 +1,39 @@
 import express, { type Request, Response, NextFunction } from "express";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { logRequests, logErrors } from "./middleware/logging";
 import { logger } from "@shared/logger";
 
 const app = express();
+app.set('trust proxy', 1); // Доверяем первому прокси для корректной работы rate limiter
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Rate limiting для защиты от спама и DoS атак
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 1000, // максимум 1000 запросов с одного IP за 15 минут
+  message: {
+    error: "Слишком много запросов с вашего IP, попробуйте позже"
+  },
+  standardHeaders: true, // возвращать rate limit info в заголовках `RateLimit-*`
+  legacyHeaders: false, // отключить заголовки `X-RateLimit-*`
+});
+
+// Более строгие лимиты для API маршрутов
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 500, // максимум 500 API запросов с одного IP за 15 минут
+  message: {
+    error: "Слишком много API запросов с вашего IP, попробуйте позже"
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use(limiter);
+app.use('/api', apiLimiter);
 
 // Добавляем централизованное логирование для API запросов
 app.use('/api', logRequests);

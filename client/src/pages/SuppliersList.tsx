@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "@/components/DataTable";
 import { Supplier } from "@shared/schema";
 import { useSuppliers, useDeleteSuppliers, useImportSuppliers } from "@/hooks/useTypedQuery";
@@ -32,6 +33,9 @@ export default function SuppliersList() {
   const deleteSuppliersMutation = useDeleteSuppliers();
   const importSuppliersMutation = useImportSuppliers();
 
+  const memoizedColumns = useMemo(() => suppliersColumns, []);
+  const memoizedExcelConfig = useMemo(() => excelConfig, []);
+
   const handleDelete = async (ids: number[]) => {
     await deleteSuppliersMutation.mutateAsync(ids);
   };
@@ -43,12 +47,12 @@ export default function SuppliersList() {
   return (
     <DataTable
       data={suppliers}
-      columns={suppliersColumns as any}
+      columns={memoizedColumns as any}
       isLoading={isLoading}
       entityName="поставщик"
       entityNamePlural="Поставщики"
       searchFields={["name", "website"]}
-      excelConfig={excelConfig}
+      excelConfig={memoizedExcelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
     />

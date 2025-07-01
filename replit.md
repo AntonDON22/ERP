@@ -149,8 +149,12 @@ The application uses a dual storage approach:
 - July 1, 2025. Enhanced document type changing: Added support for changing document types (Оприходование ↔ Списание) with proper inventory recalculation. System now handles positive quantities for receipts and negative quantities for writeoffs with correct movementType values.
 - July 1, 2025. Improved document naming system: Changed from "Type+ID" format to "Type day.month-number" format (e.g., "Оприходование 01.07-1"). Implemented daily numbering within document types and automatic name updates when document type changes.
 - July 1, 2025. Optimized Document component interface: Combined document type and warehouse selection into single card block for more compact and user-friendly layout. Reduced interface complexity while maintaining full functionality.
+- July 1, 2025. Created complete Orders module with database schema, API routes, and user interface. Implemented automatic order naming in "Заказ день.месяц-номер" format, status management (Новый, В работе, Выполнен, Отменен), customer assignment, warehouse selection, and order items with pricing. Added full CRUD operations, search, and deletion functionality.
+- July 1, 2025. Reorganized navigation structure: Created "Настройки" dropdown menu containing Поставщики, Контрагенты, and Склады. Main navigation now shows core business operations (Товары, Документы, Остатки, Заказы) while administrative settings are grouped separately. Updated both desktop and mobile navigation layouts.
+- July 1, 2025. Fixed visual consistency issues in Orders module: Corrected column widths to match other DataTable pages, fixed Russian declension in statistics display (заказы → заказов), and removed extra padding wrapper to ensure identical spacing with Documents page. All DataTable pages now have uniform appearance and behavior.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
 Always update Dashboard changelog: Add new entries to the changelog history on the Dashboard page for every system change or update.
+When asked to create "identical" or "same" pages: Copy the exact structure, styling, and layout without adding extra wrappers or modifications. Pay attention to padding, margins, and HTML structure to ensure visual consistency.

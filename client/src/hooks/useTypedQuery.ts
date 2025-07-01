@@ -209,3 +209,93 @@ export const useUpdateDocument = () => {
     },
   });
 };
+
+// Типизированные хуки для заказов
+export const useOrders = () => {
+  return useQuery<any[]>({
+    queryKey: ["/api/orders"],
+  });
+};
+
+export const useDeleteOrders = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderIds: number[]) => {
+      return apiRequest("/api/orders/delete-multiple", "POST", { orderIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+  });
+};
+
+export const useCreateOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (orderData: any) => {
+      return apiRequest("/api/orders/create", "POST", orderData);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+  });
+};
+
+export const useOrder = (id: number) => {
+  return useQuery<any>({
+    queryKey: ["/api/orders", id],  
+    queryFn: async () => {
+      const response = await fetch(`/api/orders/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch order');
+      }
+      return response.json();
+    },
+    enabled: !!id,
+  });
+};
+
+export const useUpdateOrder = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: any }) => {
+      const response = await fetch(`/api/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to update order');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+    },
+  });
+};
+
+// Типизированные хуки для складов
+export const useDeleteWarehouses = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (warehouseIds: number[]) => {
+      return apiRequest("/api/warehouses/delete-multiple", "POST", { warehouseIds });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+    },
+  });
+};
+
+export const useImportWarehouses = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: any[]) => {
+      return apiRequest("/api/warehouses/import", "POST", { warehouses: data });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+    },
+  });
+};

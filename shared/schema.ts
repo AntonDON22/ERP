@@ -196,3 +196,58 @@ export const receiptDocumentSchema = z.object({
   warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
+
+// Таблица заказов
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  status: text("status").notNull().default("Новый"), // Новый, В работе, Выполнен, Отменен
+  customerId: integer("customer_id"), // может быть контрагент
+  warehouseId: integer("warehouse_id"),
+  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+  notes: text("notes"),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  orderDateIdx: index("orders_date_idx").on(table.date),
+  orderStatusIdx: index("orders_status_idx").on(table.status),
+}));
+
+// Таблица позиций заказов
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  productId: integer("product_id").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+});
+
+export const insertOrderSchema = createInsertSchema(orders).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
+  id: true,
+  orderId: true,
+});
+
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type Order = typeof orders.$inferSelect;
+export type CreateOrderItem = z.infer<typeof insertOrderItemSchema>;
+export type InsertOrderItem = CreateOrderItem & { orderId?: number };
+export type OrderItem = typeof orderItems.$inferSelect;
+
+export const orderItemSchema = z.object({
+  productId: z.number().min(1, "Товар обязателен"),
+  quantity: z.number().min(1, "Количество должно быть больше 0"),
+  price: z.number().min(0, "Цена не может быть отрицательной"),
+});
+
+export const orderSchema = z.object({
+  customerId: z.number().optional(),
+  warehouseId: z.number().min(1, "Склад обязателен"),
+  status: z.string(),
+  notes: z.string().optional(),
+  items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),
+});

@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 
@@ -730,6 +730,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching inventory:", error);
       res.status(500).json({ message: "Ошибка при загрузке остатков" });
+    }
+  });
+
+  // Orders routes
+  // Get all orders
+  app.get("/api/orders", async (req, res) => {
+    try {
+      const ordersData = await db.select().from(orders);
+      res.json(ordersData);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      res.status(500).json({ message: "Ошибка при загрузке заказов" });
+    }
+  });
+
+  // Get single order by ID
+  app.get("/api/orders/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Некорректный ID заказа" });
+      }
+
+      const [order] = await db.select().from(orders).where(eq(orders.id, id));
+      if (!order) {
+        return res.status(404).json({ message: "Заказ не найден" });
+      }
+
+      // Получаем элементы заказа
+      const items = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, id));
+
+      res.json({
+        ...order,
+        items: items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price)
+        }))
+      });
+    } catch (error) {
+      console.error("Error fetching order:", error);
+      res.status(500).json({ message: "Ошибка при загрузке заказа" });
+    }
+  });
+
+  // Create order
+  app.post("/api/orders/create", async (req, res) => {
+    try {
+      const { status, customerId, warehouseId, notes, items } = req.body;
+      
+      console.log(`🔄 Создание заказа:`, { status, customerId, warehouseId, notes, items });
+
+      // Создаем заказ в транзакции
+      const order = await db.transaction(async (tx) => {
+        // 1. Создаем заказ
+        const [createdOrder] = await tx
+          .insert(orders)
+          .values({
+            name: "", // временное название
+            status,
+            customerId: customerId || null,
+            warehouseId,
+            notes: notes || "",
+            date: new Date().toISOString().split('T')[0],
+            totalAmount: "0",
+          })
+          .returning();
+
+        // 2. Генерируем название в формате "Заказ день.месяц-номер"
+        const today = new Date().toLocaleDateString('ru-RU', { 
+          day: '2-digit', 
+          month: '2-digit' 
+        });
+        
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+        
+        const todayOrders = await tx
+          .select()
+          .from(orders)
+          .where(sql`${orders.createdAt} >= ${todayStart.toISOString()} AND ${orders.createdAt} <= ${todayEnd.toISOString()}`);
+        
+        const dayNumber = todayOrders.length;
+        const name = `Заказ ${today}-${dayNumber}`;
+
+        // 3. Создаем позиции заказа и считаем общую сумму
+        let totalAmount = 0;
+        for (const item of items) {
+          await tx
+            .insert(orderItems)
+            .values({
+              orderId: createdOrder.id,
+              productId: item.productId,
+              quantity: item.quantity.toString(),
+              price: item.price.toString()
+            });
+          totalAmount += item.quantity * item.price;
+        }
+
+        // 4. Обновляем заказ с названием и общей суммой
+        const [updatedOrder] = await tx
+          .update(orders)
+          .set({ 
+            name,
+            totalAmount: totalAmount.toFixed(2)
+          })
+          .where(eq(orders.id, createdOrder.id))
+          .returning();
+
+        return updatedOrder;
+      });
+
+      console.log(`✅ Заказ создан:`, order);
+      res.status(201).json(order);
+    } catch (error) {
+      console.error("Error creating order:", error);
+      res.status(500).json({ message: "Ошибка при создании заказа" });
+    }
+  });
+
+  // Delete multiple orders
+  app.post("/api/orders/delete-multiple", async (req, res) => {
+    try {
+      const { orderIds } = req.body;
+      
+      if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: "Укажите массив ID заказов для удаления" });
+      }
+
+      // Удаляем заказы и связанные записи
+      await db.transaction(async (tx) => {
+        // Сначала удаляем позиции заказов
+        for (const orderId of orderIds) {
+          await tx.delete(orderItems).where(eq(orderItems.orderId, orderId));
+        }
+        
+        // Затем удаляем сами заказы
+        for (const orderId of orderIds) {
+          await tx.delete(orders).where(eq(orders.id, orderId));
+        }
+      });
+
+      res.json({ message: `Удалено заказов: ${orderIds.length}` });
+    } catch (error) {
+      console.error("Error deleting orders:", error);
+      res.status(500).json({ message: "Ошибка при удалении заказов" });
+    }
+  });
+
+  // Update order
+  app.put("/api/orders/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Некорректный ID заказа" });
+      }
+
+      const { status, customerId, warehouseId, notes, items } = req.body;
+      
+      console.log(`🔄 Обновление заказа ${id}:`, { status, customerId, warehouseId, notes, items });
+
+      // Обновляем заказ в транзакции
+      const updatedOrder = await db.transaction(async (tx) => {
+        // Считаем новую общую сумму
+        let totalAmount = 0;
+        for (const item of items) {
+          totalAmount += item.quantity * item.price;
+        }
+
+        // Обновляем основную информацию заказа
+        const [order] = await tx
+          .update(orders)
+          .set({ 
+            status,
+            customerId: customerId || null,
+            warehouseId,
+            notes: notes || "",
+            totalAmount: totalAmount.toFixed(2)
+          })
+          .where(eq(orders.id, id))
+          .returning();
+
+        // Удаляем старые позиции
+        await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+
+        // Создаем новые позиции
+        for (const item of items) {
+          await tx
+            .insert(orderItems)
+            .values({
+              orderId: id,
+              productId: item.productId,
+              quantity: item.quantity.toString(),
+              price: item.price.toString()
+            });
+        }
+
+        return order;
+      });
+
+      console.log(`✅ Заказ ${id} обновлен`);
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error("Error updating order:", error);
+      res.status(500).json({ message: "Ошибка при обновлении заказа" });
     }
   });
 

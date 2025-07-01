@@ -14,6 +14,7 @@ export default function Navigation() {
   const isWarehousesActive = location === "/warehouses";
   const isDocumentsActive = location === "/documents";
   const isInventoryActive = location === "/inventory";
+  const isOrdersActive = location === "/orders";
 
   const navItems = [
     { href: "/", label: "Главная", isActive: isHomeActive },
@@ -23,6 +24,7 @@ export default function Navigation() {
     { href: "/warehouses", label: "Склады", isActive: isWarehousesActive },
     { href: "/documents", label: "Документы", isActive: isDocumentsActive },
     { href: "/inventory", label: "Остатки", isActive: isInventoryActive },
+    { href: "/orders", label: "Заказы", isActive: isOrdersActive },
   ];
 
   return (

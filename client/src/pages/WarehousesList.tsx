@@ -1,6 +1,7 @@
 import DataTable, { ColumnConfig, ExcelExportConfig } from "../components/DataTable";
 import { Warehouse } from "@shared/schema";
-import { useWarehouses, useDeleteWarehouses, useImportWarehouses } from "@/hooks/useWarehouses";
+import { useWarehouses } from "@/hooks/useWarehouses";
+import { useDeleteWarehouses, useImportWarehouses } from "@/hooks/useTypedQuery";
 import { useToast } from "@/hooks/use-toast";
 
 const columns: ColumnConfig<Warehouse>[] = [

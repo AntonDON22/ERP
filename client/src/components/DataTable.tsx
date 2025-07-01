@@ -1,9 +1,10 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus } from "lucide-react";
+import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { useDebounce } from "../hooks/useDebounce";
@@ -131,6 +132,7 @@ export default function DataTable<T extends { id: number; name: string }>({
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [isResizing, setIsResizing] = useState<string | null>(null);
+  const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -139,12 +141,13 @@ export default function DataTable<T extends { id: number; name: string }>({
   // Debounced search query
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
-  // Уникальный ключ для localStorage для каждой таблицы
-  const storageKey = `dataTable-${entityName}-columnWidths`;
+  // Уникальные ключи для localStorage для каждой таблицы
+  const widthStorageKey = `dataTable-${entityName}-columnWidths`;
+  const hiddenStorageKey = `dataTable-${entityName}-hiddenColumns`;
 
   // Загрузка ширины столбцов при монтировании
   useEffect(() => {
-    const savedWidths = localStorage.getItem(storageKey);
+    const savedWidths = localStorage.getItem(widthStorageKey);
     if (savedWidths) {
       try {
         setColumnWidths(JSON.parse(savedWidths));
@@ -152,14 +155,31 @@ export default function DataTable<T extends { id: number; name: string }>({
         console.warn("Failed to parse saved column widths");
       }
     }
-  }, [storageKey]);
+  }, [widthStorageKey]);
+
+  // Загрузка скрытых столбцов при монтировании
+  useEffect(() => {
+    const savedHidden = localStorage.getItem(hiddenStorageKey);
+    if (savedHidden) {
+      try {
+        setHiddenColumns(new Set(JSON.parse(savedHidden)));
+      } catch (e) {
+        console.warn("Failed to parse saved hidden columns");
+      }
+    }
+  }, [hiddenStorageKey]);
 
   // Сохранение ширины столбцов при изменении
   useEffect(() => {
     if (Object.keys(columnWidths).length > 0) {
-      localStorage.setItem(storageKey, JSON.stringify(columnWidths));
+      localStorage.setItem(widthStorageKey, JSON.stringify(columnWidths));
     }
-  }, [columnWidths, storageKey]);
+  }, [columnWidths, widthStorageKey]);
+
+  // Сохранение скрытых столбцов при изменении
+  useEffect(() => {
+    localStorage.setItem(hiddenStorageKey, JSON.stringify(Array.from(hiddenColumns)));
+  }, [hiddenColumns, hiddenStorageKey]);
 
   // Функция для начала изменения размера
   const startResize = useCallback((columnKey: string, event: React.MouseEvent) => {
@@ -211,6 +231,24 @@ export default function DataTable<T extends { id: number; name: string }>({
       document.body.style.userSelect = '';
     };
   }, [isResizing, handleMouseMove, stopResize]);
+
+  // Функция для переключения видимости столбца
+  const toggleColumnVisibility = useCallback((columnKey: string) => {
+    setHiddenColumns(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(columnKey)) {
+        newSet.delete(columnKey);
+      } else {
+        newSet.add(columnKey);
+      }
+      return newSet;
+    });
+  }, []);
+
+  // Фильтруем видимые столбцы
+  const visibleColumns = useMemo(() => {
+    return columns.filter(column => !hiddenColumns.has(String(column.key)));
+  }, [columns, hiddenColumns]);
 
   // Функция копирования в буфер обмена
   const copyToClipboard = useCallback(async (text: string, type: string) => {
@@ -497,6 +535,44 @@ export default function DataTable<T extends { id: number; name: string }>({
 
       {/* Таблица */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+        {/* Заголовок с настройками столбцов */}
+        <div className="flex justify-end p-3 border-b border-gray-200">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Settings className="w-4 h-4" />
+                Столбцы
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="end">
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Настройка столбцов</h4>
+                <div className="space-y-2">
+                  {columns.map((column) => {
+                    const columnKey = String(column.key);
+                    const isVisible = !hiddenColumns.has(columnKey);
+                    
+                    return (
+                      <div key={columnKey} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`column-${columnKey}`}
+                          checked={isVisible}
+                          onCheckedChange={() => toggleColumnVisibility(columnKey)}
+                        />
+                        <label
+                          htmlFor={`column-${columnKey}`}
+                          className="text-sm font-normal cursor-pointer flex-1"
+                        >
+                          {column.label}
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
+        </div>
         <div className="overflow-x-auto">
           <table ref={tableRef} className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
@@ -509,7 +585,7 @@ export default function DataTable<T extends { id: number; name: string }>({
                     />
                   </th>
                 )}
-                {columns.map((column, index) => {
+                {visibleColumns.map((column, index) => {
                   const columnKey = String(column.key);
                   const width = columnWidths[columnKey] || (column.width ? parseInt(column.width.replace(/\D/g, '')) || 200 : 200);
                   
@@ -572,7 +648,7 @@ export default function DataTable<T extends { id: number; name: string }>({
                       />
                     </td>
                   )}
-                  {columns.map((column) => {
+                  {visibleColumns.map((column) => {
                     const value = item[column.key];
                     const formattedValue = column.format ? column.format(value) : value;
                     const columnKey = String(column.key);

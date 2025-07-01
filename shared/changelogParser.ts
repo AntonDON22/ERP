@@ -91,6 +91,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
     time: string;
     content: string;
   }> = [];
+  let updateIndex = 0; // Счетчик для генерации уникального времени
 
   for (const line of changelogLines) {
     if (line.trim().startsWith('- ') && line.includes('2025')) {
@@ -104,7 +105,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
         // Конвертируем русскую дату в ISO формат
         const isoDate = convertRussianDateToISO(dateStr);
         if (isoDate) {
-          const time = extractTimeFromDescription(description || title);
+          const time = extractTimeFromDescription(description || title, updateIndex++);
           
           updates.push({
             date: isoDate,
@@ -118,7 +119,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
         // Конвертируем английскую дату в ISO формат
         const isoDate = convertDateToISO(dateStr);
         if (isoDate) {
-          const time = extractTimeFromDescription(description || title);
+          const time = extractTimeFromDescription(description || title, updateIndex++);
           
           updates.push({
             date: isoDate,
@@ -136,7 +137,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
             const colonIndex = content.indexOf(':');
             const title = colonIndex > 0 ? content.substring(0, colonIndex).trim() : content.substring(0, 50) + '...';
             const description = colonIndex > 0 ? content.substring(colonIndex + 1).trim() : content;
-            const time = extractTimeFromDescription(description);
+            const time = extractTimeFromDescription(description, updateIndex++);
             
             updates.push({
               date: isoDate,
@@ -169,13 +170,13 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
     const displayDate = formatDateToRussian(date);
     
     const updates: Update[] = dayUpdates
-      .sort((a: {time: string, content: string}, b: {time: string, content: string}) => b.time.localeCompare(a.time)) // Сортируем по времени (новые сверху)
       .map((update: {time: string, content: string}, index: number) => ({
         time: update.time,
         type: determineUpdateType(update.content),
         title: extractTitle(update.content),
         description: extractDescription(update.content)
-      }));
+      }))
+      .sort((a, b) => b.time.localeCompare(a.time)); // Сортируем по времени после генерации
 
     dayData.push({
       date,
@@ -196,9 +197,10 @@ function extractTimeFromDescription(description: string, index: number = 0): str
   }
   
   // Фиксированное время на основе индекса записи для стабильности
-  const baseHour = 9 + (index % 12); // 9-20 часов
-  const minute = (index * 7) % 60; // Фиксированные минуты на основе позиции
-  return `${baseHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  const baseHour = 9 + Math.floor(index / 4); // Каждые 4 записи = новый час
+  const baseMinute = (index % 4) * 15; // 0, 15, 30, 45 минут
+  const hour = Math.min(baseHour, 23); // Ограничиваем до 23:xx
+  return `${hour.toString().padStart(2, '0')}:${baseMinute.toString().padStart(2, '0')}`;
 }
 
 function determineUpdateType(content: string): "feature" | "fix" | "improvement" | "database" {

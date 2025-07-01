@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { inventoryService } from '@server/services/inventoryService';
-import { db } from '@server/db';
+import { inventoryService } from '../../server/services/inventoryService';
+import { db } from '../../server/db';
 
 // Мокаем базу данных
-vi.mock('@server/db', () => ({
+vi.mock('../../server/db', () => ({
   db: {
     select: vi.fn(),
     insert: vi.fn(),

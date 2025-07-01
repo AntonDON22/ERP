@@ -8,6 +8,11 @@ export default defineConfig({
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.test.ts'],
     exclude: ['node_modules', 'dist', 'build'],
+    alias: {
+      '@shared': path.resolve(__dirname, './shared'),
+      '@server': path.resolve(__dirname, './server'),
+      '@': path.resolve(__dirname, './client/src'),
+    },
   },
   resolve: {
     alias: {
@@ -16,4 +21,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './client/src'),
     },
   },
+  esbuild: {
+    target: 'node14'
+  }
 });

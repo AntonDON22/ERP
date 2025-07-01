@@ -8,7 +8,7 @@ import {
   getCurrentMoscowDateString,
   getMoscowDateForDocument,
   MOSCOW_TIMEZONE_OFFSET
-} from '@shared/timeUtils';
+} from '../../shared/timeUtils';
 
 describe('TimeUtils', () => {
   beforeEach(() => {

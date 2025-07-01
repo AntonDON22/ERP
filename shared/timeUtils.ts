@@ -14,6 +14,7 @@ export function formatMoscowTime(date?: Date): string {
   return moscowTime.toLocaleTimeString('ru-RU', {
     hour: '2-digit',
     minute: '2-digit',
+    second: '2-digit',
     timeZone: 'Europe/Moscow'
   });
 }
@@ -30,14 +31,19 @@ export function formatMoscowDate(date?: Date): string {
 
 export function formatMoscowDateTime(date?: Date): string {
   const moscowTime = getMoscowTime(date);
-  return moscowTime.toLocaleString('ru-RU', {
+  const dateStr = moscowTime.toLocaleDateString('ru-RU', {
     day: '2-digit',
     month: '2-digit', 
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
     timeZone: 'Europe/Moscow'
   });
+  const timeStr = moscowTime.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    timeZone: 'Europe/Moscow'
+  });
+  return `${dateStr} ${timeStr}`;
 }
 
 export function getCurrentMoscowTimeString(): string {
@@ -48,8 +54,17 @@ export function getCurrentMoscowDateString(): string {
   return formatMoscowDate();
 }
 
-// Для генерации названий документов в формате день.месяц
+// Для генерации названий документов в формате YYYY-MM-DD
 export function getMoscowDateForDocument(): string {
+  const moscowTime = getMoscowTime();
+  const year = moscowTime.getFullYear();
+  const month = (moscowTime.getMonth() + 1).toString().padStart(2, '0');
+  const day = moscowTime.getDate().toString().padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+// Для отображения даты в интерфейсе в формате день.месяц
+export function getMoscowShortDate(): string {
   const moscowTime = getMoscowTime();
   const day = moscowTime.getDate().toString().padStart(2, '0');
   const month = (moscowTime.getMonth() + 1).toString().padStart(2, '0');

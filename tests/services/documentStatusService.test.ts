@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { documentStatusService } from '@server/services/documentStatusService';
-import { db } from '@server/db';
+import { documentStatusService } from '../../server/services/documentStatusService';
+import { db } from '../../server/db';
 
 // Мокаем базу данных
-vi.mock('@server/db', () => ({
+vi.mock('../../server/db', () => ({
   db: {
     select: vi.fn(),
     update: vi.fn(),

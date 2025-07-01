@@ -1,14 +1,16 @@
--- Материализованное представление для остатков товаров
+-- Материализованное представление для остатков товаров (только проведенные документы)
 CREATE MATERIALIZED VIEW IF NOT EXISTS inventory_summary AS
 SELECT 
     p.id,
     p.name,
     p.sku,
-    COALESCE(SUM(i.quantity), 0) as total_quantity,
-    COUNT(i.id) as movement_count,
-    MAX(i.created_at) as last_movement_date
+    COALESCE(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END), 0) as total_quantity,
+    COUNT(CASE WHEN d.status = 'posted' THEN i.id END) as movement_count,
+    MAX(CASE WHEN d.status = 'posted' THEN i.created_at END) as last_movement_date
 FROM products p
 LEFT JOIN inventory i ON p.id = i.product_id
+LEFT JOIN documents d ON i.document_id = d.id
+WHERE d.status = 'posted' OR d.status IS NULL OR i.id IS NULL
 GROUP BY p.id, p.name, p.sku;
 
 -- Создание индекса для быстрого поиска по product_id
@@ -19,26 +21,28 @@ ON inventory_summary (id);
 CREATE INDEX IF NOT EXISTS idx_inventory_summary_name 
 ON inventory_summary USING gin(to_tsvector('russian', name));
 
--- Материализованное представление для остатков по складам
+-- Материализованное представление для остатков по складам (только проведенные документы)
 CREATE MATERIALIZED VIEW IF NOT EXISTS inventory_by_warehouse AS
 SELECT 
     p.id as product_id,
     p.name as product_name,
     w.id as warehouse_id,
     w.name as warehouse_name,
-    COALESCE(SUM(i.quantity), 0) as quantity,
-    COUNT(i.id) as movement_count,
-    MAX(i.created_at) as last_movement_date
+    COALESCE(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END), 0) as quantity,
+    COUNT(CASE WHEN d.status = 'posted' THEN i.id END) as movement_count,
+    MAX(CASE WHEN d.status = 'posted' THEN i.created_at END) as last_movement_date
 FROM products p
 CROSS JOIN warehouses w
 LEFT JOIN inventory i ON p.id = i.product_id AND w.id = i.warehouse_id
+LEFT JOIN documents d ON i.document_id = d.id
+WHERE d.status = 'posted' OR d.status IS NULL OR i.id IS NULL
 GROUP BY p.id, p.name, w.id, w.name;
 
 -- Создание составного индекса
 CREATE UNIQUE INDEX IF NOT EXISTS idx_inventory_warehouse_product_warehouse 
 ON inventory_by_warehouse (product_id, warehouse_id);
 
--- Материализованное представление для доступных остатков (с учетом резервов)
+-- Материализованное представление для доступных остатков (с учетом резервов и только проведенные документы)
 CREATE MATERIALIZED VIEW IF NOT EXISTS inventory_availability AS
 SELECT 
     p.id as product_id,
@@ -49,10 +53,12 @@ SELECT
 FROM products p
 LEFT JOIN (
     SELECT 
-        product_id, 
-        SUM(quantity) as total_quantity
-    FROM inventory 
-    GROUP BY product_id
+        i.product_id, 
+        SUM(i.quantity) as total_quantity
+    FROM inventory i
+    LEFT JOIN documents d ON i.document_id = d.id
+    WHERE d.status = 'posted' OR d.status IS NULL
+    GROUP BY i.product_id
 ) inv_total ON p.id = inv_total.product_id
 LEFT JOIN (
     SELECT 

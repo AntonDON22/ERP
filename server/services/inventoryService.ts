@@ -54,9 +54,11 @@ export class InventoryService {
         SELECT 
           p.id,
           p.name,
-          COALESCE(CAST(SUM(i.quantity) AS DECIMAL), 0) as quantity
+          COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) as quantity
         FROM products p
-        LEFT JOIN inventory i ON p.id = i.product_id ${warehouseFilter}
+        LEFT JOIN inventory i ON p.id = i.product_id
+        LEFT JOIN documents d ON i.document_id = d.id
+        WHERE (d.status = 'posted' OR d.status IS NULL) ${warehouseFilter}
         GROUP BY p.id, p.name
         ORDER BY p.name
       `);
@@ -119,12 +121,14 @@ export class InventoryService {
         SELECT 
           p.id,
           p.name,
-          COALESCE(CAST(SUM(i.quantity) AS DECIMAL), 0) as quantity,
+          COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) as quantity,
           COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as reserved,
-          COALESCE(CAST(SUM(i.quantity) AS DECIMAL), 0) - COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as available
+          COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) - COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as available
         FROM products p
-        LEFT JOIN inventory i ON p.id = i.product_id ${warehouseFilter}
+        LEFT JOIN inventory i ON p.id = i.product_id
+        LEFT JOIN documents d ON i.document_id = d.id
         LEFT JOIN reserves r ON p.id = r.product_id ${warehouseFilter}
+        WHERE (d.status = 'posted' OR d.status IS NULL OR i.id IS NULL) ${warehouseFilter}
         GROUP BY p.id, p.name
         ORDER BY p.name
       `);

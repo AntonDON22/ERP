@@ -301,7 +301,7 @@ export class DatabaseStorage implements IStorage {
       let result;
       
       if (warehouseId) {
-        // Если указан склад, фильтруем по складу через documents
+        // Если указан склад, фильтруем по складу через documents и учитываем только проведенные документы
         result = await db
           .select({
             id: products.id,
@@ -310,7 +310,8 @@ export class DatabaseStorage implements IStorage {
               COALESCE(
                 SUM(
                   CASE 
-                    WHEN documents.warehouse_id = ${warehouseId} OR documents.warehouse_id IS NULL 
+                    WHEN (documents.warehouse_id = ${warehouseId} OR documents.warehouse_id IS NULL) 
+                         AND documents.status = 'posted'
                     THEN CAST(inventory.quantity AS DECIMAL)
                     ELSE 0 
                   END
@@ -323,15 +324,26 @@ export class DatabaseStorage implements IStorage {
           .leftJoin(documents, eq(inventory.documentId, documents.id))
           .groupBy(products.id, products.name);
       } else {
-        // Без фильтра по складу - показываем все остатки
+        // Без фильтра по складу - показываем все остатки только из проведенных документов
         result = await db
           .select({
             id: products.id,
             name: products.name,
-            quantity: sql<number>`COALESCE(SUM(CAST(${inventory.quantity} AS DECIMAL)), 0)`.as('quantity')
+            quantity: sql<number>`
+              COALESCE(
+                SUM(
+                  CASE 
+                    WHEN documents.status = 'posted' 
+                    THEN CAST(inventory.quantity AS DECIMAL)
+                    ELSE 0 
+                  END
+                ), 0
+              )
+            `.as('quantity')
           })
           .from(products)
           .leftJoin(inventory, eq(products.id, inventory.productId))
+          .leftJoin(documents, eq(inventory.documentId, documents.id))
           .groupBy(products.id, products.name);
       }
       
@@ -651,18 +663,74 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
-    // Автоматически устанавливаем время изменения
-    const updatePayload = {
-      ...updateData,
-      updatedAt: new Date()
-    };
-    
-    const [document] = await db
-      .update(documents)
-      .set(updatePayload)
-      .where(eq(documents.id, id))
-      .returning();
-    return document || undefined;
+    try {
+      return await db.transaction(async (tx) => {
+        // Получаем текущий документ для сравнения статуса
+        const [currentDocument] = await tx.select().from(documents).where(eq(documents.id, id));
+        
+        if (!currentDocument) {
+          return undefined;
+        }
+
+        // Автоматически устанавливаем время изменения
+        const updatePayload = {
+          ...updateData,
+          updatedAt: new Date()
+        };
+        
+        const [updatedDocument] = await tx
+          .update(documents)
+          .set(updatePayload)
+          .where(eq(documents.id, id))
+          .returning();
+
+        if (!updatedDocument) {
+          return undefined;
+        }
+
+        // Обрабатываем изменение статуса документа
+        const oldStatus = currentDocument.status;
+        const newStatus = updatedDocument.status;
+
+        if (oldStatus !== newStatus) {
+          // Получаем элементы документа для работы с инвентарем
+          const items = await tx
+            .select()
+            .from(documentItems)
+            .where(eq(documentItems.documentId, id));
+
+          if (oldStatus === 'posted' && newStatus === 'draft') {
+            // Документ был проведен, теперь черновик - отменяем движения инвентаря
+            await tx.delete(inventory).where(eq(inventory.documentId, id));
+            console.log(`📝 Документ ${id} переведен в черновик, движения инвентаря отменены`);
+            
+          } else if (oldStatus === 'draft' && newStatus === 'posted') {
+            // Документ был черновиком, теперь проведен - создаем движения инвентаря
+            for (const item of items) {
+              if (updatedDocument.type === 'Оприходование') {
+                await tx
+                  .insert(inventory)
+                  .values({
+                    productId: item.productId,
+                    quantity: item.quantity,
+                    price: item.price,
+                    movementType: 'IN',
+                    documentId: id,
+                  });
+              } else if (updatedDocument.type === 'Списание') {
+                await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price, id);
+              }
+            }
+            console.log(`✅ Документ ${id} проведен, движения инвентаря созданы`);
+          }
+        }
+
+        return updatedDocument;
+      });
+    } catch (error) {
+      console.error("Error updating document:", error);
+      throw error;
+    }
   }
 
   async deleteDocument(id: number): Promise<boolean> {
@@ -747,21 +815,23 @@ export class DatabaseStorage implements IStorage {
               documentId: createdDocument.id,
             });
 
-          // 3. Обрабатываем движения инвентаря по FIFO
-          if (updatedDocument.type === 'Оприходование') {
-            // Приход товара - просто добавляем запись
-            await tx
-              .insert(inventory)
-              .values({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-                movementType: 'IN',
-                documentId: createdDocument.id,
-              });
-          } else if (updatedDocument.type === 'Списание') {
-            // Списание товара - используем FIFO логику
-            await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price ?? "0", createdDocument.id);
+          // 3. Обрабатываем движения инвентаря по FIFO только для проведенных документов
+          if (updatedDocument.status === 'posted') {
+            if (updatedDocument.type === 'Оприходование') {
+              // Приход товара - просто добавляем запись
+              await tx
+                .insert(inventory)
+                .values({
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  movementType: 'IN',
+                  documentId: createdDocument.id,
+                });
+            } else if (updatedDocument.type === 'Списание') {
+              // Списание товара - используем FIFO логику
+              await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price ?? "0", createdDocument.id);
+            }
           }
         }
 

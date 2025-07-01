@@ -16,6 +16,7 @@ import { orderService } from "./services/orderService";
 import { transactionService } from "./services/transactionService";
 import { materializedViewService } from "./services/materializedViewService";
 import { documentStatusService } from "./services/documentStatusService";
+import { warehouseService } from "./services/warehouseService";
 
 // Импорт логирования
 import { apiLogger, getErrorMessage } from "@shared/logger";
@@ -364,6 +365,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Delete single warehouse
+  app.delete("/api/warehouses/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Некорректный ID склада" });
+      }
+
+      const success = await warehouseService.delete(id);
+      if (!success) {
+        return res.status(404).json({ message: "Склад не найден" });
+      }
+
+      res.json({ message: "Склад удален" });
+    } catch (error) {
+      console.error("Error deleting warehouse:", error);
+      res.status(500).json({ message: "Ошибка при удалении склада" });
+    }
+  });
+
   // Delete multiple warehouses (original DELETE route)
   app.delete("/api/warehouses", validateBody(warehouseIdsSchema), async (req, res) => {
     try {
@@ -510,6 +531,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error updating document:", error);
       res.status(500).json({ message: "Ошибка при обновлении документа" });
+    }
+  });
+
+  // Delete single document
+  app.delete("/api/documents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Некорректный ID документа" });
+      }
+
+      const success = await documentService.delete(id);
+      if (!success) {
+        return res.status(404).json({ message: "Документ не найден" });
+      }
+
+      res.json({ message: "Документ удален" });
+    } catch (error) {
+      console.error("Error deleting document:", error);
+      res.status(500).json({ message: "Ошибка при удалении документа" });
     }
   });
 

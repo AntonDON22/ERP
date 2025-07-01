@@ -378,6 +378,8 @@ class SystemIntegrationTest {
   private async cleanup(): Promise<void> {
     console.log('\n🧹 Очистка тестовых данных...');
     
+    let cleanupErrors = 0;
+
     // Удаляем документы
     for (const doc of this.testData.documents) {
       if (doc.id) {
@@ -385,7 +387,8 @@ class SystemIntegrationTest {
           await this.api.deleteDocument(doc.id);
           console.log(`   ✅ Документ ${doc.id} удален`);
         } catch (error) {
-          console.warn(`   ⚠️ Не удалось удалить документ ${doc.id}`);
+          console.warn(`   ⚠️ Не удалось удалить документ ${doc.id}: ${error}`);
+          cleanupErrors++;
         }
       }
     }
@@ -396,7 +399,8 @@ class SystemIntegrationTest {
         await this.api.deleteProduct(this.testData.product.id);
         console.log(`   ✅ Товар ${this.testData.product.id} удален`);
       } catch (error) {
-        console.warn(`   ⚠️ Не удалось удалить товар`);
+        console.warn(`   ⚠️ Не удалось удалить товар: ${error}`);
+        cleanupErrors++;
       }
     }
 
@@ -405,7 +409,8 @@ class SystemIntegrationTest {
         await this.api.deleteContractor(this.testData.contractor.id);
         console.log(`   ✅ Контрагент ${this.testData.contractor.id} удален`);
       } catch (error) {
-        console.warn(`   ⚠️ Не удалось удалить контрагента`);
+        console.warn(`   ⚠️ Не удалось удалить контрагента: ${error}`);
+        cleanupErrors++;
       }
     }
 
@@ -414,8 +419,16 @@ class SystemIntegrationTest {
         await this.api.deleteWarehouse(this.testData.warehouse.id);
         console.log(`   ✅ Склад ${this.testData.warehouse.id} удален`);
       } catch (error) {
-        console.warn(`   ⚠️ Не удалось удалить склад`);
+        console.warn(`   ⚠️ Не удалось удалить склад: ${error}`);
+        cleanupErrors++;
       }
+    }
+
+    // Обновляем статистику ошибок очистки
+    if (cleanupErrors > 0) {
+      console.log(`\n⚠️  Предупреждений при очистке: ${cleanupErrors}`);
+    } else {
+      console.log(`\n✨ Очистка завершена без ошибок`);
     }
   }
 

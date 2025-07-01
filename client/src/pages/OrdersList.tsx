@@ -15,19 +15,22 @@ const columns: ColumnConfig<Order>[] = [
     format: (value) => `${Number(value || 0).toFixed(2)} ₽`
   },
   { 
-    key: "date", 
-    label: "Дата", 
+    key: "createdAt", 
+    label: "Дата и время", 
     width: "30%", 
     sortable: true, 
     copyable: true,
     format: (value: any) => {
       if (!value) return '';
       const date = new Date(value);
-      return date.toLocaleDateString('ru-RU', {
+      return date.toLocaleString('ru-RU', {
         timeZone: 'Europe/Moscow',
         year: 'numeric',
         month: '2-digit',
-        day: '2-digit'
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
       });
     }
   },

@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "wouter";
@@ -79,7 +79,7 @@ export default function Document({ config, documentData }: DocumentProps) {
   const form = useForm<FormDocument>({
     resolver: zodResolver(documentSchema),
     defaultValues: {
-      warehouseId: documentData?.warehouseId || 0,
+      warehouseId: documentData?.warehouseId ?? 0,
       items: documentData?.items?.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -92,6 +92,20 @@ export default function Document({ config, documentData }: DocumentProps) {
     control: form.control,
     name: "items",
   });
+
+  // Обновление формы при изменении documentData
+  useEffect(() => {
+    if (documentData) {
+      form.reset({
+        warehouseId: documentData.warehouseId ?? 0,
+        items: documentData.items?.map(item => ({
+          productId: item.productId,
+          quantity: item.quantity,
+          price: item.price,
+        })) || [{ productId: 0, quantity: 1, price: 0 }],
+      });
+    }
+  }, [documentData, form]);
 
   // Обработчик сохранения
   const handleSave = async (data: FormDocument) => {

@@ -75,6 +75,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Create product
+  app.post("/api/products", validateBody(insertProductSchema), async (req, res) => {
+    try {
+      const product = await productService.create(req.body);
+      res.status(201).json(product);
+    } catch (error) {
+      console.error("Error creating product:", error);
+      res.status(500).json({ message: "Ошибка при создании товара" });
+    }
+  });
+
   // Delete product
   app.delete("/api/products/:id", async (req, res) => {
     try {
@@ -125,6 +136,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Suppliers API routes
+  // Create supplier
+  app.post("/api/suppliers", validateBody(insertSupplierSchema), async (req, res) => {
+    try {
+      const supplier = await supplierService.create(req.body);
+      res.status(201).json(supplier);
+    } catch (error) {
+      console.error("Error creating supplier:", error);  
+      res.status(500).json({ message: "Ошибка при создании поставщика" });
+    }
+  });
+
   // Get all suppliers
   app.get("/api/suppliers", async (req, res) => {
     try {
@@ -162,6 +184,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error importing suppliers:", error);
       res.status(500).json({ message: error instanceof Error ? error.message : "Ошибка при импорте поставщиков" });
+    }
+  });
+
+  // Create contractor  
+  app.post("/api/contractors", validateBody(insertContractorSchema), async (req, res) => {
+    try {
+      const contractor = await contractorService.create(req.body);
+      res.status(201).json(contractor);
+    } catch (error) {
+      console.error("Error creating contractor:", error);
+      res.status(500).json({ message: "Ошибка при создании контрагента" });
     }
   });
 

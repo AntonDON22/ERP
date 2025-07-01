@@ -771,12 +771,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/orders/delete-multiple", validateBody(orderIdsSchema), async (req, res) => {
     try {
       const { orderIds } = req.body;
-      const result = await orderService.deleteMultiple(orderIds);
+      
+      if (!Array.isArray(orderIds) || orderIds.length === 0) {
+        return res.status(400).json({ message: "Укажите массив ID заказов для удаления" });
+      }
+
+      const validIds = orderIds.filter(id => Number.isInteger(id) && id > 0);
+      if (validIds.length !== orderIds.length) {
+        return res.status(400).json({ message: "Некорректные ID заказов" });
+      }
+
+      let deletedCount = 0;
+      const results = [];
+
+      for (const id of validIds) {
+        try {
+          console.log(`🗑️ Удаление заказа ${id}...`);
+          
+          // Проверяем что заказ существует
+          const [existingOrder] = await db.select().from(orders).where(eq(orders.id, id));
+          
+          if (!existingOrder) {
+            console.log(`❌ Заказ ${id} не найден`);
+            results.push({ id, status: 'not_found' });
+            continue;
+          }
+          
+          // Удаляем связанные резервы
+          console.log(`🗑️ Удаление резервов для заказа ${id}...`);
+          await db.delete(reserves).where(eq(reserves.orderId, id));
+          
+          // Удаляем позиции заказа
+          console.log(`🗑️ Удаление позиций заказа ${id}...`);
+          await db.delete(orderItems).where(eq(orderItems.orderId, id));
+          
+          // Удаляем сам заказ
+          console.log(`🗑️ Удаление заказа ${id}...`);
+          await db.delete(orders).where(eq(orders.id, id));
+          
+          deletedCount++;
+          results.push({ id, status: 'deleted' });
+          console.log(`✅ Заказ ${id} успешно удален`);
+        } catch (error) {
+          console.error(`❌ Ошибка при удалении заказа ${id}:`, error);
+          results.push({ id, status: 'error' });
+        }
+      }
+      
+      // Инвалидируем кэш для обновления inventory availability
+      // inventoryService.invalidateCache();
       
       res.json({ 
-        message: `Удалено заказов: ${result.deletedCount} из ${orderIds.length}`,
-        deletedCount: result.deletedCount,
-        results: result.results
+        message: `Удалено заказов: ${deletedCount} из ${orderIds.length}`,
+        deletedCount,
+        results
       });
     } catch (error) {
       console.error("Error deleting orders:", error);

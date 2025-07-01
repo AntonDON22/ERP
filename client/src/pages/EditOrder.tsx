@@ -238,16 +238,16 @@ export default function EditOrder() {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">
             <div>
-              <Label>Заказчик</Label>
+              <Label>Контрагент</Label>
               <Select
                 value={form.watch('customerId')?.toString() || ""}
                 onValueChange={(value) => form.setValue('customerId', parseInt(value))}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Выберите заказчика" />
+                  <SelectValue placeholder="Выберите контрагента" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Без заказчика</SelectItem>
+                  <SelectItem value="0">Без контрагента</SelectItem>
                   {contractors.map((contractor: Contractor) => (
                     <SelectItem key={contractor.id} value={contractor.id.toString()}>
                       {contractor.name}

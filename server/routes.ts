@@ -4,7 +4,7 @@ import express from "express";
 import { storage } from "./storage";
 import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
@@ -551,6 +551,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         .set({ warehouseId, type })
         .where(eq(documents.id, id))
         .returning();
+
+      // Генерируем новое название в формате "Тип + день.месяц + номер в дне"
+      const today = new Date().toLocaleDateString('ru-RU', { 
+        day: '2-digit', 
+        month: '2-digit' 
+      });
+      
+      // Получаем количество документов данного типа за сегодня
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+      const todayEnd = new Date();
+      todayEnd.setHours(23, 59, 59, 999);
+      
+      const todayDocuments = await db
+        .select()
+        .from(documents)
+        .where(sql`${documents.type} = ${type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`);
+      
+      const dayNumber = todayDocuments.length;
+      const newName = `${type} ${today}-${dayNumber}`;
+      
+      // Обновляем название
+      await db
+        .update(documents)
+        .set({ name: newName })
+        .where(eq(documents.id, id));
 
       if (!updatedDocument) {
         return res.status(404).json({ message: "Документ не найден" });

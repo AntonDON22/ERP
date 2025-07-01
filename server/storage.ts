@@ -703,8 +703,26 @@ export class DatabaseStorage implements IStorage {
           .values(document)
           .returning();
 
-        // 1.1. Генерируем название в формате "Тип+ID"
-        const name = `${createdDocument.type}${createdDocument.id}`;
+        // 1.1. Генерируем название в формате "Тип день.месяц-номер"
+        const today = new Date().toLocaleDateString('ru-RU', { 
+          day: '2-digit', 
+          month: '2-digit' 
+        });
+        
+        // Получаем количество документов данного типа за сегодня
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+        const todayEnd = new Date();
+        todayEnd.setHours(23, 59, 59, 999);
+        
+        const todayDocuments = await tx
+          .select()
+          .from(documents)
+          .where(sql`${documents.type} = ${createdDocument.type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`);
+        
+        const dayNumber = todayDocuments.length;
+        const name = `${createdDocument.type} ${today}-${dayNumber}`;
+        
         const [updatedDocument] = await tx
           .update(documents)
           .set({ name })

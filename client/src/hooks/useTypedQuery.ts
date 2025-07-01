@@ -243,6 +243,7 @@ export const useDeleteOrders = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };
@@ -255,6 +256,7 @@ export const useCreateOrder = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };
@@ -289,6 +291,7 @@ export const useUpdateOrder = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };

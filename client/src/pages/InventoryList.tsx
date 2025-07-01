@@ -6,6 +6,8 @@ import { useWarehouses } from "@/hooks/useWarehouses";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { RefreshCw } from "lucide-react";
 
 interface InventoryAvailabilityItem {
   id: number;
@@ -50,10 +52,23 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
 export default function InventoryList() {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | undefined>(undefined);
   const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
-  const { data: inventory = [], isLoading } = useInventoryAvailability(selectedWarehouseId);
+  const { data: inventory = [], isLoading, refetch } = useInventoryAvailability(selectedWarehouseId);
+
+  // Добавляем кнопку принудительного обновления для отладки
+  const handleRefresh = () => {
+    console.log("🔄 Принудительное обновление данных остатков");
+    refetch();
+  };
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Остатки</h1>
+        <Button onClick={handleRefresh} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Обновить
+        </Button>
+      </div>
       <DataTable
         data={inventory}
         columns={columns}

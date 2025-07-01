@@ -8,6 +8,23 @@ import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
 import { useDebounce } from "../hooks/useDebounce";
 
+// Функция для склонения в родительный падеж
+function getGenitiveForm(entityNamePlural: string): string {
+  const lowerCase = entityNamePlural.toLowerCase();
+  
+  // Словарь склонений
+  const genitiveMap: Record<string, string> = {
+    'товары': 'товаров',
+    'поставщики': 'поставщиков', 
+    'контрагенты': 'контрагентов',
+    'склады': 'складов',
+    'документы': 'документов',
+    'заказы': 'заказов'
+  };
+  
+  return genitiveMap[lowerCase] || lowerCase;
+}
+
 // Типы для конфигурации колонок
 export interface ColumnConfig<T> {
   key: keyof T;
@@ -299,7 +316,7 @@ export default function DataTable<T extends { id: number; name: string }>({
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural.charAt(0).toUpperCase() + entityNamePlural.slice(1)}</h1>
             <p className="text-sm text-gray-600 mt-1">
-              Всего {entityNamePlural.toLowerCase()}: {filteredAndSortedData.length}
+              Всего {getGenitiveForm(entityNamePlural)}: {filteredAndSortedData.length}
             </p>
           </div>
         </div>

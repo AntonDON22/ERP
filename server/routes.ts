@@ -15,6 +15,7 @@ import { inventoryService } from "./services/inventoryService";
 import { orderService } from "./services/orderService";
 import { transactionService } from "./services/transactionService";
 import { materializedViewService } from "./services/materializedViewService";
+import { documentStatusService } from "./services/documentStatusService";
 
 // Импорт логирования
 import { apiLogger, getErrorMessage } from "@shared/logger";
@@ -537,6 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentData = {
         type: type,
         warehouseId: warehouseId,
+        status: "draft" as const, // Новые документы создаются в статусе черновик
         name: "", // Будет заполнено автоматически в storage
         date: new Date().toISOString().split('T')[0], // Текущая дата
       };
@@ -905,6 +907,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error toggling materialized views:", error);
       res.status(500).json({ message: "Ошибка при переключении представлений" });
+    }
+  });
+
+  // API маршруты для управления статусами документов
+  
+  // Проводка документа
+  app.post('/api/documents/:id/post', validateParams(idParamSchema), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      apiLogger.info(`POST /documents/${documentId}/post`, { method: 'POST', url: `/documents/${documentId}/post` });
+      
+      const document = await documentStatusService.postDocument(documentId);
+      if (!document) {
+        apiLogger.warn(`Document not found for posting: ${documentId}`);
+        return res.status(404).json({ error: 'Документ не найден' });
+      }
+      
+      apiLogger.info(`Performance: POST /documents/${documentId}/post`, { statusCode: 200, responseSize: JSON.stringify(document).length });
+      res.json(document);
+    } catch (error) {
+      apiLogger.error('Error posting document', { error: getErrorMessage(error), documentId: req.params.id });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Ошибка проводки документа' });
+    }
+  });
+
+  // Отмена проводки документа
+  app.post('/api/documents/:id/unpost', validateParams(idParamSchema), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      apiLogger.info(`POST /documents/${documentId}/unpost`, { method: 'POST', url: `/documents/${documentId}/unpost` });
+      
+      const document = await documentStatusService.unpostDocument(documentId);
+      if (!document) {
+        apiLogger.warn(`Document not found for unposting: ${documentId}`);
+        return res.status(404).json({ error: 'Документ не найден' });
+      }
+      
+      apiLogger.info(`Performance: POST /documents/${documentId}/unpost`, { statusCode: 200, responseSize: JSON.stringify(document).length });
+      res.json(document);
+    } catch (error) {
+      apiLogger.error('Error unposting document', { error: getErrorMessage(error), documentId: req.params.id });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Ошибка отмены проводки документа' });
+    }
+  });
+
+  // Переключение статуса документа
+  app.post('/api/documents/:id/toggle-status', validateParams(idParamSchema), async (req, res) => {
+    try {
+      const documentId = parseInt(req.params.id);
+      apiLogger.info(`POST /documents/${documentId}/toggle-status`, { method: 'POST', url: `/documents/${documentId}/toggle-status` });
+      
+      const document = await documentStatusService.toggleDocumentStatus(documentId);
+      if (!document) {
+        apiLogger.warn(`Document not found for status toggle: ${documentId}`);
+        return res.status(404).json({ error: 'Документ не найден' });
+      }
+      
+      apiLogger.info(`Performance: POST /documents/${documentId}/toggle-status`, { statusCode: 200, responseSize: JSON.stringify(document).length });
+      res.json(document);
+    } catch (error) {
+      apiLogger.error('Error toggling document status', { error: getErrorMessage(error), documentId: req.params.id });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Ошибка изменения статуса документа' });
+    }
+  });
+
+  // Статистика по статусам документов
+  app.get('/api/documents/status-stats', async (req, res) => {
+    try {
+      apiLogger.info('GET /documents/status-stats', { method: 'GET', url: '/documents/status-stats' });
+      
+      const stats = await documentStatusService.getDocumentStatusStats();
+      
+      apiLogger.info('Performance: GET /documents/status-stats', { statusCode: 200, responseSize: JSON.stringify(stats).length });
+      res.json(stats);
+    } catch (error) {
+      apiLogger.error('Error getting document status stats', { error: getErrorMessage(error) });
+      res.status(500).json({ error: error instanceof Error ? error.message : 'Ошибка получения статистики документов' });
     }
   });
 

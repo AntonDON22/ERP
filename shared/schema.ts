@@ -44,9 +44,11 @@ export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   type: text("type"),
+  status: text("status").notNull().default("draft"), // "draft" или "posted"
   date: text("date"),
   warehouseId: integer("warehouse_id").references(() => warehouses.id),
   createdAt: timestamp("created_at").defaultNow(),
+  postedAt: timestamp("posted_at"), // Время проведения документа
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -161,6 +163,8 @@ export const insertWarehouseSchema = createInsertSchema(warehouses).omit({
 
 export const insertDocumentSchema = createInsertSchema(documents).omit({
   id: true,
+  createdAt: true,
+  postedAt: true,
 }).extend({
   name: z.string()
     .min(1, "Название обязательно")
@@ -169,6 +173,9 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   type: z.enum(['Оприходование', 'Списание'], {
     errorMap: () => ({ message: "Тип документа должен быть 'Оприходование' или 'Списание'" })
   }),
+  status: z.enum(['draft', 'posted'], {
+    errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
+  }).default('draft'),
   date: z.string().optional(),
   warehouseId: z.number()
     .positive("ID склада должен быть положительным числом")

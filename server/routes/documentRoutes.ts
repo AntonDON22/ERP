@@ -16,12 +16,11 @@ const createDocumentSchema = z.object({
   }, "Тип документа должен быть 'Оприходование' или 'Списание'"),
   status: z.enum(["draft", "posted"], { required_error: "Статус документа обязателен" }),
   name: z.string().min(1, "Название документа обязательно"),
-  date: z.string().min(1, "Дата документа обязательна"),
   warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(z.object({
     productId: z.number().min(1, "Выберите товар"),
-    quantity: z.number().min(0.01, "Количество должно быть больше 0"),
-    price: z.number().min(0, "Цена не может быть отрицательной"),
+    quantity: z.string().min(1, "Количество обязательно"),
+    price: z.string().optional(),
   })).min(1, "Добавьте хотя бы один товар"),
 });
 const updateDocumentSchema = insertDocumentSchema.partial();
@@ -74,11 +73,17 @@ router.post("/create-receipt", async (req, res) => {
       type: validatedData.type,
       status: validatedData.status,
       name: validatedData.name,
-      date: validatedData.date,
       warehouseId: validatedData.warehouseId
     };
     
-    const document = await storage.createReceiptDocument(documentData, validatedData.items);
+    // Преобразуем строковые значения в числовые для storage
+    const processedItems = validatedData.items.map(item => ({
+      productId: item.productId,
+      quantity: parseFloat(item.quantity),
+      price: item.price ? parseFloat(item.price) : undefined
+    }));
+    
+    const document = await storage.createReceiptDocument(documentData, processedItems);
     res.status(201).json(document);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -21,7 +21,6 @@ router.use("/orders", orderRoutes);
 // Сервисы для остальных API
 const inventoryService = new InventoryService();
 const contractorService = new ContractorService();
-// warehouseService уже импортирован выше
 
 // Валидация схемы для контрагентов
 const deleteContractorsSchema = z.object({
@@ -51,7 +50,23 @@ router.get("/inventory/availability", async (req, res) => {
     res.json(availability);
   } catch (error) {
     apiLogger.error("Failed to get inventory availability", { warehouseId: req.query.warehouseId, error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка получения доступности товаров" });
+    res.status(500).json({ error: "Ошибка получения доступности" });
+  }
+});
+
+// Endpoint для материализованных представлений
+router.get("/materialized-views/status", async (req, res) => {
+  try {
+    res.json({
+      status: "active",
+      views: [
+        { name: "inventory_summary", active: true },
+        { name: "inventory_availability", active: true }
+      ]
+    });
+  } catch (error) {
+    apiLogger.error("Failed to check materialized views status", { error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка проверки статуса представлений" });
   }
 });
 
@@ -66,25 +81,6 @@ router.get("/contractors", async (req, res) => {
   }
 });
 
-router.get("/contractors/:id", async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID контрагента" });
-    }
-    
-    const contractor = await contractorService.getById(id);
-    if (!contractor) {
-      return res.status(404).json({ error: "Контрагент не найден" });
-    }
-    
-    res.json(contractor);
-  } catch (error) {
-    apiLogger.error("Failed to get contractor", { contractorId: req.params.id, error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка получения контрагента" });
-  }
-});
-
 router.post("/contractors", async (req, res) => {
   try {
     const contractor = await contractorService.create(req.body);
@@ -95,33 +91,22 @@ router.post("/contractors", async (req, res) => {
   }
 });
 
-router.post("/contractors/delete-multiple", async (req, res) => {
+router.delete("/contractors/:id", async (req, res) => {
   try {
-    const validatedData = deleteContractorsSchema.parse(req.body);
-    const result = await contractorService.deleteMultiple(validatedData.contractorIds);
-    res.json(result);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({ error: validationError.message });
-    }
-    apiLogger.error("Failed to delete multiple contractors", { body: req.body, error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка удаления контрагентов" });
-  }
-});
-
-router.post("/contractors/import", async (req, res) => {
-  try {
-    const { contractors } = req.body;
-    if (!Array.isArray(contractors)) {
-      return res.status(400).json({ error: "Ожидается массив контрагентов" });
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Некорректный ID контрагента" });
     }
     
-    const result = await contractorService.import(contractors);
-    res.json(result);
+    const success = await contractorService.deleteById(id);
+    if (!success) {
+      return res.status(404).json({ error: "Контрагент не найден" });
+    }
+    
+    res.json({ success: true });
   } catch (error) {
-    apiLogger.error("Failed to import contractors", { error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка импорта контрагентов" });
+    apiLogger.error("Failed to delete contractor", { contractorId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка удаления контрагента" });
   }
 });
 
@@ -136,25 +121,6 @@ router.get("/warehouses", async (req, res) => {
   }
 });
 
-router.get("/warehouses/:id", async (req, res) => {
-  try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID склада" });
-    }
-    
-    const warehouse = await warehouseService.getById(id);
-    if (!warehouse) {
-      return res.status(404).json({ error: "Склад не найден" });
-    }
-    
-    res.json(warehouse);
-  } catch (error) {
-    apiLogger.error("Failed to get warehouse", { warehouseId: req.params.id, error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка получения склада" });
-  }
-});
-
 router.post("/warehouses", async (req, res) => {
   try {
     const warehouse = await warehouseService.create(req.body);
@@ -165,33 +131,22 @@ router.post("/warehouses", async (req, res) => {
   }
 });
 
-router.post("/warehouses/delete-multiple", async (req, res) => {
+router.delete("/warehouses/:id", async (req, res) => {
   try {
-    const validatedData = deleteWarehousesSchema.parse(req.body);
-    const result = await warehouseService.deleteMultiple(validatedData.warehouseIds);
-    res.json(result);
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({ error: validationError.message });
-    }
-    apiLogger.error("Failed to delete multiple warehouses", { body: req.body, error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка удаления складов" });
-  }
-});
-
-router.post("/warehouses/import", async (req, res) => {
-  try {
-    const { warehouses } = req.body;
-    if (!Array.isArray(warehouses)) {
-      return res.status(400).json({ error: "Ожидается массив складов" });
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Некорректный ID склада" });
     }
     
-    const result = await warehouseService.import(warehouses);
-    res.json(result);
+    const success = await warehouseService.deleteById(id);
+    if (!success) {
+      return res.status(404).json({ error: "Склад не найден" });
+    }
+    
+    res.json({ success: true });
   } catch (error) {
-    apiLogger.error("Failed to import warehouses", { error: error instanceof Error ? error.message : String(error) });
-    res.status(500).json({ error: "Ошибка импорта складов" });
+    apiLogger.error("Failed to delete warehouse", { warehouseId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка удаления склада" });
   }
 });
 

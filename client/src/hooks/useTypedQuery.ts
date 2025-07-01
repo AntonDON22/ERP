@@ -79,6 +79,7 @@ export const useDeleteContractors = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      queryClient.refetchQueries({ queryKey: ["/api/contractors"] });
     },
   });
 };
@@ -109,8 +110,16 @@ export const useDeleteDocuments = () => {
       return apiRequest("/api/documents/delete-multiple", "POST", { documentIds: ids });
     },
     onSuccess: () => {
+      // Принудительная инвалидация и перезапрос всех связанных данных
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      
+      // Принудительное обновление
+      queryClient.refetchQueries({ queryKey: ["/api/documents"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };

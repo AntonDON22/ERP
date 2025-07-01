@@ -92,9 +92,9 @@ export class InventoryService {
     try {
       const result = await materializedViewService.getInventoryAvailability();
       
-      return result.map(row => ({
-        id: row.product_id,
-        name: row.product_name,
+      return result.map((row: any) => ({
+        id: row.id,
+        name: row.name,
         quantity: parseFloat(row.total_quantity) || 0,
         reserved: parseFloat(row.reserved_quantity) || 0,
         available: parseFloat(row.available_quantity) || 0

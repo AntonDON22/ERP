@@ -146,13 +146,13 @@ export class MaterializedViewService {
     try {
       const result = await db.execute(sql`
         SELECT 
-          product_id,
-          product_name,
-          total_quantity::text,
-          reserved_quantity::text,
-          available_quantity::text
+          id,
+          name,
+          quantity::text as total_quantity,
+          reserved::text as reserved_quantity,
+          available::text as available_quantity
         FROM inventory_availability
-        ORDER BY product_name
+        ORDER BY name
       `);
       
       const duration = Date.now() - startTime;

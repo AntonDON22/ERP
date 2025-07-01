@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Clock, ChevronDown, ChevronRight, CheckCircle, Wrench, Database } from "lucide-react";
 
 interface Update {
@@ -16,6 +17,12 @@ interface DayData {
 
 export default function Dashboard() {
   const [expandedDays, setExpandedDays] = useState<string[]>([]);
+  
+  const { data: dayData = [], isLoading, error } = useQuery<DayData[]>({
+    queryKey: ['/api/changelog'],
+    refetchInterval: 30000, // Обновляем каждые 30 секунд
+    staleTime: 0 // Всегда считать данные устаревшими для свежести
+  });
 
   const toggleDay = (date: string) => {
     setExpandedDays(prev => 
@@ -25,532 +32,125 @@ export default function Dashboard() {
     );
   };
 
-  const dayData: DayData[] = [
-    {
-      date: "2025-07-01",
-      displayDate: "1 июля 2025",
-      updates: [
-        {
-          time: "22:07",
-          type: "fix",
-          title: "Завершено исправление всех операций множественного удаления",
-          description: "Добавлены недостающие POST маршруты /api/contractors/delete-multiple и /api/warehouses/delete-multiple в централизованный роутер. Все 6 модулей системы (товары, поставщики, контрагенты, склады, документы, заказы) теперь поддерживают корректное множественное удаление с JSON ответами. Протестированы все bulk deletion операции с детальной информацией о результатах {'deletedCount': N, 'results': [...]}. Пользовательский интерфейс работает стабильно с мгновенным обновлением списков"
-        },
-        {
-          time: "21:58",
-          type: "fix", 
-          title: "Устранены все критические ошибки API-роутинга",
-          description: "Полностью решена проблема возврата HTML вместо JSON из API endpoints. Добавлен принудительный JSON middleware для всех /api/* маршрутов. Создан централизованный API роутер с правильным порядком middleware (API → Rate Limiting → JSON Headers → Routes). Исправлены отсутствующие DELETE маршруты в documentRoutes, добавлены методы deleteById в сервисах. Интеграционное тестирование подтверждает 100% работоспособность за 4.18 секунды"
-        },
-        {
-          time: "21:40",
-          type: "improvement",
-          title: "Завершена комплексная оптимизация базы данных и тестирование",
-          description: "Полностью завершена оптимизация БД: удалены неиспользуемые столбцы (documents.date, documents.posted_at, products.image_url), обновлены схемы Drizzle и Zod валидация. Исправлены триггеры материализованных представлений для корректной работы с PostgreSQL. Интеграционный тест подтверждает стабильную работу всех компонентов: FIFO инвентарь, материализованные представления (40мс), общее время выполнения 2.3сек. Система достигла production-ready состояния"
-        },
-        {
-          time: "21:28",
-          type: "fix",
-          title: "Исправлена критическая проблема интеграционного тестирования",
-          description: "Решена проблема с валидацией русских символов в Zod enum для типов документов ('Оприходование', 'Списание'). Заменен z.enum на z.string().refine для корректной обработки Unicode символов. Исправлена схема валидации createDocumentSchema в documentRoutes.ts для поддержки полного набора полей. Интеграционный тест теперь стабильно проходит все 7 этапов тестирования со временем выполнения ~1.7 секунды"
-        },
-        {
-          time: "21:15",
-          type: "feature",
-          title: "Добавлены React Query Devtools для отладки",
-          description: "Интегрированы инструменты разработчика @tanstack/react-query-devtools с настройкой initialIsOpen={false}. Упрощена отладка кеширования, мутаций и сетевых запросов в development режиме"
-        },
-        {
-          time: "21:10",
-          type: "feature",
-          title: "Интегрирована защита от DoS атак через express-rate-limit",
-          description: "Настроены глобальные лимиты (1000 запросов/15 мин) и API лимиты (500 запросов/15 мин). Добавлена конфигурация trust proxy для корректной работы в production среде. Реализованы русскоязычные сообщения об ограничениях скорости"
-        },
-        {
-          time: "21:05",
-          type: "feature",
-          title: "Реализована комплексная Zod валидация для API безопасности",
-          description: "Добавлена полная валидация схем в productRoutes, supplierRoutes, documentRoutes с проверкой создания, обновления и получения данных. Внедрены русскоязычные сообщения об ошибках валидации через fromZodError. Устранены уязвимости через строгую типизацию входных данных"
-        },
-        {
-          time: "21:00",
-          type: "improvement",
-          title: "Завершена полная оптимизация React производительности",
-          description: "Добавлены useMemo хуки для всех колонок и конфигураций Excel во всех 7 страницах DataTable (ProductsList, SuppliersList, ContractorsList, DocumentsList, OrdersList, InventoryList, WarehousesList). Оптимизирована повторная отрисовка компонентов через мемоизацию тяжелых вычислений"
-        },
-        {
-          time: "20:55",
-          type: "fix",
-          title: "Исправлены критические TypeScript ошибки в DataTable компоненте",
-          description: "Решена проблема с универсальной типизацией DataTable для поддержки всех типов данных. Добавлены приведения типов во всех страницах использующих DataTable. Устранены ошибки типизации в колонках и обработчиках событий"
-        },
-        {
-          time: "20:50",
-          type: "improvement",
-          title: "Проведена масштабная оптимизация кода и архитектуры системы",
-          description: "Устранены все 53 использования типа 'any' в пользу строгой типизации. Заменены все 107 console.log на централизованный логгер. Переструктурирован routes.ts - разбит с 1101 строки на 5 модульных файлов (-40% сокращение кода). Создана модульная архитектура роутеров с proper error handling"
-        },
-        {
-          time: "20:25",
-          type: "feature",
-          title: "Создана автоматизированная система интеграционного тестирования",
-          description: "Разработан полнофункциональный автотест покрывающий весь жизненный цикл ERP операций (создание сущностей, приходные/расходные документы, FIFO инвентарь, отмена документов, материализованные представления). Исправлены недостающие POST API маршруты для создания продуктов, контракторов и поставщиков. Тест выполняется за 2.3 сек, покрывает 7 ключевых сценариев. Создан исполняемый скрипт runSystemTest.sh"
-        },
-        {
-          time: "20:20",
-          type: "feature",
-          title: "Реализована полная настройка таблиц",
-          description: "Добавлено изменение ширины столбцов перетаскиванием границ с минимальными ограничениями (80-300px). Создан поповер с шестеренкой для скрытия/показа столбцов через чекбоксы. Все настройки сохраняются в localStorage индивидуально для каждой таблицы. Исправлена проблема с обновлением данных при скрытии столбцов"
-        },
-        {
-          time: "20:15",
-          type: "fix",
-          title: "Исправлено кеширование во всех модулях",
-          description: "Устранена проблема когда удаленные записи продолжали отображаться в интерфейсе. Изменены настройки React Query - установлен staleTime: 0 для немедленного обновления данных. Улучшена инвалидация кеша в операциях удаления с принудительными refetchQueries"
-        },
-        {
-          time: "20:10",
-          type: "fix",
-          title: "Исправлено удаление заказов",
-          description: "Полностью переработана функция удаления заказов в API. Реализовано каскадное удаление связанных данных: резервы товаров (reserves), позиции заказа (orderItems), сам заказ (orders). Добавлена проверка существования заказа перед удалением и подробные логи операций"
-        },
-        {
-          time: "18:11",
-          type: "fix",
-          title: "Исправлены все критические ошибки в unit-тестах",
-          description: "Масштабное исправление системы тестирования: улучшена с 61% до 93% успешных тестов (+32% прогресс). Полностью переписан DataCleanerService с правильной логикой форматирования чисел. Исправлены моки базы данных и MaterializedViewService. Validation middleware теперь корректно обрабатывает ошибки. Система готова к продакшену с 93% протестированным качеством"
-        },
-        {
-          time: "15:27",
-          type: "fix",
-          title: "Исправлена критическая проблема со временем",
-          description: "Полностью переписаны timeUtils функции для корректной работы с московским временем. Заменены ручные вычисления смещений на встроенные timezone API JavaScript. Теперь все время в системе отображается правильно в соответствии с Europe/Moscow часовым поясом"
-        },
-        {
-          time: "14:32",
-          type: "feature",
-          title: "Внедрена централизованная система логирования",
-          description: "Создан структурированный логгер с поддержкой разных уровней (DEBUG, INFO, WARN, ERROR). Добавлено логирование производительности, API запросов, операций БД и ошибок. Все логи теперь в JSON формате с московским временем. Готова интеграция с Sentry и другими системами мониторинга"
-        },
-        {
-          time: "14:18",
-          type: "feature", 
-          title: "Исправлены все критические проблемы unit-тестов",
-          description: "Решены проблемы с импортами, мокированием и логикой обработки данных. Система unit-тестов улучшена с 61% до 78% успешных тестов. Исправлены DataCleanerService (обработка Excel), TimeUtils (московское время), InventoryService (моки MaterializedView), DocumentStatusService (импорты). Все критические компоненты API и валидации работают на 100%"
-        },
-        {
-          time: "14:31",
-          type: "improvement", 
-          title: "Упрощена система материализованных представлений",
-          description: "Удалена админ панель по просьбе пользователя. Материализованные представления теперь работают полностью автоматически без ручного управления. Система самостоятельно обновляет кэш и переключается между быстрыми и прямыми запросами при необходимости"
-        },
-        {
-          time: "14:26",
-          type: "feature",
-          title: "Внедрены материализованные представления для остатков",
-          description: "Созданы материализованные представления inventory_summary и inventory_availability для ускорения запросов к остаткам в 10-20 раз. Система автоматически переключается между быстрыми представлениями и прямыми запросами при необходимости"
-        },
-        {
-          time: "14:18",
-          type: "improvement",
-          title: "Завершена интеграция Zod валидации",
-          description: "Добавлена комплексная валидация ко всем критичным API маршрутам через middleware. Созданы схемы валидации для удаления товаров, поставщиков, контрагентов, документов, заказов и складов. Система теперь возвращает детальные ошибки валидации на русском языке"
-        },
-        {
-          time: "13:58",
-          type: "database",
-          title: "Настроено московское время",
-          description: "Создана система работы с московским временем (UTC+3) для всех операций. Обновлены времена в changelog, генерация названий документов, форматирование дат. Система теперь всегда использует МСК"
-        },
-        {
-          time: "13:55",
-          type: "database",
-          title: "Создана транзакционная архитектура",
-          description: "Реализован TransactionService с атомарными операциями для всех операций с остатками. Добавлены методы createDocumentWithInventory, updateDocumentWithInventory, deleteDocumentWithInventory для гарантированной консистентности. Интегрированы транзакционные методы в DocumentService"
-        },
-        {
-          time: "13:50",
-          type: "feature",
-          title: "Рефакторинг routes.ts → services/",
-          description: "Создана архитектура сервисов: productService, supplierService, contractorService, documentService, inventoryService. Вынесена бизнес-логика из маршрутов для улучшения читаемости и тестируемости"
-        },
-        {
-          time: "16:45",
-          type: "fix",
-          title: "Исправлен расчет отрицательной доступности",
-          description: "Убран Math.max(0, ...) из расчета доступности товаров. Теперь при отрицательном остатке показывается отрицательная доступность вместо нуля"
-        },
-        {
-          time: "13:35",
-          type: "improvement",
-          title: "Убрана кнопка 'Обновить'",
-          description: "Полностью удалена кнопка принудительного обновления из интерфейса остатков - все данные обновляются автоматически"
-        },
-        {
-          time: "13:30", 
-          type: "fix",
-          title: "Исправлена автоматическая инвалидация кэша",
-          description: "Настроена агрессивная инвалидация кэша с staleTime: 0 и принудительным refetch для мгновенного обновления данных остатков"
-        },
-        {
-          time: "12:45",
-          type: "feature", 
-          title: "Система резервирования заказов",
-          description: "Создана полная система резервов с таблицей reserves, автоматическим созданием/удалением резервов при изменении статуса заказов"
-        },
-        {
-          time: "15:30",
-          type: "feature",
-          title: "API доступности товаров",
-          description: "Разработан endpoint /api/inventory/availability с четырьмя колонками: Остаток, Резерв, Доступно с правильными FIFO расчетами"
-        },
-        {
-          time: "12:15",
-          type: "improvement",
-          title: "Расширена страница остатков",
-          description: "Добавлено отслеживание резервов в реальном времени с четырьмя колонками вместо двух для полного контроля запасов"
-        },
-        {
-          time: "11:45",
-          type: "fix",
-          title: "Исправлены визуальные несоответствия",
-          description: "Откорректированы ширины колонок, склонения в статистике (заказы → заказов), убраны лишние отступы для единообразия"
-        },
-        {
-          time: "14:30",
-          type: "feature",
-          title: "Реорганизация навигации",
-          description: "Создано выпадающее меню 'Настройки' с разделами Поставщики, Контрагенты, Склады. Основная навигация теперь показывает ключевые бизнес-операции"
-        },
-        {
-          time: "11:15",
-          type: "feature",
-          title: "Полный модуль заказов",
-          description: "Создан модуль заказов с базой данных, API маршрутами и интерфейсом. Автоматическое именование 'Заказ день.месяц-номер', управление статусами, CRUD операции"
-        },
-        {
-          time: "13:45",
-          type: "improvement",
-          title: "Оптимизация интерфейса документов",
-          description: "Объединены выбор типа документа и склада в единый блок для более компактного и удобного интерфейса"
-        },
-        {
-          time: "10:30",
-          type: "improvement",
-          title: "Улучшенная система именования",
-          description: "Переход от формата 'Тип+ID' к 'Тип день.месяц-номер' с ежедневной нумерацией внутри типов документов"
-        },
-        {
-          time: "10:15",
-          type: "feature",
-          title: "Поддержка смены типа документов",
-          description: "Добавлена возможность менять типы документов (Оприходование ↔ Списание) с правильным пересчетом остатков"
-        },
-        {
-          time: "13:00",
-          type: "fix",
-          title: "Исправлен баг расчета остатков",
-          description: "Откорректированы SQL запросы с CAST операциями для правильной обработки десятичных полей количества"
-        },
-        {
-          time: "09:45",
-          type: "feature",
-          title: "Система обновления документов",
-          description: "Создан PUT API endpoint, добавлен хук useUpdateDocument, исправлена логика для обновления существующих документов"
-        },
-        {
-          time: "12:30",
-          type: "fix",
-          title: "Исправлено редактирование документов",
-          description: "Решена проблема с непопулированием поля склада при открытии существующих документов, создан API для получения одного документа"
-        },
-        {
-          time: "09:15",
-          type: "feature",
-          title: "Колонка склада в таблице документов",
-          description: "Добавлено отображение поля склада между типом и датой с правильным разрешением имен складов вместо ID"
-        },
-        {
-          time: "12:00",
-          type: "fix",
-          title: "Разделы по умолчанию свернуты",
-          description: "Изменено начальное состояние - разделы истории изменений теперь закрыты, пользователь может расширить для просмотра"
-        }
-      ]
-    },
-    {
-      date: "2025-06-30",
-      displayDate: "30 июня 2025",
-      updates: [
-        {
-          time: "22:45",
-          type: "database",
-          title: "Оптимизация базы данных и FIFO",
-          description: "Добавлены внешние ключи для целостности данных, созданы индексы производительности, оптимизирован FIFO алгоритм с пакетными вставками"
-        },
-        {
-          time: "22:30",
-          type: "feature", 
-          title: "Мобильная навигация",
-          description: "Создано адаптивное меню-гамбургер для мобильных устройств вместо горизонтальных вкладок"
-        },
-        {
-          time: "22:15",
-          type: "feature",
-          title: "Полная система FIFO",
-          description: "Реализовано управление запасами по принципу 'первым пришел - первым ушел' с автоматическим списанием из старых партий"
-        },
-        {
-          time: "21:45",
-          type: "feature",
-          title: "Каскадное удаление документов",
-          description: "При удалении документов автоматически удаляются связанные записи из таблиц позиций и остатков"
-        },
-        {
-          time: "21:30",
-          type: "feature",
-          title: "Отслеживание остатков",
-          description: "Документы приходования теперь обновляют остатки товаров в реальном времени с правильным расчетом"
-        },
-        {
-          time: "21:15",
-          type: "feature",
-          title: "Модуль 'Остатки'",
-          description: "Создан пятый модуль системы для просмотра текущих остатков товаров без возможности редактирования"
-        },
-        {
-          time: "20:45",
-          type: "feature",
-          title: "Автоматические названия документов",
-          description: "Документы получают названия в формате 'Тип+ID', добавлены временные метки создания"
-        },
-        {
-          time: "20:15",
-          type: "improvement",
-          title: "Улучшение UI документов",
-          description: "Кнопки действий перенесены в правый верхний угол, унифицированы названия"
-        },
-        {
-          time: "20:00",
-          type: "feature",
-          title: "Редактирование документов",
-          description: "Добавлена возможность редактирования документов через клик по строке в таблице"
-        },
-        {
-          time: "19:30",
-          type: "feature",
-          title: "CRUD для документов",
-          description: "Добавлены режимы создания, редактирования и просмотра в единый компонент документов"
-        },
-        {
-          time: "19:15",
-          type: "feature",
-          title: "Универсальный компонент документов",
-          description: "Создан конфигурируемый компонент для разных типов документов с автоматическим ценообразованием"
-        },
-        {
-          time: "18:30",
-          type: "fix",
-          title: "Удаление экспорта из документов",
-          description: "Убрана функция экспорта Excel из модуля документов, сделан параметр опциональным"
-        },
-        {
-          time: "18:00",
-          type: "feature",
-          title: "Модуль документов",
-          description: "Создан четвертый модуль для управления документами 'Оприходование' и 'Списание'"
-        },
-        {
-          time: "17:15",
-          type: "feature",
-          title: "Excel импорт/экспорт с обновлением",
-          description: "Реализован полный цикл Excel с ID полями для обновления существующих записей"
-        },
-        {
-          time: "16:45",
-          type: "improvement",
-          title: "Рефакторинг кода",
-          description: "Создан универсальный DataTable компонент, убрано дублирование кода на 50%"
-        },
-        {
-          time: "16:00",
-          type: "feature",
-          title: "Модуль контрагентов",
-          description: "Создана страница 'Контрагенты' с полным функционалом поиска и удаления"
-        },
-        {
-          time: "15:30",
-          type: "feature",
-          title: "Создание Dashboard",
-          description: "Создана главная страница с полным журналом изменений системы"
-        },
-        {
-          time: "14:30",
-          type: "database",
-          title: "Таблица поставщиков",
-          description: "Создана таблица поставщиков в PostgreSQL"
-        },
-        {
-          time: "14:00",
-          type: "feature",
-          title: "Навигация между модулями",
-          description: "Реализована маршрутизация wouter между 'Товары' и 'Поставщики'"
-        },
-        {
-          time: "13:45",
-          type: "feature",
-          title: "Страница поставщиков",
-          description: "Создана страница 'Поставщики' копированием структуры товаров"
-        },
-        {
-          time: "13:00",
-          type: "feature",
-          title: "Массовое удаление",
-          description: "Добавлены чекбоксы для выбора и массового удаления товаров"
-        },
-        {
-          time: "15:30",
-          type: "feature",
-          title: "Поиск товаров",
-          description: "Добавлен поиск в реальном времени по названию, артикулу и штрихкоду"
-        },
-        {
-          time: "12:00",
-          type: "database",
-          title: "Миграция на PostgreSQL",
-          description: "Успешно переведена система с памяти на PostgreSQL с Drizzle ORM"
-        },
-        {
-          time: "14:30",
-          type: "feature",
-          title: "Инициализация проекта",
-          description: "Создана базовая система управления товарами с React TypeScript и Express.js"
-        }
-      ]
-    }
-  ];
+  if (isLoading) {
+    return (
+      <div className="p-6">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Загрузка истории обновлений...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="text-center text-red-600">
+          <p>Ошибка загрузки истории обновлений</p>
+        </div>
+      </div>
+    );
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case "feature":
         return <CheckCircle className="w-4 h-4 text-green-600" />;
       case "fix":
-        return <Wrench className="w-4 h-4 text-blue-600" />;
-      case "improvement":
         return <Wrench className="w-4 h-4 text-orange-600" />;
       case "database":
         return <Database className="w-4 h-4 text-purple-600" />;
       default:
-        return <Clock className="w-4 h-4 text-gray-600" />;
+        return <CheckCircle className="w-4 h-4 text-blue-600" />;
     }
   };
 
-  const getTypeLabel = (type: string) => {
+  const getTypeColor = (type: string) => {
     switch (type) {
-      case "feature": return "Новая функция";
-      case "fix": return "Исправление";
-      case "improvement": return "Улучшение";
-      case "database": return "База данных";
-      default: return "Обновление";
-    }
-  };
-
-  const getTypeBg = (type: string) => {
-    switch (type) {
-      case "feature": return "bg-green-50 border-green-200";
-      case "fix": return "bg-blue-50 border-blue-200";
-      case "improvement": return "bg-orange-50 border-orange-200";
-      case "database": return "bg-purple-50 border-purple-200";
-      default: return "bg-gray-50 border-gray-200";
+      case "feature":
+        return "text-green-700 bg-green-100";
+      case "fix":
+        return "text-orange-700 bg-orange-100";
+      case "database":
+        return "text-purple-700 bg-purple-100";
+      default:
+        return "text-blue-700 bg-blue-100";
     }
   };
 
   const totalUpdates = dayData.reduce((sum, day) => sum + day.updates.length, 0);
+  const developmentDays = dayData.length;
+  const avgUpdatesPerDay = developmentDays > 0 ? (totalUpdates / developmentDays).toFixed(1) : "0";
 
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">История обновлений системы</h1>
-        <p className="text-gray-600">
-          Полная хронология изменений и улучшений ERP системы
-        </p>
-      </div>
+    <div className="p-6 space-y-6">
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h1 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+          <Clock className="w-7 h-7 text-blue-600" />
+          История обновлений системы
+        </h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-blue-600">{totalUpdates}</div>
+            <div className="text-sm text-blue-700">Всего обновлений</div>
+          </div>
+          <div className="bg-green-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-green-600">{developmentDays}</div>
+            <div className="text-sm text-green-700">Дней разработки</div>
+          </div>
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <div className="text-2xl font-bold text-purple-600">{avgUpdatesPerDay}</div>
+            <div className="text-sm text-purple-700">В среднем за день</div>
+          </div>
+        </div>
 
-      <div className="space-y-4">
-        {dayData.map((day) => (
-          <div key={day.date} className="bg-white rounded-lg border shadow-sm">
-            <button
-              onClick={() => toggleDay(day.date)}
-              className="w-full px-6 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                {expandedDays.includes(day.date) ? (
-                  <ChevronDown className="w-5 h-5 text-gray-400" />
-                ) : (
-                  <ChevronRight className="w-5 h-5 text-gray-400" />
-                )}
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {day.displayDate}
-                </h2>
-                <span className="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-0.5 rounded">
-                  {day.updates.length} обновлений
-                </span>
-              </div>
-            </button>
-
-            {expandedDays.includes(day.date) && (
-              <div className="px-6 pb-6">
-                <div className="space-y-3">
+        <div className="space-y-4">
+          {dayData.map((day) => (
+            <div key={day.date} className="border border-gray-200 rounded-lg overflow-hidden">
+              <button
+                onClick={() => toggleDay(day.date)}
+                className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-left"
+              >
+                <div className="flex items-center gap-3">
+                  {expandedDays.includes(day.date) ? (
+                    <ChevronDown className="w-5 h-5 text-gray-600" />
+                  ) : (
+                    <ChevronRight className="w-5 h-5 text-gray-600" />
+                  )}
+                  <span className="font-semibold text-gray-900">{day.displayDate}</span>
+                  <span className="text-sm text-gray-600 bg-gray-200 px-2 py-1 rounded-full">
+                    {day.updates.length} обновлений
+                  </span>
+                </div>
+              </button>
+              
+              {expandedDays.includes(day.date) && (
+                <div className="p-4 space-y-4 bg-white">
                   {day.updates.map((update, index) => (
-                    <div 
-                      key={index}
-                      className={`p-4 rounded-lg border ${getTypeBg(update.type)}`}
-                    >
-                      <div className="flex items-start gap-3">
+                    <div key={index} className="flex gap-4 p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+                      <div className="flex-shrink-0 mt-1">
                         {getTypeIcon(update.type)}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-medium text-gray-900">
-                              {getTypeLabel(update.type)}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {update.time}
-                            </span>
-                          </div>
-                          <h3 className="font-semibold text-gray-900 mb-1">
-                            {update.title}
-                          </h3>
-                          <p className="text-gray-700 text-sm leading-relaxed">
-                            {update.description}
-                          </p>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-sm font-medium text-gray-600">{update.time}</span>
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${getTypeColor(update.type)}`}>
+                            {update.type === "feature" ? "Функция" : 
+                             update.type === "fix" ? "Исправление" :
+                             update.type === "database" ? "База данных" : "Улучшение"}
+                          </span>
                         </div>
+                        <h3 className="font-semibold text-gray-900 mb-1">{update.title}</h3>
+                        <p className="text-sm text-gray-600 leading-relaxed">{update.description}</p>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      <div className="mt-8 bg-gray-50 rounded-lg p-6">
-        <h3 className="font-semibold text-gray-900 mb-4">Статистика разработки</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{dayData.length}</div>
-            <div className="text-sm text-gray-600">Дней разработки</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{totalUpdates}</div>
-            <div className="text-sm text-gray-600">Всего обновлений</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
-              {Math.round(totalUpdates / dayData.length)}
+              )}
             </div>
-            <div className="text-sm text-gray-600">Обновлений в день</div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

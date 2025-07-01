@@ -9,6 +9,8 @@ import { WarehouseService } from "../services/warehouseService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
+import { readFileSync } from "fs";
+import { parseChangelogFromReplit } from "../../shared/changelogParser";
 
 const router = Router();
 
@@ -180,6 +182,18 @@ router.post("/warehouses/delete-multiple", async (req, res) => {
     }
     apiLogger.error("Failed to delete multiple warehouses", { body: req.body, error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка удаления складов" });
+  }
+});
+
+// GET /api/changelog - получение истории обновлений из replit.md
+router.get("/changelog", async (req, res) => {
+  try {
+    const replitContent = readFileSync('./replit.md', 'utf-8');
+    const dayData = parseChangelogFromReplit(replitContent);
+    res.json(dayData);
+  } catch (error) {
+    apiLogger.error("Failed to get changelog", { error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка получения истории обновлений" });
   }
 });
 

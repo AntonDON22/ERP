@@ -4,12 +4,26 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
 import { insertDocumentSchema, receiptDocumentSchema } from "../../shared/schema";
+import { storage } from "../storage";
 
 const router = Router();
 const documentService = new DocumentService();
 
 // Валидация схем
-const createDocumentSchema = receiptDocumentSchema;
+const createDocumentSchema = z.object({
+  type: z.string().refine(val => {
+    return val === "Оприходование" || val === "Списание";
+  }, "Тип документа должен быть 'Оприходование' или 'Списание'"),
+  status: z.enum(["draft", "posted"], { required_error: "Статус документа обязателен" }),
+  name: z.string().min(1, "Название документа обязательно"),
+  date: z.string().min(1, "Дата документа обязательна"),
+  warehouseId: z.number().min(1, "Выберите склад"),
+  items: z.array(z.object({
+    productId: z.number().min(1, "Выберите товар"),
+    quantity: z.number().min(0.01, "Количество должно быть больше 0"),
+    price: z.number().min(0, "Цена не может быть отрицательной"),
+  })).min(1, "Добавьте хотя бы один товар"),
+});
 const updateDocumentSchema = insertDocumentSchema.partial();
 const deleteDocumentsSchema = z.object({
   documentIds: z.array(z.number()).min(1, "Укажите хотя бы один документ для удаления"),
@@ -54,7 +68,17 @@ router.get("/:id", async (req, res) => {
 router.post("/create-receipt", async (req, res) => {
   try {
     const validatedData = createDocumentSchema.parse(req.body);
-    const document = await documentService.create(validatedData);
+    
+    // Преобразуем данные для создания документа через storage
+    const documentData = {
+      type: validatedData.type,
+      status: validatedData.status,
+      name: validatedData.name,
+      date: validatedData.date,
+      warehouseId: validatedData.warehouseId
+    };
+    
+    const document = await storage.createReceiptDocument(documentData, validatedData.items);
     res.status(201).json(document);
   } catch (error) {
     if (error instanceof z.ZodError) {

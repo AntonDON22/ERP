@@ -93,7 +93,7 @@ class TestAPI {
   }
 
   // Документы
-  async createDocument(document: { type: string; warehouseId: number; status: 'draft' | 'posted'; items: Array<{ productId: number; quantity: number; price: number }> }): Promise<TestDocument> {
+  async createDocument(document: { type: string; name: string; date: string; warehouseId: number; status: 'draft' | 'posted'; items: Array<{ productId: number; quantity: number; price: number }> }): Promise<TestDocument> {
     return this.request('POST', '/documents/create-receipt', document);
   }
 
@@ -193,6 +193,8 @@ class SystemIntegrationTest {
     try {
       const receiptDoc = await this.api.createDocument({
         type: 'Оприходование',
+        name: 'Test Receipt Document',
+        date: new Date().toISOString().split('T')[0],
         warehouseId: this.testData.warehouse.id,
         status: 'posted',
         items: [{
@@ -230,6 +232,8 @@ class SystemIntegrationTest {
     try {
       const writeoffDoc = await this.api.createDocument({
         type: 'Списание',
+        name: 'Test Writeoff Document',
+        date: new Date().toISOString().split('T')[0],
         warehouseId: this.testData.warehouse.id,
         status: 'posted',
         items: [{
@@ -267,6 +271,8 @@ class SystemIntegrationTest {
     try {
       const minusWriteoffDoc = await this.api.createDocument({
         type: 'Списание',
+        name: 'Test Negative Writeoff Document',
+        date: new Date().toISOString().split('T')[0],
         warehouseId: this.testData.warehouse.id,
         status: 'posted',
         items: [{

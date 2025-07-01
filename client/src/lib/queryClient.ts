@@ -56,8 +56,9 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
+      refetchOnWindowFocus: true, // Обновление при возвращении во вкладку
       staleTime: 0, // Данные всегда считаются устаревшими для немедленного обновления
+      gcTime: 5 * 60 * 1000, // Кеш хранится 5 минут (gcTime в React Query v5)
       retry: false,
     },
     mutations: {

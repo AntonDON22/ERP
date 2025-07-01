@@ -1,34 +1,45 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor, Warehouse, InsertWarehouse } from "@shared/schema";
 import { apiRequest, apiRequestJson, getQueryFn } from "@/lib/queryClient";
+import { useInvalidate } from "./useInvalidate";
 
 // Типизированные хуки для продуктов
 export const useProducts = () => {
   return useQuery<Product[]>({
-    queryKey: ["/api/products"],
+    queryKey: ['products'],
+    queryFn: () => apiRequestJson<Product[]>('/api/products'),
+  });
+};
+
+export const useProduct = (id: number) => {
+  return useQuery<Product>({
+    queryKey: ['product', id],
+    queryFn: () => apiRequestJson<Product>(`/api/products/${id}`),
+    enabled: !!id,
   });
 };
 
 export const useDeleteProducts = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (productIds: number[]) => {
       return apiRequest("/api/products/delete-multiple", "POST", { productIds });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      invalidate.products();
+      invalidate.inventoryRelated();
     },
   });
 };
 
 export const useImportProducts = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (productsData: InsertProduct[]) => {
       return apiRequest("/api/products/import", "POST", { products: productsData });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      invalidate.products();
     },
   });
 };
@@ -36,30 +47,39 @@ export const useImportProducts = () => {
 // Типизированные хуки для поставщиков
 export const useSuppliers = () => {
   return useQuery<Supplier[]>({
-    queryKey: ["/api/suppliers"],
+    queryKey: ['suppliers'],
+    queryFn: () => apiRequestJson<Supplier[]>('/api/suppliers'),
+  });
+};
+
+export const useSupplier = (id: number) => {
+  return useQuery<Supplier>({
+    queryKey: ['supplier', id],
+    queryFn: () => apiRequestJson<Supplier>(`/api/suppliers/${id}`),
+    enabled: !!id,
   });
 };
 
 export const useDeleteSuppliers = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (supplierIds: number[]) => {
       return apiRequest("/api/suppliers/delete-multiple", "POST", { supplierIds });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      invalidate.suppliers();
     },
   });
 };
 
 export const useImportSuppliers = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (suppliersData: InsertSupplier[]) => {
       return apiRequest("/api/suppliers/import", "POST", { suppliers: suppliersData });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      invalidate.suppliers();
     },
   });
 };
@@ -67,31 +87,39 @@ export const useImportSuppliers = () => {
 // Типизированные хуки для контрагентов
 export const useContractors = () => {
   return useQuery<Contractor[]>({
-    queryKey: ["/api/contractors"],
+    queryKey: ['contractors'],
+    queryFn: () => apiRequestJson<Contractor[]>('/api/contractors'),
+  });
+};
+
+export const useContractor = (id: number) => {
+  return useQuery<Contractor>({
+    queryKey: ['contractor', id],
+    queryFn: () => apiRequestJson<Contractor>(`/api/contractors/${id}`),
+    enabled: !!id,
   });
 };
 
 export const useDeleteContractors = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (contractorIds: number[]) => {
       return apiRequest("/api/contractors/delete-multiple", "POST", { contractorIds });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
-      queryClient.refetchQueries({ queryKey: ["/api/contractors"] });
+      invalidate.contractors();
     },
   });
 };
 
 export const useImportContractors = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (contractorsData: InsertContractor[]) => {
       return apiRequest("/api/contractors/import", "POST", { contractors: contractorsData });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      invalidate.contractors();
     },
   });
 };
@@ -99,27 +127,19 @@ export const useImportContractors = () => {
 // Типизированные хуки для документов
 export const useDocuments = () => {
   return useQuery<DocumentRecord[]>({
-    queryKey: ["/api/documents"],
+    queryKey: ['documents'],
+    queryFn: () => apiRequestJson<DocumentRecord[]>('/api/documents'),
   });
 };
 
 export const useDeleteDocuments = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (ids: number[]) => {
       return apiRequest("/api/documents/delete-multiple", "POST", { documentIds: ids });
     },
     onSuccess: () => {
-      // Принудительная инвалидация и перезапрос всех связанных данных
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
-      
-      // Принудительное обновление
-      queryClient.refetchQueries({ queryKey: ["/api/documents"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
+      invalidate.documentRelated();
     },
   });
 };
@@ -131,7 +151,7 @@ export const useInventory = (warehouseId?: number) => {
     : "/api/inventory";
     
   return useQuery<{ id: number; name: string; quantity: number }[]>({
-    queryKey: ["/api/inventory", warehouseId],
+    queryKey: warehouseId ? ['inventory', 'warehouse', warehouseId] : ['inventory'],
     queryFn: async () => {
       const response = await fetch(url);
       if (!response.ok) {
@@ -149,7 +169,7 @@ export const useInventoryAvailability = (warehouseId?: number) => {
     : "/api/inventory/availability";
     
   return useQuery<{ id: number; name: string; quantity: number; reserved: number; available: number }[]>({
-    queryKey: ["/api/inventory/availability", warehouseId],
+    queryKey: warehouseId ? ['inventory', 'availability', 'warehouse', warehouseId] : ['inventory', 'availability'],
     queryFn: async () => {
       const response = await fetch(url);
       if (!response.ok) {
@@ -157,69 +177,32 @@ export const useInventoryAvailability = (warehouseId?: number) => {
       }
       return response.json();
     },
-    staleTime: 0, // Данные всегда считаются устаревшими
-    refetchOnWindowFocus: true, // Обновлять при фокусе окна
   });
 };
 
-let isCreatingDocument = false;
-let lastDocumentRequest: any = null;
+
 
 export const useCreateReceiptDocument = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (documentData: any) => {
-      // Защита от дублирования на уровне hook
-      if (isCreatingDocument) {
-        console.log('🚫 Блокирован повторный запрос в hook');
-        throw new Error('Document creation already in progress');
-      }
-      
-      // Проверяем, не такой ли же запрос недавно обрабатывался
-      if (lastDocumentRequest && JSON.stringify(lastDocumentRequest) === JSON.stringify(documentData)) {
-        console.log('🚫 Блокирован дублированный запрос');
-        throw new Error('Duplicate request detected');
-      }
-      
-      isCreatingDocument = true;
-      lastDocumentRequest = { ...documentData };
-      
-      console.log('🔒 Блокировка активирована в hook');
-      
-      try {
-        const result = await apiRequest("/api/documents/create-receipt", "POST", documentData);
-        console.log('✅ Запрос успешно выполнен в hook');
-        return result;
-      } finally {
-        setTimeout(() => {
-          isCreatingDocument = false;
-          lastDocumentRequest = null;
-          console.log('🔓 Блокировка снята в hook');
-        }, 1000); // Блокировка на 1 секунду
-      }
+      return apiRequest("/api/documents/create-receipt", "POST", documentData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      invalidate.documentRelated();
     },
   });
 };
 export const useDocument = (id: number) => {
   return useQuery<any>({
-    queryKey: ["/api/documents", id],  
-    queryFn: async () => {
-      const response = await fetch(`/api/documents/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch document');
-      }
-      return response.json();
-    },
+    queryKey: ['document', id],
+    queryFn: () => apiRequestJson<any>(`/api/documents/${id}`),
     enabled: !!id,
   });
 };
 
 export const useUpdateDocument = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await fetch(`/api/documents/${id}`, {
@@ -232,9 +215,9 @@ export const useUpdateDocument = () => {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+    onSuccess: (data, { id }) => {
+      invalidate.document(id);
+      invalidate.documentRelated();
     },
   });
 };
@@ -242,58 +225,45 @@ export const useUpdateDocument = () => {
 // Типизированные хуки для заказов
 export const useOrders = () => {
   return useQuery<any[]>({
-    queryKey: ["/api/orders"],
+    queryKey: ['orders'],
+    queryFn: () => apiRequestJson<any[]>('/api/orders'),
   });
 };
 
 export const useDeleteOrders = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (orderIds: number[]) => {
       return apiRequest("/api/orders/delete-multiple", "POST", { orderIds });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      // Инвалидируем все варианты кэша инвентаря
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
+      invalidate.orderRelated();
     },
   });
 };
 
 export const useCreateOrder = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (orderData: any) => {
       return apiRequest("/api/orders/create", "POST", orderData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      // Инвалидируем все варианты кэша инвентаря
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
+      invalidate.orderRelated();
     },
   });
 };
 
 export const useOrder = (id: number) => {
   return useQuery<any>({
-    queryKey: ["/api/orders", id],  
-    queryFn: async () => {
-      const response = await fetch(`/api/orders/${id}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch order');
-      }
-      return response.json();
-    },
+    queryKey: ['order', id],
+    queryFn: () => apiRequestJson<any>(`/api/orders/${id}`),
     enabled: !!id,
   });
 };
 
 export const useUpdateOrder = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async ({ id, data }: { id: number; data: any }) => {
       const response = await fetch(`/api/orders/${id}`, {
@@ -306,37 +276,49 @@ export const useUpdateOrder = () => {
       }
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
-      // Инвалидируем все варианты кэша инвентаря
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
+    onSuccess: (data, { id }) => {
+      invalidate.order(id);
+      invalidate.orderRelated();
     },
   });
 };
 
 // Типизированные хуки для складов
+export const useWarehouses = () => {
+  return useQuery<Warehouse[]>({
+    queryKey: ['warehouses'],
+    queryFn: () => apiRequestJson<Warehouse[]>('/api/warehouses'),
+  });
+};
+
+export const useWarehouse = (id: number) => {
+  return useQuery<Warehouse>({
+    queryKey: ['warehouse', id],
+    queryFn: () => apiRequestJson<Warehouse>(`/api/warehouses/${id}`),
+    enabled: !!id,
+  });
+};
+
 export const useDeleteWarehouses = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (warehouseIds: number[]) => {
       return apiRequest("/api/warehouses/delete-multiple", "POST", { warehouseIds });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      invalidate.warehouses();
     },
   });
 };
 
 export const useImportWarehouses = () => {
-  const queryClient = useQueryClient();
+  const invalidate = useInvalidate();
   return useMutation({
     mutationFn: async (data: any[]) => {
       return apiRequest("/api/warehouses/import", "POST", { warehouses: data });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      invalidate.warehouses();
     },
   });
 };

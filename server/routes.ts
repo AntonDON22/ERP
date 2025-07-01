@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, orderSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema, reserves } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, orderSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema, reserves, warehouses } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 
@@ -283,7 +283,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete multiple warehouses
+  // Delete multiple warehouses (POST route for compatibility with DataTable)
+  app.post("/api/warehouses/delete-multiple", validateBody(warehouseIdsSchema), async (req, res) => {
+    try {
+      const { warehouseIds } = req.body;
+      
+      if (!Array.isArray(warehouseIds)) {
+        return res.status(400).json({ message: "Ожидается массив ID складов" });
+      }
+
+      let deletedCount = 0;
+      const results = [];
+
+      for (const id of warehouseIds) {
+        try {
+          console.log(`🗑️ Удаление склада ${id}...`);
+          
+          // Проверяем что склад существует
+          const [existingWarehouse] = await db.select().from(warehouses).where(eq(warehouses.id, id));
+          
+          if (!existingWarehouse) {
+            console.log(`❌ Склад ${id} не найден`);
+            results.push({ id, status: 'not_found' });
+            continue;
+          }
+          
+          // Удаляем склад
+          await db.delete(warehouses).where(eq(warehouses.id, id));
+          
+          deletedCount++;
+          results.push({ id, status: 'deleted' });
+          console.log(`✅ Склад ${id} успешно удален`);
+        } catch (error) {
+          console.error(`❌ Ошибка при удалении склада ${id}:`, error);
+          results.push({ id, status: 'error' });
+        }
+      }
+      
+      res.json({ 
+        message: `Удалено складов: ${deletedCount} из ${warehouseIds.length}`,
+        deletedCount,
+        results
+      });
+    } catch (error) {
+      console.error("Error deleting warehouses:", error);
+      res.status(500).json({ message: "Ошибка при удалении складов" });
+    }
+  });
+
+  // Delete multiple warehouses (original DELETE route)
   app.delete("/api/warehouses", validateBody(warehouseIdsSchema), async (req, res) => {
     try {
       const { warehouseIds } = req.body;

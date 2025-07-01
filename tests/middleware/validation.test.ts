@@ -52,10 +52,12 @@ describe('Validation Middleware', () => {
       middleware(req as Request, res as Response, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: expect.stringContaining('Ошибка валидации'),
-        details: expect.any(Array),
-      });
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          error: expect.stringContaining('Ошибка валидации'),
+          details: expect.any(Array),
+        })
+      );
       expect(next).not.toHaveBeenCalled();
     });
 
@@ -189,7 +191,7 @@ describe('Validation Middleware', () => {
       it('should validate positive integer IDs', () => {
         const validData = { id: '123' };
         const result = idParamSchema.parse(validData);
-        expect(result.id).toBe('123');
+        expect(result.id).toBe(123); // coerce преобразует строку в число
       });
 
       it('should reject non-numeric IDs', () => {

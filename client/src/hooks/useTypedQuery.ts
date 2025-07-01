@@ -106,7 +106,7 @@ export const useDeleteDocuments = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (ids: number[]) => {
-      return apiRequest("/api/documents/delete-multiple", "POST", { ids });
+      return apiRequest("/api/documents/delete-multiple", "POST", { documentIds: ids });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });

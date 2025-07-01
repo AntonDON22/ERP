@@ -649,7 +649,7 @@ function DataTable<T = any>({
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAndSortedData.map((item) => (
+              {filteredAndSortedData.map((item: any) => (
                 <tr
                   key={item.id}
                   className={`hover:bg-gray-50 transition-colors ${
@@ -672,7 +672,7 @@ function DataTable<T = any>({
                     </td>
                   )}
                   {visibleColumns.map((column) => {
-                    const value = item[column.key];
+                    const value = (item as any)[column.key];
                     const formattedValue = column.format ? column.format(value) : value;
                     const columnKey = String(column.key);
                     const defaultWidth = column.minWidth || 150;

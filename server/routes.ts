@@ -512,7 +512,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create receipt document
-  app.post("/api/documents/create-receipt", validateBody(receiptDocumentSchema), async (req, res) => {
+  app.post("/api/documents/create-receipt", async (req, res) => {
     try {
       console.log("🔄 Создание документа:", req.body);
       

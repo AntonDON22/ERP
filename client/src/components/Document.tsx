@@ -11,8 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, useUpdateDocument } from "@/hooks/useTypedQuery";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { useToggleDocumentStatus } from "@/hooks/useDocumentStatus";
-import { ArrowLeft, Plus, Trash2, FileCheck, FileX } from "lucide-react";
+
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Product, Warehouse } from "@shared/schema";
 
 // Конфигурация для типов документов
@@ -69,7 +69,7 @@ export default function Document({ config, documentData }: DocumentProps) {
   const { toast } = useToast();
   const mutation = config.mutationHook();
   const updateMutation = useUpdateDocument();
-  const toggleStatusMutation = useToggleDocumentStatus();
+
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
   
@@ -209,29 +209,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     }
   };
 
-  // Переключение статуса документа
-  const handleToggleStatus = () => {
-    if (!documentData?.id) return;
-    
-    toggleStatusMutation.mutate(documentData.id, {
-      onSuccess: () => {
-        const newStatus = documentData.status === 'posted' ? 'черновик' : 'проведен';
-        toast({
-          title: "Статус изменен",
-          description: `Документ ${newStatus}`,
-        });
-        // Перенаправляем на список документов для обновления данных
-        setLocation(config.backUrl);
-      },
-      onError: (error) => {
-        toast({
-          title: "Ошибка",
-          description: "Не удалось изменить статус документа",
-          variant: "destructive",
-        });
-      },
-    });
-  };
+
 
   return (
     <div className="container mx-auto p-6 max-w-4xl">
@@ -247,25 +225,7 @@ export default function Document({ config, documentData }: DocumentProps) {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Назад
               </Button>
-              {documentData?.id && (
-                <Button
-                  variant={documentData.status === 'posted' ? 'destructive' : 'default'}
-                  onClick={handleToggleStatus}
-                  disabled={toggleStatusMutation.isPending}
-                >
-                  {documentData.status === 'posted' ? (
-                    <>
-                      <FileX className="h-4 w-4 mr-2" />
-                      Отменить проведение
-                    </>
-                  ) : (
-                    <>
-                      <FileCheck className="h-4 w-4 mr-2" />
-                      Провести
-                    </>
-                  )}
-                </Button>
-              )}
+
               <Button 
                 form="document-form"
                 type="submit"

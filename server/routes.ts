@@ -449,89 +449,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update document
-  app.put("/api/documents/:id", validateParams(idParamSchema), validateBody(receiptDocumentSchema), async (req, res) => {
+  app.put("/api/documents/:id", validateParams(idParamSchema), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Некорректный ID документа" });
       }
 
-      const { warehouseId, items, type, status } = req.body;
+      const { warehouseId, type, status } = req.body;
       
-      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, items, type, status });
+      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, type, status });
 
-      // Обновляем документ (склад, тип и статус)
-      const [updatedDocument] = await db
-        .update(documents)
-        .set({ warehouseId, type, status })
-        .where(eq(documents.id, id))
-        .returning();
+      // Используем метод storage, который правильно обрабатывает статусы и инвентарь
+      const updateData: any = {};
+      if (warehouseId !== undefined) updateData.warehouseId = warehouseId;
+      if (type !== undefined) updateData.type = type;
+      if (status !== undefined) updateData.status = status;
 
-      // Генерируем новое название в формате "Тип + день.месяц + номер в дне"
-      const today = new Date().toLocaleDateString('ru-RU', { 
-        day: '2-digit', 
-        month: '2-digit' 
-      });
-      
-      // Получаем количество документов данного типа за сегодня
-      const todayStart = new Date();
-      todayStart.setHours(0, 0, 0, 0);
-      const todayEnd = new Date();
-      todayEnd.setHours(23, 59, 59, 999);
-      
-      const todayDocuments = await db
-        .select()
-        .from(documents)
-        .where(sql`${documents.type} = ${type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`);
-      
-      const dayNumber = todayDocuments.length;
-      const newName = `${type} ${today}-${dayNumber}`;
-      
-      // Обновляем название
-      await db
-        .update(documents)
-        .set({ name: newName })
-        .where(eq(documents.id, id));
+      const updatedDocument = await storage.updateDocument(id, updateData);
 
       if (!updatedDocument) {
         return res.status(404).json({ message: "Документ не найден" });
-      }
-
-      // Удаляем старые записи из inventory и document_items
-      await db.delete(inventory).where(eq(inventory.documentId, id));
-      await db.delete(documentItems).where(eq(documentItems.documentId, id));
-
-      // Создаем новые записи document_items
-      const documentItemsData = items.map((item: any) => ({
-        documentId: id,
-        productId: item.productId,
-        quantity: item.quantity.toString(),
-        price: item.price.toString()
-      }));
-
-      await db.insert(documentItems).values(documentItemsData);
-
-      // Создаем новые записи inventory в зависимости от типа
-      if (type === 'Оприходование') {
-        // Для оприходования - просто добавляем положительные записи
-        const inventoryData = items.map((item: any) => ({
-          documentId: id,
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-          movementType: 'IN'
-        }));
-        await db.insert(inventory).values(inventoryData);
-      } else if (type === 'Списание') {
-        // Для списания - добавляем отрицательные записи (FIFO будет обрабатывать позже)
-        const inventoryData = items.map((item: any) => ({
-          documentId: id,
-          productId: item.productId,
-          quantity: -Math.abs(item.quantity), // Отрицательное количество для списания
-          price: item.price,
-          movementType: 'OUT'
-        }));
-        await db.insert(inventory).values(inventoryData);
       }
 
       console.log(`✅ Документ ${id} обновлен`);

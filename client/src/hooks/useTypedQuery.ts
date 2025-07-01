@@ -133,6 +133,24 @@ export const useInventory = (warehouseId?: number) => {
   });
 };
 
+// Типизированный хук для доступности товаров (с учетом резервов)
+export const useInventoryAvailability = (warehouseId?: number) => {
+  const url = warehouseId 
+    ? `/api/inventory/availability?warehouseId=${warehouseId}` 
+    : "/api/inventory/availability";
+    
+  return useQuery<{ id: number; name: string; quantity: number; reserved: number; available: number }[]>({
+    queryKey: ["/api/inventory/availability", warehouseId],
+    queryFn: async () => {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch inventory availability');
+      }
+      return response.json();
+    },
+  });
+};
+
 let isCreatingDocument = false;
 let lastDocumentRequest: any = null;
 

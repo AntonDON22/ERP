@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, useCreateOrder } from "@/hooks/useTypedQuery";
 import { useWarehouses } from "@/hooks/useWarehouses";
@@ -27,8 +28,9 @@ export default function CreateOrder() {
   const { data: warehouses = [] } = useWarehouses();
   const { data: contractors = [] } = useContractors();
   
-  // Состояние для статуса заказа
+  // Состояние для статуса заказа и резерва
   const [orderStatus, setOrderStatus] = useState("Новый");
+  const [isReserved, setIsReserved] = useState(false);
 
   // Счетчик и ref для предотвращения дублей
   const submissionCounter = useRef(0);
@@ -80,6 +82,7 @@ export default function CreateOrder() {
         status: orderStatus,
         customerId: data.customerId || null,
         warehouseId: data.warehouseId,
+        isReserved,
         items: data.items.map((item: FormOrderItem) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -153,7 +156,7 @@ export default function CreateOrder() {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="orderStatus">Статус заказа</Label>
               <Select
@@ -193,6 +196,14 @@ export default function CreateOrder() {
                   {form.formState.errors.warehouseId.message}
                 </p>
               )}
+            </div>
+            <div className="flex items-center space-x-2 mt-6">
+              <Checkbox
+                id="isReserved"
+                checked={isReserved}
+                onCheckedChange={(checked) => setIsReserved(checked === true)}
+              />
+              <Label htmlFor="isReserved">Резерв</Label>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-1 gap-4 mt-4">

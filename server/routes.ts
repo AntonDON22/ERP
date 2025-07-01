@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema, reserves } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 
@@ -733,6 +733,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get inventory with availability (considering reserves)
+  app.get("/api/inventory/availability", async (req, res) => {
+    try {
+      console.log("[DB] Starting inventory availability query...");
+      const startTime = Date.now();
+      
+      const warehouseId = req.query.warehouseId ? parseInt(req.query.warehouseId as string) : undefined;
+      
+      // Получаем остатки на складе
+      const inventoryData = await storage.getInventory(warehouseId);
+      
+      // Получаем резервы по складу
+      const reservesQuery = warehouseId 
+        ? db.select({
+            productId: reserves.productId,
+            reservedQuantity: sql<string>`SUM(CAST(${reserves.quantity} AS DECIMAL))`.as('reserved_quantity')
+          })
+          .from(reserves)
+          .where(eq(reserves.warehouseId, warehouseId))
+          .groupBy(reserves.productId)
+        : db.select({
+            productId: reserves.productId,
+            reservedQuantity: sql<string>`SUM(CAST(${reserves.quantity} AS DECIMAL))`.as('reserved_quantity')
+          })
+          .from(reserves)
+          .groupBy(reserves.productId);
+      
+      const reservesData = await reservesQuery;
+      
+      // Создаем карту резервов для быстрого поиска
+      const reservesMap = new Map();
+      reservesData.forEach(reserve => {
+        reservesMap.set(reserve.productId, parseFloat(reserve.reservedQuantity) || 0);
+      });
+      
+      // Объединяем данные
+      const availabilityData = inventoryData.map(item => ({
+        id: item.id,
+        name: item.name,
+        quantity: item.quantity,
+        reserved: reservesMap.get(item.id) || 0,
+        available: Math.max(0, item.quantity - (reservesMap.get(item.id) || 0))
+      }));
+      
+      const duration = Date.now() - startTime;
+      console.log(`[DB] Inventory availability completed in ${duration}ms, returned ${availabilityData.length} items`);
+      
+      res.json(availabilityData);
+    } catch (error) {
+      console.error("Error fetching inventory availability:", error);
+      res.status(500).json({ message: "Ошибка при загрузке доступных остатков" });
+    }
+  });
+
   // Orders routes
   // Get all orders
   app.get("/api/orders", async (req, res) => {
@@ -782,7 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create order
   app.post("/api/orders/create", async (req, res) => {
     try {
-      const { status, customerId, warehouseId, items } = req.body;
+      const { status, customerId, warehouseId, isReserved, items } = req.body;
       
       console.log(`🔄 Создание заказа:`, { status, customerId, warehouseId, items });
 
@@ -796,6 +850,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status,
             customerId: customerId || null,
             warehouseId,
+            isReserved: isReserved || false,
             date: new Date().toISOString().split('T')[0],
             totalAmount: "0",
           })
@@ -834,7 +889,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalAmount += item.quantity * item.price;
         }
 
-        // 4. Обновляем заказ с названием и общей суммой
+        // 4. Создаем резервы если флаг isReserved = true
+        if (isReserved) {
+          for (const item of items) {
+            await tx
+              .insert(reserves)
+              .values({
+                orderId: createdOrder.id,
+                productId: item.productId,
+                quantity: item.quantity.toString(),
+                warehouseId
+              });
+          }
+          console.log(`📦 Созданы резервы для заказа ${createdOrder.id}`);
+        }
+
+        // 5. Обновляем заказ с названием и общей суммой
         const [updatedOrder] = await tx
           .update(orders)
           .set({ 
@@ -871,6 +941,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await tx.delete(orderItems).where(eq(orderItems.orderId, orderId));
         }
         
+        // Удаляем резервы заказов
+        for (const orderId of orderIds) {
+          await tx.delete(reserves).where(eq(reserves.orderId, orderId));
+        }
+        
         // Затем удаляем сами заказы
         for (const orderId of orderIds) {
           await tx.delete(orders).where(eq(orders.id, orderId));
@@ -892,9 +967,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Некорректный ID заказа" });
       }
 
-      const { status, customerId, warehouseId, items } = req.body;
+      const { status, customerId, warehouseId, isReserved, items } = req.body;
       
-      console.log(`🔄 Обновление заказа ${id}:`, { status, customerId, warehouseId, items });
+      console.log(`🔄 Обновление заказа ${id}:`, { status, customerId, warehouseId, isReserved, items });
 
       // Обновляем заказ в транзакции
       const updatedOrder = await db.transaction(async (tx) => {
@@ -911,6 +986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             status,
             customerId: customerId || null,
             warehouseId,
+            isReserved: isReserved || false,
             totalAmount: totalAmount.toFixed(2)
           })
           .where(eq(orders.id, id))
@@ -918,6 +994,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Удаляем старые позиции
         await tx.delete(orderItems).where(eq(orderItems.orderId, id));
+
+        // Удаляем старые резервы
+        await tx.delete(reserves).where(eq(reserves.orderId, id));
 
         // Создаем новые позиции
         for (const item of items) {
@@ -929,6 +1008,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
               quantity: item.quantity.toString(),
               price: item.price.toString()
             });
+        }
+
+        // Создаем резервы если флаг isReserved = true
+        if (isReserved) {
+          for (const item of items) {
+            await tx
+              .insert(reserves)
+              .values({
+                orderId: id,
+                productId: item.productId,
+                quantity: item.quantity.toString(),
+                warehouseId
+              });
+          }
+          console.log(`📦 Обновлены резервы для заказа ${id}`);
         }
 
         return order;

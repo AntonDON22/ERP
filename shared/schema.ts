@@ -206,6 +206,7 @@ export const orders = pgTable("orders", {
   warehouseId: integer("warehouse_id"),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
   notes: text("notes"),
+  isReserved: boolean("is_reserved").notNull().default(false), // резерв товаров
   date: text("date").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
@@ -248,5 +249,20 @@ export const orderSchema = z.object({
   customerId: z.number().optional(),
   warehouseId: z.number().min(1, "Склад обязателен"),
   status: z.string(),
+  isReserved: z.boolean().optional(),
   items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
+
+// Таблица резервов товаров
+export const reserves = pgTable("reserves", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(),
+  productId: integer("product_id").notNull(),
+  warehouseId: integer("warehouse_id").notNull(),
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  reserveOrderIdx: index("reserves_order_idx").on(table.orderId),
+  reserveProductIdx: index("reserves_product_idx").on(table.productId),
+  reserveWarehouseIdx: index("reserves_warehouse_idx").on(table.warehouseId),
+}));

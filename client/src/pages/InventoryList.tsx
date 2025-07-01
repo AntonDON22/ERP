@@ -1,23 +1,25 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DataTable, { type ColumnConfig } from "@/components/DataTable";
-import { useInventory } from "@/hooks/useTypedQuery";
+import { useInventory, useInventoryAvailability } from "@/hooks/useTypedQuery";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface InventoryItem {
+interface InventoryAvailabilityItem {
   id: number;
   name: string;
   quantity: number;
+  reserved: number;
+  available: number;
 }
 
-const columns: ColumnConfig<InventoryItem>[] = [
+const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
   {
     key: "name",
     label: "Название",
-    width: "70%",
+    width: "50%",
     sortable: true,
     copyable: true,
     multiline: true,
@@ -25,7 +27,21 @@ const columns: ColumnConfig<InventoryItem>[] = [
   {
     key: "quantity",
     label: "Остаток",
-    width: "30%",
+    width: "15%",
+    sortable: true,
+    format: (value: number) => value.toString(),
+  },
+  {
+    key: "reserved",
+    label: "Резерв",
+    width: "15%",
+    sortable: true,
+    format: (value: number) => value.toString(),
+  },
+  {
+    key: "available",
+    label: "Доступно",
+    width: "20%",
     sortable: true,
     format: (value: number) => value.toString(),
   },
@@ -34,7 +50,7 @@ const columns: ColumnConfig<InventoryItem>[] = [
 export default function InventoryList() {
   const [selectedWarehouseId, setSelectedWarehouseId] = useState<number | undefined>(undefined);
   const { data: warehouses = [], isLoading: warehousesLoading } = useWarehouses();
-  const { data: inventory = [], isLoading } = useInventory(selectedWarehouseId);
+  const { data: inventory = [], isLoading } = useInventoryAvailability(selectedWarehouseId);
 
   return (
     <div className="space-y-6">
@@ -44,7 +60,7 @@ export default function InventoryList() {
         isLoading={isLoading || warehousesLoading}
         entityName="товар"
         entityNamePlural="товары"
-        searchFields={["name"]}
+        searchFields={["name" as keyof InventoryAvailabilityItem]}
         hideSelectionColumn={true}
         warehouseFilter={{
           selectedWarehouseId,

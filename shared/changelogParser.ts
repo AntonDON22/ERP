@@ -36,6 +36,29 @@ function convertDateToISO(dateStr: string): string | null {
   }
 }
 
+function convertRussianDateToISO(dateStr: string): string | null {
+  try {
+    // Конвертируем "1 июля 2025" в ISO формат "2025-07-01"
+    const months: Record<string, string> = {
+      'января': '01', 'февраля': '02', 'марта': '03', 'апреля': '04', 'мая': '05', 'июня': '06',
+      'июля': '07', 'августа': '08', 'сентября': '09', 'октября': '10', 'ноября': '11', 'декабря': '12'
+    };
+    
+    const match = dateStr.match(/^(\d+) ([а-яё]+) (\d+)$/i);
+    if (!match) return null;
+    
+    const [, day, monthName, year] = match;
+    const monthNum = months[monthName.toLowerCase()];
+    
+    if (!monthNum) return null;
+    
+    const dayPadded = day.padStart(2, '0');
+    return `${year}-${monthNum}-${dayPadded}`;
+  } catch {
+    return null;
+  }
+}
+
 function formatDateToRussian(isoDate: string): string {
   try {
     // Конвертируем "2025-07-01" в "1 июля 2025"
@@ -56,11 +79,15 @@ function formatDateToRussian(isoDate: string): string {
 
 export function parseChangelogFromReplit(replitContent: string): DayData[] {
   const lines = replitContent.split('\n');
-  const changelogStart = lines.findIndex(line => line.includes('## Changelog'));
+  const changelogStart = lines.findIndex(line => line.includes('## История изменений') || line.includes('## Changelog'));
   
-  if (changelogStart === -1) return [];
+  if (changelogStart === -1) {
+    console.log('DEBUG: Раздел changelog не найден');
+    return [];
+  }
   
   const changelogLines = lines.slice(changelogStart + 1);
+  console.log('DEBUG: Найдено строк changelog:', changelogLines.length);
   const updates: Array<{
     date: string;
     time: string;
@@ -69,21 +96,56 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
 
   for (const line of changelogLines) {
     if (line.trim().startsWith('- ') && line.includes('2025')) {
-      // Парсим строку вида: "- July 1, 2025. Заголовок: Описание"
-      const match = line.match(/^- ([A-Za-z]+ \d+, \d+)\.\s*(.+?):\s*(.+)$/);
-      if (match) {
-        const [, dateStr, title, description] = match;
+      // Парсим строку вида: "- 1 июля 2025. Заголовок: Описание" или "- July 1, 2025. Title: Description"
+      const russianMatch = line.match(/^- (\d+ [а-яё]+ \d+)\.\s*(.+?):\s*(.+)$/i);
+      const englishMatch = line.match(/^- ([A-Za-z]+ \d+, \d+)\.\s*(.+?):\s*(.+)$/);
+      
+      if (russianMatch) {
+        const [, dateStr, title, description] = russianMatch;
         
-        // Конвертируем английскую дату в ISO формат
-        const isoDate = convertDateToISO(dateStr);
+        // Конвертируем русскую дату в ISO формат
+        const isoDate = convertRussianDateToISO(dateStr);
         if (isoDate) {
-          const time = extractTimeFromDescription(description);
+          const time = extractTimeFromDescription(description || title);
           
           updates.push({
             date: isoDate,
             time,
-            content: `${title}: ${description}`
+            content: `${title}: ${description || ''}`
           });
+        }
+      } else if (englishMatch) {
+        const [, dateStr, title, description] = englishMatch;
+        
+        // Конвертируем английскую дату в ISO формат
+        const isoDate = convertDateToISO(dateStr);
+        if (isoDate) {
+          const time = extractTimeFromDescription(description || title);
+          
+          updates.push({
+            date: isoDate,
+            time,
+            content: `${title}: ${description || ''}`
+          });
+        }
+      } else {
+        // Упрощенное сопоставление для записей без строгого формата
+        const simpleMatch = line.match(/^- (\d+ [а-яё]+ \d+)\.\s*(.+)$/i);
+        if (simpleMatch) {
+          const [, dateStr, content] = simpleMatch;
+          const isoDate = convertRussianDateToISO(dateStr);
+          if (isoDate) {
+            const colonIndex = content.indexOf(':');
+            const title = colonIndex > 0 ? content.substring(0, colonIndex).trim() : content.substring(0, 50) + '...';
+            const description = colonIndex > 0 ? content.substring(colonIndex + 1).trim() : content;
+            const time = extractTimeFromDescription(description);
+            
+            updates.push({
+              date: isoDate,
+              time,
+              content: `${title}: ${description}`
+            });
+          }
         }
       }
     }

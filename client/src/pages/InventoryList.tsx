@@ -19,7 +19,7 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
   {
     key: "name",
     label: "Название",
-    width: "60%",
+    width: "50%",
     sortable: true,
     copyable: true,
     multiline: true,

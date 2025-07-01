@@ -6,14 +6,14 @@ const suppliersColumns: ColumnConfig<Supplier>[] = [
   {
     key: "name",
     label: "Название",
-    width: "w-2/3",
+    width: "w-1/2",
     copyable: true,
     multiline: true,
   },
   {
     key: "website",
     label: "Вебсайт",
-    width: "w-1/3",
+    width: "w-1/2",
     copyable: true,
   },
 ];

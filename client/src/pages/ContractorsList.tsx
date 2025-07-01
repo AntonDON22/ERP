@@ -6,14 +6,14 @@ const contractorsColumns: ColumnConfig<Contractor>[] = [
   {
     key: "name",
     label: "Название",
-    width: "w-1/2",
+    width: "w-2/3",
     copyable: true,
     multiline: true,
   },
   {
     key: "website",
     label: "Вебсайт",
-    width: "w-1/2",
+    width: "w-1/3",
     copyable: true,
   },
 ];

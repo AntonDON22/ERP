@@ -7,7 +7,7 @@ const productsColumns: ColumnConfig<Product>[] = [
   {
     key: "name",
     label: "Название",
-    width: "w-1/4",
+    width: "w-2/5",
     copyable: true,
     multiline: true,
   },

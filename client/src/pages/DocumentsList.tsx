@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 
 // Создаем функцию для получения колонок с данными складов
 const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnConfig<DocumentRecord>[] => [
-  { key: 'name', label: 'Название', width: '25%', copyable: true, multiline: true },
+  { key: 'name', label: 'Название', width: '35%', copyable: true, multiline: true },
   { key: 'type', label: 'Тип', width: '12%', copyable: true, multiline: true },
   { 
     key: 'warehouseId', 

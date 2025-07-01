@@ -8,7 +8,7 @@ const columns: ColumnConfig<Warehouse>[] = [
   {
     key: "name",
     label: "Название",
-    width: "60%",
+    minWidth: 200,
     sortable: true,
     copyable: true,
     multiline: true,
@@ -16,7 +16,7 @@ const columns: ColumnConfig<Warehouse>[] = [
   {
     key: "address", 
     label: "Адрес",
-    width: "40%",
+    minWidth: 300,
     sortable: true,
     copyable: true,
     multiline: true,

@@ -7,41 +7,41 @@ const productsColumns: ColumnConfig<Product>[] = [
   {
     key: "name",
     label: "Название",
-    width: "w-1/4",
+    minWidth: 200,
     copyable: true,
     multiline: true,
   },
   {
     key: "sku",
     label: "Артикул",
-    width: "w-32",
+    minWidth: 120,
     copyable: true,
   },
   {
     key: "price",
     label: "Цена",
-    width: "w-24",
+    minWidth: 100,
     format: (value) => value ? formatPrice(value) : "",
     className: "text-right",
   },
   {
     key: "purchasePrice",
     label: "Закупочная цена",
-    width: "w-28",
+    minWidth: 140,
     format: (value) => value ? formatPrice(value) : "",
     className: "text-right",
   },
   {
     key: "weight",
     label: "Вес",
-    width: "w-20",
+    minWidth: 80,
     format: (value) => value ? formatWeight(value) : "",
     className: "text-right",
   },
   {
     key: "length",
     label: "Длина",
-    width: "w-20",
+    minWidth: 80,
     format: (value) => {
       if (!value) return "";
       const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -53,7 +53,7 @@ const productsColumns: ColumnConfig<Product>[] = [
   {
     key: "width",
     label: "Ширина", 
-    width: "w-20",
+    minWidth: 80,
     format: (value) => {
       if (!value) return "";
       const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -65,7 +65,7 @@ const productsColumns: ColumnConfig<Product>[] = [
   {
     key: "height",
     label: "Высота",
-    width: "w-20", 
+    minWidth: 80, 
     format: (value) => {
       if (!value) return "";
       const num = typeof value === 'string' ? parseFloat(value) : value;
@@ -77,7 +77,7 @@ const productsColumns: ColumnConfig<Product>[] = [
   {
     key: "barcode",
     label: "Штрихкод",
-    width: "w-32",
+    minWidth: 120,
     copyable: true,
   },
 ];

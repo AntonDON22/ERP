@@ -6,12 +6,12 @@ import { useLocation } from "wouter";
 
 // Создаем функцию для получения колонок с данными складов
 const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnConfig<DocumentRecord>[] => [
-  { key: 'name', label: 'Название', width: '25%', copyable: true, multiline: true },
-  { key: 'type', label: 'Тип', width: '12%', copyable: true, multiline: true },
+  { key: 'name', label: 'Название', minWidth: 180, copyable: true, multiline: true },
+  { key: 'type', label: 'Тип', minWidth: 100, copyable: true, multiline: true },
   { 
     key: 'warehouseId', 
     label: 'Склад', 
-    width: '15%', 
+    minWidth: 120, 
     copyable: true,
     format: (value: any) => {
       if (!value) return 'Не указан';
@@ -22,7 +22,7 @@ const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnC
   { 
     key: 'status', 
     label: 'Статус', 
-    width: '12%', 
+    minWidth: 100, 
     copyable: true,
     format: (value: any) => {
       return value === 'posted' ? 'Проведен' : 'Черновик';
@@ -31,7 +31,7 @@ const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnC
   { 
     key: 'createdAt', 
     label: 'Дата и время создания', 
-    width: '18%', 
+    minWidth: 150, 
     copyable: true,
     format: (value: any) => {
       if (!value) return '';
@@ -50,7 +50,7 @@ const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnC
   { 
     key: 'updatedAt', 
     label: 'Дата и время изменения', 
-    width: '18%', 
+    minWidth: 150, 
     copyable: true,
     format: (value: any) => {
       if (!value) return '—';

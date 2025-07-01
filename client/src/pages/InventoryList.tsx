@@ -19,7 +19,7 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
   {
     key: "name",
     label: "Название",
-    width: "50%",
+    minWidth: 300,
     sortable: true,
     copyable: true,
     multiline: true,
@@ -27,21 +27,21 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
   {
     key: "quantity",
     label: "Остаток",
-    width: "15%",
+    minWidth: 100,
     sortable: true,
     format: (value: number) => value.toString(),
   },
   {
     key: "reserved",
     label: "Резерв",
-    width: "15%",
+    minWidth: 100,
     sortable: true,
     format: (value: number) => value.toString(),
   },
   {
     key: "available",
     label: "Доступно",
-    width: "20%",
+    minWidth: 120,
     sortable: true,
     format: (value: number) => value.toString(),
   },

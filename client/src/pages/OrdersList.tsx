@@ -4,12 +4,12 @@ import { Order } from "@shared/schema";
 import { useLocation } from "wouter";
 
 const columns: ColumnConfig<Order>[] = [
-  { key: "name", label: "Название", width: "25%", sortable: true, copyable: true, multiline: true },
-  { key: "status", label: "Статус", width: "12%", sortable: true, copyable: true },
+  { key: "name", label: "Название", minWidth: 180, sortable: true, copyable: true, multiline: true },
+  { key: "status", label: "Статус", minWidth: 100, sortable: true, copyable: true },
   { 
     key: "totalAmount", 
     label: "Сумма", 
-    width: "13%", 
+    minWidth: 110, 
     sortable: true,
     copyable: true,
     format: (value) => `${Number(value || 0).toFixed(2)} ₽`
@@ -17,7 +17,7 @@ const columns: ColumnConfig<Order>[] = [
   { 
     key: "createdAt", 
     label: "Дата и время создания", 
-    width: "25%", 
+    minWidth: 150, 
     sortable: true, 
     copyable: true,
     format: (value: any) => {
@@ -37,7 +37,7 @@ const columns: ColumnConfig<Order>[] = [
   { 
     key: "updatedAt", 
     label: "Дата и время изменения", 
-    width: "25%", 
+    minWidth: 150, 
     sortable: true, 
     copyable: true,
     format: (value: any) => {

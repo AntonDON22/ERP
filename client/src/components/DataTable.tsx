@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -30,6 +30,7 @@ export interface ColumnConfig<T> {
   key: keyof T;
   label: string;
   width?: string;
+  minWidth?: number;
   sortable?: boolean;
   copyable?: boolean;
   multiline?: boolean;
@@ -128,12 +129,88 @@ export default function DataTable<T extends { id: number; name: string }>({
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
+  const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
+  const [isResizing, setIsResizing] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const tableRef = useRef<HTMLTableElement>(null);
   const { toast } = useToast();
 
   // Debounced search query
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+
+  // Уникальный ключ для localStorage для каждой таблицы
+  const storageKey = `dataTable-${entityName}-columnWidths`;
+
+  // Загрузка ширины столбцов при монтировании
+  useEffect(() => {
+    const savedWidths = localStorage.getItem(storageKey);
+    if (savedWidths) {
+      try {
+        setColumnWidths(JSON.parse(savedWidths));
+      } catch (e) {
+        console.warn("Failed to parse saved column widths");
+      }
+    }
+  }, [storageKey]);
+
+  // Сохранение ширины столбцов при изменении
+  useEffect(() => {
+    if (Object.keys(columnWidths).length > 0) {
+      localStorage.setItem(storageKey, JSON.stringify(columnWidths));
+    }
+  }, [columnWidths, storageKey]);
+
+  // Функция для начала изменения размера
+  const startResize = useCallback((columnKey: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    setIsResizing(columnKey);
+  }, []);
+
+  // Функция для обработки изменения размера
+  const handleMouseMove = useCallback((event: MouseEvent) => {
+    if (!isResizing || !tableRef.current) return;
+
+    const table = tableRef.current;
+    const tableRect = table.getBoundingClientRect();
+    const columnHeader = table.querySelector(`th[data-column="${isResizing}"]`) as HTMLElement;
+    
+    if (!columnHeader) return;
+
+    const currentColumn = columns.find(col => String(col.key) === isResizing);
+    const minWidth = currentColumn?.minWidth || 100;
+    
+    const mouseX = event.clientX;
+    const headerRect = columnHeader.getBoundingClientRect();
+    const newWidth = Math.max(minWidth, mouseX - headerRect.left);
+
+    setColumnWidths(prev => ({
+      ...prev,
+      [isResizing]: newWidth
+    }));
+  }, [isResizing, columns]);
+
+  // Функция для завершения изменения размера
+  const stopResize = useCallback(() => {
+    setIsResizing(null);
+  }, []);
+
+  // Обработчики событий мыши
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', stopResize);
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', stopResize);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, handleMouseMove, stopResize]);
 
   // Функция копирования в буфер обмена
   const copyToClipboard = useCallback(async (text: string, type: string) => {
@@ -421,7 +498,7 @@ export default function DataTable<T extends { id: number; name: string }>({
       {/* Таблица */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table ref={tableRef} className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {!hideSelectionColumn && (
@@ -432,24 +509,44 @@ export default function DataTable<T extends { id: number; name: string }>({
                     />
                   </th>
                 )}
-                {columns.map((column) => (
-                  <th
-                    key={String(column.key)}
-                    className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${column.width || 'w-auto'} ${column.className || ''}`}
-                  >
-                    {column.sortable !== false ? (
-                      <button
-                        onClick={() => handleSort(column.key)}
-                        className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                      >
-                        {column.label}
-                        <ArrowUpDown className="w-3 h-3" />
-                      </button>
-                    ) : (
-                      column.label
-                    )}
-                  </th>
-                ))}
+                {columns.map((column, index) => {
+                  const columnKey = String(column.key);
+                  const width = columnWidths[columnKey] || (column.width ? parseInt(column.width.replace(/\D/g, '')) || 200 : 200);
+                  
+                  return (
+                    <th
+                      key={columnKey}
+                      data-column={columnKey}
+                      className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${column.className || ''}`}
+                      style={{ width: `${width}px` }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          {column.sortable !== false ? (
+                            <button
+                              onClick={() => handleSort(column.key)}
+                              className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+                            >
+                              {column.label}
+                              <ArrowUpDown className="w-3 h-3" />
+                            </button>
+                          ) : (
+                            column.label
+                          )}
+                        </div>
+                        
+                        {/* Разделитель для изменения размера */}
+                        <div
+                          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-300 bg-transparent transition-colors"
+                          onMouseDown={(e) => startResize(columnKey, e)}
+                          style={{ 
+                            backgroundColor: isResizing === columnKey ? '#3B82F6' : 'transparent'
+                          }}
+                        />
+                      </div>
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -478,25 +575,30 @@ export default function DataTable<T extends { id: number; name: string }>({
                   {columns.map((column) => {
                     const value = item[column.key];
                     const formattedValue = column.format ? column.format(value) : value;
+                    const columnKey = String(column.key);
+                    const width = columnWidths[columnKey] || (column.width ? parseInt(column.width.replace(/\D/g, '')) || 200 : 200);
                     
                     return (
                       <td
-                        key={String(column.key)}
+                        key={columnKey}
                         className={`px-4 py-3 text-sm ${column.className || ''}`}
+                        style={{ width: `${width}px` }}
                       >
-                        {column.copyable ? (
-                          <CopyableCell
-                            value={formattedValue ? String(formattedValue) : null}
-                            type={column.label}
-                            multiline={column.multiline}
-                            copiedStates={copiedStates}
-                            onCopy={copyToClipboard}
-                          />
-                        ) : (
-                          <span className={column.multiline ? "break-words" : "truncate"}>
-                            {formattedValue ? String(formattedValue) : <span className="text-gray-400">-</span>}
-                          </span>
-                        )}
+                        <div className="overflow-hidden">
+                          {column.copyable ? (
+                            <CopyableCell
+                              value={formattedValue ? String(formattedValue) : null}
+                              type={column.label}
+                              multiline={column.multiline}
+                              copiedStates={copiedStates}
+                              onCopy={copyToClipboard}
+                            />
+                          ) : (
+                            <span className={column.multiline ? "break-words" : "truncate block"}>
+                              {formattedValue ? String(formattedValue) : <span className="text-gray-400">-</span>}
+                            </span>
+                          )}
+                        </div>
                       </td>
                     );
                   })}

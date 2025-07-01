@@ -2,6 +2,7 @@ import { db } from "../db";
 import { sql } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
+import { normalizeInventoryArray, type NormalizedInventoryItem } from '@shared/apiNormalizer';
 
 export class MaterializedViewService {
   
@@ -51,15 +52,9 @@ export class MaterializedViewService {
 
   /**
    * Получение остатков из материализованного представления
+   * Возвращает нормализованные данные в унифицированном API формате
    */
-  async getInventorySummary(): Promise<Array<{
-    id: number;
-    name: string;
-    sku: string;
-    total_quantity: string;
-    movement_count: number;
-    last_movement_date: Date | null;
-  }>> {
+  async getInventorySummary(): Promise<NormalizedInventoryItem[]> {
     console.log("[MATERIALIZED] Starting getInventorySummary query...");
     const startTime = Date.now();
     
@@ -79,7 +74,14 @@ export class MaterializedViewService {
       const duration = Date.now() - startTime;
       console.log(`[MATERIALIZED] getInventorySummary completed in ${duration}ms, returned ${result.rows.length} items`);
       
-      return result.rows as any;
+      // Применяем централизованную нормализацию данных
+      const rawData = result.rows.map((row: any) => ({
+        id: row.id as number,
+        name: row.name as string,
+        total_quantity: row.total_quantity as string
+      }));
+      
+      return normalizeInventoryArray(rawData);
     } catch (error) {
       console.error("[MATERIALIZED] Error in getInventorySummary:", error);
       throw error;
@@ -132,14 +134,9 @@ export class MaterializedViewService {
 
   /**
    * Получение доступных остатков из материализованного представления
+   * Возвращает нормализованные данные в унифицированном API формате
    */
-  async getInventoryAvailability(): Promise<Array<{
-    product_id: number;
-    product_name: string;
-    total_quantity: string;
-    reserved_quantity: string;
-    available_quantity: string;
-  }>> {
+  async getInventoryAvailability(): Promise<NormalizedInventoryItem[]> {
     console.log("[MATERIALIZED] Starting getInventoryAvailability query...");
     const startTime = Date.now();
     
@@ -158,7 +155,16 @@ export class MaterializedViewService {
       const duration = Date.now() - startTime;
       console.log(`[MATERIALIZED] getInventoryAvailability completed in ${duration}ms, returned ${result.rows.length} items`);
       
-      return result.rows as any;
+      // Применяем централизованную нормализацию данных
+      const rawData = result.rows.map((row: any) => ({
+        id: row.id as number,
+        name: row.name as string,
+        total_quantity: row.total_quantity as string,
+        reserved_quantity: row.reserved_quantity as string,
+        available_quantity: row.available_quantity as string
+      }));
+      
+      return normalizeInventoryArray(rawData);
     } catch (error) {
       console.error("[MATERIALIZED] Error in getInventoryAvailability:", error);
       throw error;

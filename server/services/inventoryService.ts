@@ -29,10 +29,11 @@ export class InventoryService {
     try {
       const result = await materializedViewService.getInventorySummary();
       
+      // Данные уже нормализованы MaterializedViewService
       return result.map(row => ({
         id: row.id,
         name: row.name,
-        quantity: parseFloat(row.total_quantity) || 0
+        quantity: row.quantity
       }));
     } catch (error) {
       console.error("[MATERIALIZED] Error, falling back to direct query:", error);
@@ -92,12 +93,13 @@ export class InventoryService {
     try {
       const result = await materializedViewService.getInventoryAvailability();
       
-      return result.map((row: any) => ({
+      // Данные уже нормализованы MaterializedViewService, просто возвращаем их
+      return result.map(row => ({
         id: row.id,
         name: row.name,
-        quantity: parseFloat(row.total_quantity) || 0,
-        reserved: parseFloat(row.reserved_quantity) || 0,
-        available: parseFloat(row.available_quantity) || 0
+        quantity: row.quantity,
+        reserved: row.reserved || 0,
+        available: row.available || 0
       }));
     } catch (error) {
       console.error("[MATERIALIZED] Error, falling back to direct query:", error);

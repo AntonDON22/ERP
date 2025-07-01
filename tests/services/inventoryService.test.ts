@@ -12,8 +12,16 @@ vi.mock('../../server/db', () => ({
   }
 }));
 
+// Мокаем drizzle-orm
+vi.mock('drizzle-orm', () => ({
+  sql: vi.fn((strings, ...values) => ({ strings, values })),
+  eq: vi.fn(),
+  sum: vi.fn(),
+  count: vi.fn(),
+}));
+
 // Мокаем logger
-vi.mock('@shared/logger', () => ({
+vi.mock('../../shared/logger', () => ({
   dbLogger: {
     startOperation: vi.fn(() => vi.fn()),
     info: vi.fn(),
@@ -21,6 +29,16 @@ vi.mock('@shared/logger', () => ({
     error: vi.fn(),
   },
   getErrorMessage: vi.fn((error) => error.message),
+}));
+
+// Мокаем MaterializedViewService
+vi.mock('../../server/services/materializedViewService', () => ({
+  materializedViewService: {
+    getInventorySummary: vi.fn().mockResolvedValue([]),
+    getInventoryAvailability: vi.fn().mockResolvedValue([]),
+    getViewsStatus: vi.fn().mockResolvedValue([]),
+    refreshAllViews: vi.fn().mockResolvedValue(undefined),
+  },
 }));
 
 // Мокаем MaterializedViewService
@@ -128,36 +146,26 @@ describe('InventoryService', () => {
 
   describe('getInventoryAvailability', () => {
     it('should return availability with reserves calculation', async () => {
-      const mockAvailabilityData = [
-        {
-          productId: 1,
-          productName: 'Товар 1',
-          totalStock: '100.000',
-          totalReserved: '20.000',
-        },
-        {
-          productId: 2,
-          productName: 'Товар 2',
-          totalStock: '50.000',
-          totalReserved: '0.000',
-        },
-      ];
+      const mockAvailabilityData = {
+        rows: [
+          {
+            id: 1,
+            name: 'Товар 1',
+            quantity: '100.000',
+            reserved: '20.000',
+            available: '80.000',
+          },
+          {
+            id: 2,
+            name: 'Товар 2',
+            quantity: '50.000',
+            reserved: '0.000',
+            available: '50.000',
+          },
+        ]
+      };
 
-      (db.select as any).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            leftJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                groupBy: vi.fn().mockReturnValue({
-                  having: vi.fn().mockReturnValue({
-                    orderBy: vi.fn().mockResolvedValue(mockAvailabilityData),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      (db.execute as any).mockResolvedValue(mockAvailabilityData);
 
       const result = await inventoryService.getInventoryAvailability();
 
@@ -165,14 +173,14 @@ describe('InventoryService', () => {
         {
           id: 1,
           name: 'Товар 1',
-          stock: 100,
+          quantity: 100,
           reserved: 20,
           available: 80,
         },
         {
           id: 2,
           name: 'Товар 2',
-          stock: 50,
+          quantity: 50,
           reserved: 0,
           available: 50,
         },
@@ -180,30 +188,19 @@ describe('InventoryService', () => {
     });
 
     it('should handle negative availability correctly', async () => {
-      const mockAvailabilityData = [
-        {
-          productId: 1,
-          productName: 'Товар 1',
-          totalStock: '10.000',
-          totalReserved: '25.000',
-        },
-      ];
+      const mockAvailabilityData = {
+        rows: [
+          {
+            id: 1,
+            name: 'Товар 1',
+            quantity: '10.000',
+            reserved: '25.000',
+            available: '-15.000',
+          },
+        ]
+      };
 
-      (db.select as any).mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          leftJoin: vi.fn().mockReturnValue({
-            leftJoin: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                groupBy: vi.fn().mockReturnValue({
-                  having: vi.fn().mockReturnValue({
-                    orderBy: vi.fn().mockResolvedValue(mockAvailabilityData),
-                  }),
-                }),
-              }),
-            }),
-          }),
-        }),
-      });
+      (db.execute as any).mockResolvedValue(mockAvailabilityData);
 
       const result = await inventoryService.getInventoryAvailability();
 
@@ -211,7 +208,7 @@ describe('InventoryService', () => {
         {
           id: 1,
           name: 'Товар 1',
-          stock: 10,
+          quantity: 10,
           reserved: 25,
           available: -15, // Отрицательное значение показывает превышение резерва
         },
@@ -231,10 +228,10 @@ describe('InventoryService', () => {
 
       const result = await inventoryService.getPerformanceStats();
 
-      expect(result).toHaveProperty('materializedViews');
-      expect(result).toHaveProperty('queryPerformance');
-      expect(result.materializedViews).toHaveProperty('inventory_summary');
-      expect(result.materializedViews).toHaveProperty('inventory_availability');
+      expect(result).toHaveProperty('materialized_views_enabled');
+      expect(result).toHaveProperty('views_status');
+      expect(result.materialized_views_enabled).toBe(true);
+      expect(Array.isArray(result.views_status)).toBe(true);
     });
   });
 

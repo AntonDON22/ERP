@@ -14,12 +14,12 @@ vi.mock('../../server/db', () => ({
 }));
 
 // Мокаем timeUtils
-vi.mock('@shared/timeUtils', () => ({
+vi.mock('../../shared/timeUtils', () => ({
   getMoscowTime: vi.fn(() => new Date('2025-07-01T14:30:00.000Z')),
 }));
 
 // Мокаем logger
-vi.mock('@shared/logger', () => ({
+vi.mock('../../shared/logger', () => ({
   inventoryLogger: {
     startOperation: vi.fn(() => vi.fn()),
     info: vi.fn(),

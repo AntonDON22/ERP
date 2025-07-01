@@ -133,7 +133,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
         title,
         description
       };
-    });
+    }).reverse(); // Новые записи сверху
 
     dayData.push({
       date,

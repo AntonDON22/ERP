@@ -119,7 +119,6 @@ export class MemStorage implements IStorage {
       length: insertProduct.length || null,
       width: insertProduct.width || null,
       height: insertProduct.height || null,
-      imageUrl: insertProduct.imageUrl || null,
       barcode: insertProduct.barcode || null,
     };
     this.products.set(id, product);

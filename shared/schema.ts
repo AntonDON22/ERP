@@ -19,7 +19,7 @@ export const products = pgTable("products", {
   length: decimal("length", { precision: 8, scale: 1 }),
   width: decimal("width", { precision: 8, scale: 1 }),
   height: decimal("height", { precision: 8, scale: 1 }),
-  imageUrl: text("image_url"),
+  // Убрано неиспользуемое поле imageUrl
 });
 
 export const suppliers = pgTable("suppliers", {
@@ -45,11 +45,12 @@ export const documents = pgTable("documents", {
   name: text("name").notNull(),
   type: text("type"),
   status: text("status").notNull().default("draft"), // "draft" или "posted"
-  date: text("date"),
   warehouseId: integer("warehouse_id").references(() => warehouses.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  postedAt: timestamp("posted_at"), // Время проведения документа
+  // Убираем неиспользуемые поля:
+  // date - дублирует createdAt
+  // postedAt - не используется в логике системы
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -117,7 +118,6 @@ export const importProductSchema = z.object({
     val ? String(val).replace(/[^\d]/g, '') || "" : ""
   ),
   barcode: z.string().optional().transform(val => val && val.trim() ? val.trim() : ""),
-  imageUrl: z.string().optional().transform(val => val && val.trim() ? val.trim() : ""),
 });
 
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({
@@ -166,7 +166,6 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
-  postedAt: true,
 }).extend({
   name: z.string()
     .min(1, "Название обязательно")
@@ -178,7 +177,7 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   status: z.enum(['draft', 'posted'], {
     errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
   }).default('draft'),
-  date: z.string().optional(),
+
   warehouseId: z.number()
     .positive("ID склада должен быть положительным числом")
     .int("ID склада должен быть целым числом")
@@ -262,7 +261,6 @@ export const documentItemSchema = z.object({
 
 export const receiptDocumentSchema = z.object({
   name: z.string().min(1, "Название документа обязательно"),
-  date: z.string().min(1, "Дата документа обязательна"),
   warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });

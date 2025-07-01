@@ -41,7 +41,7 @@ export class MaterializedViewService {
     console.log("🔄 Обновление всех материализованных представлений...");
     
     try {
-      await db.execute(sql`SELECT refresh_inventory_views()`);
+      await db.execute(sql`SELECT refresh_materialized_views()`);
       console.log("✅ Все материализованные представления обновлены");
     } catch (error) {
       console.error("❌ Ошибка при обновлении представлений:", error);

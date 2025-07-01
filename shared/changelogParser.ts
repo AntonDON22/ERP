@@ -82,12 +82,10 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
   const changelogStart = lines.findIndex(line => line.includes('## История изменений') || line.includes('## Changelog'));
   
   if (changelogStart === -1) {
-    console.log('DEBUG: Раздел changelog не найден');
     return [];
   }
   
   const changelogLines = lines.slice(changelogStart + 1);
-  console.log('DEBUG: Найдено строк changelog:', changelogLines.length);
   const updates: Array<{
     date: string;
     time: string;
@@ -172,7 +170,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
     
     const updates: Update[] = dayUpdates
       .sort((a: {time: string, content: string}, b: {time: string, content: string}) => b.time.localeCompare(a.time)) // Сортируем по времени (новые сверху)
-      .map((update: {time: string, content: string}) => ({
+      .map((update: {time: string, content: string}, index: number) => ({
         time: update.time,
         type: determineUpdateType(update.content),
         title: extractTitle(update.content),
@@ -190,17 +188,17 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
   return dayData.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function extractTimeFromDescription(description: string): string {
+function extractTimeFromDescription(description: string, index: number = 0): string {
   // Попытка извлечь время из описания (если есть упоминания времени)
   const timeMatch = description.match(/(\d{1,2}:\d{2})/);
   if (timeMatch) {
     return timeMatch[1];
   }
   
-  // Если времени нет, генерируем примерное на основе порядка записей
-  const hour = Math.floor(Math.random() * 12) + 9; // 9-20 часов
-  const minute = Math.floor(Math.random() * 60);
-  return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  // Фиксированное время на основе индекса записи для стабильности
+  const baseHour = 9 + (index % 12); // 9-20 часов
+  const minute = (index * 7) % 60; // Фиксированные минуты на основе позиции
+  return `${baseHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
 }
 
 function determineUpdateType(content: string): "feature" | "fix" | "improvement" | "database" {

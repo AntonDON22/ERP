@@ -133,6 +133,7 @@ export default function DataTable<T extends { id: number; name: string }>({
   const [columnWidths, setColumnWidths] = useState<Record<string, number>>({});
   const [isResizing, setIsResizing] = useState<string | null>(null);
   const [hiddenColumns, setHiddenColumns] = useState<Set<string>>(new Set());
+  const [forceRender, setForceRender] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const tableRef = useRef<HTMLTableElement>(null);
@@ -243,6 +244,8 @@ export default function DataTable<T extends { id: number; name: string }>({
       }
       return newSet;
     });
+    // Принудительно перерендерим таблицу
+    setForceRender(prev => prev + 1);
   }, []);
 
   // Фильтруем видимые столбцы
@@ -574,7 +577,7 @@ export default function DataTable<T extends { id: number; name: string }>({
           </Popover>
         </div>
         <div className="overflow-x-auto">
-          <table ref={tableRef} className="w-full table-fixed">
+          <table key={forceRender} ref={tableRef} className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {!hideSelectionColumn && (

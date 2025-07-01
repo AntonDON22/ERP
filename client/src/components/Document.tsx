@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts } from "@/hooks/useTypedQuery";
+import { useProducts, useUpdateDocument } from "@/hooks/useTypedQuery";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Product, Warehouse } from "@shared/schema";
@@ -65,6 +65,7 @@ export default function Document({ config, documentData }: DocumentProps) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const mutation = config.mutationHook();
+  const updateMutation = useUpdateDocument();
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
   
@@ -96,9 +97,6 @@ export default function Document({ config, documentData }: DocumentProps) {
   // Обновление формы при изменении documentData
   useEffect(() => {
     if (documentData) {
-      console.log('📋 Обновление формы с данными документа:', documentData);
-      console.log('🏢 warehouseId из документа:', documentData.warehouseId);
-      
       form.reset({
         warehouseId: documentData.warehouseId ?? 0,
         items: documentData.items?.map(item => ({
@@ -107,8 +105,6 @@ export default function Document({ config, documentData }: DocumentProps) {
           price: item.price,
         })) || [{ productId: 0, quantity: 1, price: 0 }],
       });
-      
-      console.log('✅ Форма сброшена, текущие значения:', form.getValues());
     }
   }, [documentData, form]);
 
@@ -151,9 +147,16 @@ export default function Document({ config, documentData }: DocumentProps) {
       if (documentData) {
         // Редактирование существующего документа
         console.log(`📝 Updating document #${documentData.id}`);
-        await mutation.mutateAsync({
+        await updateMutation.mutateAsync({
           id: documentData.id,
-          ...documentToSave,
+          data: {
+            warehouseId: data.warehouseId,
+            items: data.items.map((item: FormDocumentItem) => ({
+              productId: item.productId,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          }
         });
       } else {
         // Создание нового документа

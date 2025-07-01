@@ -2,7 +2,9 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
@@ -528,6 +530,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching document:", error);
       res.status(500).json({ message: "Ошибка при загрузке документа" });
+    }
+  });
+
+  // Update document
+  app.put("/api/documents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Некорректный ID документа" });
+      }
+
+      const { warehouseId, items } = req.body;
+      
+      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, items });
+
+      // Обновляем склад документа
+      const [updatedDocument] = await db
+        .update(documents)
+        .set({ warehouseId })
+        .where(eq(documents.id, id))
+        .returning();
+
+      if (!updatedDocument) {
+        return res.status(404).json({ message: "Документ не найден" });
+      }
+
+      // Удаляем старые записи из inventory и document_items
+      await db.delete(inventory).where(eq(inventory.documentId, id));
+      await db.delete(documentItems).where(eq(documentItems.documentId, id));
+
+      // Создаем новые записи document_items
+      const documentItemsData = items.map((item: any) => ({
+        documentId: id,
+        productId: item.productId,
+        quantity: item.quantity.toString(),
+        price: item.price.toString()
+      }));
+
+      await db.insert(documentItems).values(documentItemsData);
+
+      // Создаем новые записи inventory
+      const inventoryData = items.map((item: any) => ({
+        documentId: id,
+        productId: item.productId,
+        quantity: item.quantity,
+        price: item.price
+      }));
+
+      await db.insert(inventory).values(inventoryData);
+
+      console.log(`✅ Документ ${id} обновлен`);
+      res.json(updatedDocument);
+    } catch (error) {
+      console.error("Error updating document:", error);
+      res.status(500).json({ message: "Ошибка при обновлении документа" });
     }
   });
 

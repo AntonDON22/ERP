@@ -15,7 +15,7 @@ interface DayData {
 }
 
 export default function Dashboard() {
-  const [expandedDays, setExpandedDays] = useState<string[]>(["2025-06-30"]);
+  const [expandedDays, setExpandedDays] = useState<string[]>([]);
 
   const toggleDay = (date: string) => {
     setExpandedDays(prev => 

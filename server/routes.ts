@@ -575,7 +575,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         documentId: id,
         productId: item.productId,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
+        movementType: 'IN'
       }));
 
       await db.insert(inventory).values(inventoryData);

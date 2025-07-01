@@ -35,6 +35,10 @@ export class DocumentService {
     return await transactionService.deleteDocumentWithInventory(id);
   }
 
+  async deleteById(id: number): Promise<boolean> {
+    return await this.delete(id);
+  }
+
   async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error("Укажите массив ID документов для удаления");

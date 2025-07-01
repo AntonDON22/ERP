@@ -25,6 +25,10 @@ export class WarehouseService {
     return await storage.deleteWarehouse(id);
   }
 
+  async deleteById(id: number): Promise<boolean> {
+    return await storage.deleteWarehouse(id);
+  }
+
   async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error("Укажите массив ID складов для удаления");

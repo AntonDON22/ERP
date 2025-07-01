@@ -38,6 +38,13 @@ app.use('/api', apiLimiter);
 // Добавляем централизованное логирование для API запросов
 app.use('/api', logRequests);
 
+// КРИТИЧЕСКИ ВАЖНО: Принудительно устанавливаем Content-Type: application/json для всех API запросов
+// Это предотвращает возврат HTML вместо JSON из-за конфликтов с SSR
+app.use('/api', (req, res, next) => {
+  res.setHeader('Content-Type', 'application/json');
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

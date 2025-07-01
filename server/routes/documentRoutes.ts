@@ -117,6 +117,27 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/documents/:id
+router.delete("/:id", async (req, res) => {
+  try {
+    const { id } = getDocumentSchema.parse(req.params);
+    
+    const success = await documentService.deleteById(id);
+    if (!success) {
+      return res.status(404).json({ error: "Документ не найден" });
+    }
+    
+    res.json({ success: true });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
+    apiLogger.error("Failed to delete document", { documentId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка удаления документа" });
+  }
+});
+
 // POST /api/documents/delete-multiple
 router.post("/delete-multiple", async (req, res) => {
   try {

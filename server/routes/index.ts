@@ -5,7 +5,7 @@ import documentRoutes from "./documentRoutes";
 import orderRoutes from "./orderRoutes";
 import { InventoryService } from "../services/inventoryService";
 import { ContractorService } from "../services/contractorService";
-import { warehouseService } from "../services/warehouseService";
+import { WarehouseService } from "../services/warehouseService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
@@ -21,6 +21,7 @@ router.use("/orders", orderRoutes);
 // Сервисы для остальных API
 const inventoryService = new InventoryService();
 const contractorService = new ContractorService();
+const warehouseService = new WarehouseService();
 
 // Валидация схемы для контрагентов
 const deleteContractorsSchema = z.object({

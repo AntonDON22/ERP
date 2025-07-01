@@ -35,18 +35,16 @@ export default function OrdersList() {
   };
 
   return (
-    <div className="p-6">
-      <DataTable
-        data={orders}
-        columns={columns}
-        isLoading={isLoading}
-        entityName="заказ"
-        entityNamePlural="заказы"
-        searchFields={["name", "status"]}
-        onDelete={handleDelete}
-        onRowClick={handleRowClick}
-        onCreate={handleCreate}
-      />
-    </div>
+    <DataTable
+      data={orders}
+      columns={columns}
+      isLoading={isLoading}
+      entityName="заказ"
+      entityNamePlural="заказы"
+      searchFields={["name", "status"]}
+      onDelete={handleDelete}
+      onRowClick={handleRowClick}
+      onCreate={handleCreate}
+    />
   );
 }

@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import Document, { DocumentTypeConfig } from "@/components/Document";
-import { useCreateReceiptDocument } from "@/hooks/useTypedQuery";
+import { useCreateReceiptDocument, useDocument } from "@/hooks/useTypedQuery";
 
 const editConfig: DocumentTypeConfig = {
   title: "Документ",
@@ -14,22 +14,22 @@ const editConfig: DocumentTypeConfig = {
 
 export default function EditDocument() {
   const { id } = useParams();
+  const documentId = Number(id);
   
-  // TODO: Добавить загрузку документа по ID из базы данных
-  const documentData = {
-    id: Number(id),
-    name: "Оприходование от 30.06.2025 21:37",
-    type: "Оприходование",
-    date: "2025-06-30",
-    items: [
-      { id: 1, productId: 6, quantity: 4, price: 1 }
-    ]
-  };
+  const { data: document, isLoading, error } = useDocument(documentId);
+
+  if (isLoading) {
+    return <div className="p-6">Загрузка документа...</div>;
+  }
+
+  if (error || !document) {
+    return <div className="p-6">Ошибка загрузки документа</div>;
+  }
 
   return (
     <Document 
       config={editConfig}
-      documentData={documentData}
+      documentData={document}
     />
   );
 }

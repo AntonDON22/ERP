@@ -175,3 +175,10 @@ export const useCreateReceiptDocument = () => {
     },
   });
 };
+export const useDocument = (id: number) => {
+  return useQuery<any>({
+    queryKey: ["/api/documents", id],  
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!id,
+  });
+};

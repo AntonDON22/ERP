@@ -56,7 +56,7 @@ export default function InventoryList() {
     <div className="space-y-6">
       <DataTable
         data={inventory}
-        columns={columns}
+        columns={columns as any}
         isLoading={isLoading || warehousesLoading}
         entityName="товар"
         entityNamePlural="товары"

@@ -76,13 +76,13 @@ export default function OrdersList() {
   return (
     <DataTable
       data={orders}
-      columns={columns}
+      columns={columns as any}
       isLoading={isLoading}
       entityName="заказ"
       entityNamePlural="заказы"
       searchFields={["name", "status"]}
       onDelete={handleDelete}
-      onRowClick={handleRowClick}
+      onRowClick={handleRowClick as any}
       onCreate={handleCreate}
     />
   );

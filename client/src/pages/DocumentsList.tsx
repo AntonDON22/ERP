@@ -88,7 +88,7 @@ export default function DocumentsList() {
   return (
     <DataTable
       data={documents}
-      columns={columns}
+      columns={columns as any}
       isLoading={documentsLoading || warehousesLoading}
       entityName="документ"
       entityNamePlural="Документы"
@@ -97,7 +97,7 @@ export default function DocumentsList() {
         await deleteDocuments.mutateAsync(ids);
       }}
       onCreate={handleCreate}
-      onRowClick={handleRowClick}
+      onRowClick={handleRowClick as any}
     />
   );
 }

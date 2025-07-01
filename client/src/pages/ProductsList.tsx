@@ -114,7 +114,7 @@ export default function ProductsList() {
   return (
     <DataTable
       data={products}
-      columns={productsColumns}
+      columns={productsColumns as any}
       isLoading={isLoading}
       entityName="товар"
       entityNamePlural="Товары"

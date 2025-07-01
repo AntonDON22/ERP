@@ -230,7 +230,8 @@ describe('🧪 Системный интеграционный тест ERP', ()
 
     // Проверяем остаток = 100
     const inventory = await api.getInventory();
-    const testProductInventory = inventory.find(item => item.id === testData.product.id);
+    expect(testData.product).not.toBeNull();
+    const testProductInventory = inventory.find(item => item.id === testData.product!.id);
     
     expect(testProductInventory).toBeDefined();
     expect(testProductInventory!.quantity).toBe(100);

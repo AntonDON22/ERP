@@ -43,7 +43,7 @@ export default function SuppliersList() {
   return (
     <DataTable
       data={suppliers}
-      columns={suppliersColumns}
+      columns={suppliersColumns as any}
       isLoading={isLoading}
       entityName="поставщик"
       entityNamePlural="Поставщики"

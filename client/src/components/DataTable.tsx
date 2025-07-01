@@ -28,7 +28,7 @@ function getGenitiveForm(entityNamePlural: string): string {
 
 // Типы для конфигурации колонок
 export interface ColumnConfig<T = any> {
-  key: any;
+  key: keyof T | string;
   label: string;
   width?: string;
   minWidth?: number;
@@ -55,18 +55,18 @@ export interface WarehouseFilterConfig {
 // Основные пропсы компонента
 export interface DataTableProps<T = any> {
   data: T[];
-  columns: ColumnConfig<any>[];
+  columns: ColumnConfig<T>[];
   isLoading?: boolean;
   entityName: string;
   entityNamePlural: string;
-  searchFields: any[];
+  searchFields: (keyof T | string)[];
   excelConfig?: ExcelExportConfig;
   onDelete?: (ids: number[]) => Promise<void>;
   onImport?: (data: any[]) => Promise<void>;
   deleteLabel?: string;
   importLabel?: string;
   onCreate?: () => void;
-  onRowClick?: (item: any) => void;
+  onRowClick?: (item: T) => void;
   hideSelectionColumn?: boolean;
   warehouseFilter?: WarehouseFilterConfig;
 }
@@ -623,7 +623,7 @@ function DataTable<T = any>({
                         <div className="flex-1">
                           {column.sortable !== false ? (
                             <button
-                              onClick={() => handleSort(column.key)}
+                              onClick={() => handleSort(column.key as keyof T)}
                               className="flex items-center gap-1 hover:text-gray-700 transition-colors"
                             >
                               {column.label}

@@ -75,7 +75,7 @@ export default function WarehousesList() {
   return (
     <DataTable
       data={warehouses}
-      columns={columns}
+      columns={columns as any}
       isLoading={isLoading}
       entityName="склад"
       entityNamePlural="складов"

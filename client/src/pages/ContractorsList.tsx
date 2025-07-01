@@ -43,7 +43,7 @@ export default function ContractorsList() {
   return (
     <DataTable
       data={contractors}
-      columns={contractorsColumns}
+      columns={contractorsColumns as any}
       isLoading={isLoading}
       entityName="контрагент"
       entityNamePlural="Контрагенты"

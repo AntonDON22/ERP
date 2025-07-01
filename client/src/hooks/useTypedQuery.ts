@@ -148,6 +148,8 @@ export const useInventoryAvailability = (warehouseId?: number) => {
       }
       return response.json();
     },
+    staleTime: 0, // Данные всегда считаются устаревшими
+    refetchOnWindowFocus: true, // Обновлять при фокусе окна
   });
 };
 
@@ -243,7 +245,10 @@ export const useDeleteOrders = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      // Инвалидируем все варианты кэша инвентаря
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };
@@ -256,7 +261,10 @@ export const useCreateOrder = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      // Инвалидируем все варианты кэша инвентаря
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };
@@ -291,7 +299,10 @@ export const useUpdateOrder = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
+      // Инвалидируем все варианты кэша инвентаря
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
+      queryClient.refetchQueries({ queryKey: ["/api/inventory/availability"] });
     },
   });
 };

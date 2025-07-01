@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
 import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus, Settings } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -27,8 +27,8 @@ function getGenitiveForm(entityNamePlural: string): string {
 }
 
 // Типы для конфигурации колонок
-export interface ColumnConfig<T> {
-  key: keyof T;
+export interface ColumnConfig<T = any> {
+  key: any;
   label: string;
   width?: string;
   minWidth?: number;
@@ -53,20 +53,20 @@ export interface WarehouseFilterConfig {
 }
 
 // Основные пропсы компонента
-export interface DataTableProps<T extends { id: number; name: string }> {
+export interface DataTableProps<T = any> {
   data: T[];
-  columns: ColumnConfig<T>[];
+  columns: ColumnConfig<any>[];
   isLoading?: boolean;
   entityName: string;
   entityNamePlural: string;
-  searchFields: (keyof T)[];
+  searchFields: any[];
   excelConfig?: ExcelExportConfig;
   onDelete?: (ids: number[]) => Promise<void>;
   onImport?: (data: any[]) => Promise<void>;
   deleteLabel?: string;
   importLabel?: string;
   onCreate?: () => void;
-  onRowClick?: (item: T) => void;
+  onRowClick?: (item: any) => void;
   hideSelectionColumn?: boolean;
   warehouseFilter?: WarehouseFilterConfig;
 }
@@ -108,7 +108,7 @@ const CopyableCell = ({
   );
 };
 
-export default function DataTable<T extends { id: number; name: string }>({
+function DataTable<T = any>({
   data,
   columns,
   isLoading,
@@ -126,7 +126,7 @@ export default function DataTable<T extends { id: number; name: string }>({
   warehouseFilter
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<keyof T>("name");
+  const [sortField, setSortField] = useState<any>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
@@ -296,7 +296,7 @@ export default function DataTable<T extends { id: number; name: string }>({
     // Применяем поиск
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase();
-      filtered = data.filter((item) => 
+      filtered = data.filter((item: any) => 
         searchFields.some(field => {
           const value = item[field];
           return value && String(value).toLowerCase().includes(query);
@@ -305,7 +305,7 @@ export default function DataTable<T extends { id: number; name: string }>({
     }
 
     // Применяем сортировку
-    return [...filtered].sort((a, b) => {
+    return [...filtered].sort((a: any, b: any) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
       
@@ -317,10 +317,15 @@ export default function DataTable<T extends { id: number; name: string }>({
     });
   }, [data, debouncedSearchQuery, searchFields, sortField, sortDirection]);
 
+  // Мемоизируем статистику
+  const statisticsText = useMemo(() => {
+    return `Всего ${getGenitiveForm(entityNamePlural)}: ${filteredAndSortedData.length}`;
+  }, [entityNamePlural, filteredAndSortedData.length]);
+
   // Функции для работы с выбором
   const handleSelectAll = useCallback((checked: boolean) => {
     if (checked) {
-      setSelectedItems(new Set(filteredAndSortedData.map(item => item.id)));
+      setSelectedItems(new Set(filteredAndSortedData.map((item: any) => item.id)));
     } else {
       setSelectedItems(new Set());
     }
@@ -376,11 +381,11 @@ export default function DataTable<T extends { id: number; name: string }>({
       const exportItem: Record<string, any> = {};
       
       // Добавляем ID как первую колонку
-      exportItem['ID'] = item.id;
+      exportItem['ID'] = (item as any).id;
       
       // Добавляем остальные колонки
       columns.forEach(column => {
-        const value = item[column.key];
+        const value = (item as any)[column.key];
         const formattedValue = column.format ? column.format(value) : value;
         exportItem[excelConfig.headers[String(column.key)] || String(column.label)] = formattedValue || "";
       });
@@ -448,7 +453,7 @@ export default function DataTable<T extends { id: number; name: string }>({
           <div>
             <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural.charAt(0).toUpperCase() + entityNamePlural.slice(1)}</h1>
             <p className="text-sm text-gray-600 mt-1">
-              Всего {getGenitiveForm(entityNamePlural)}: {filteredAndSortedData.length}
+              {statisticsText}
             </p>
           </div>
         </div>
@@ -715,3 +720,5 @@ export default function DataTable<T extends { id: number; name: string }>({
     </div>
   );
 }
+
+export default memo(DataTable);

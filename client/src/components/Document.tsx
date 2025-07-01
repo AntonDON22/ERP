@@ -96,6 +96,9 @@ export default function Document({ config, documentData }: DocumentProps) {
   // Обновление формы при изменении documentData
   useEffect(() => {
     if (documentData) {
+      console.log('📋 Обновление формы с данными документа:', documentData);
+      console.log('🏢 warehouseId из документа:', documentData.warehouseId);
+      
       form.reset({
         warehouseId: documentData.warehouseId ?? 0,
         items: documentData.items?.map(item => ({
@@ -104,6 +107,8 @@ export default function Document({ config, documentData }: DocumentProps) {
           price: item.price,
         })) || [{ productId: 0, quantity: 1, price: 0 }],
       });
+      
+      console.log('✅ Форма сброшена, текущие значения:', form.getValues());
     }
   }, [documentData, form]);
 

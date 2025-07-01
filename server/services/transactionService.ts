@@ -49,14 +49,16 @@ export class TransactionService {
         await tx
           .insert(documentItems)
           .values({
-            ...item,
+            productId: item.productId,
+            quantity: item.quantity.toString(),
+            price: item.price ?? "0",
             documentId: createdDocument.id,
           });
 
         // 4. Обрабатываем движения инвентаря транзакционно
         await this.processInventoryMovement(tx, {
           productId: item.productId,
-          quantity: item.quantity,
+          quantity: item.quantity.toString(),
           price: item.price ?? "0",
           documentId: createdDocument.id,
           movementType: updatedDocument.type === 'Оприходование' ? 'IN' : 'OUT',
@@ -111,14 +113,16 @@ export class TransactionService {
           await tx
             .insert(documentItems)
             .values({
-              ...item,
+              productId: item.productId,
+              quantity: item.quantity.toString(),
+              price: item.price ?? "0",
               documentId: documentId,
             });
 
           // 6. Создаем новые движения по складу
           await this.processInventoryMovement(tx, {
             productId: item.productId,
-            quantity: item.quantity,
+            quantity: item.quantity.toString(),
             price: item.price ?? "0",
             documentId: documentId,
             movementType: document.type === 'Оприходование' ? 'IN' : 'OUT',

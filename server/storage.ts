@@ -737,7 +737,9 @@ export class DatabaseStorage implements IStorage {
           await tx
             .insert(documentItems)
             .values({
-              ...item,
+              productId: item.productId,
+              quantity: item.quantity.toString(),
+              price: item.price ?? "0",
               documentId: createdDocument.id,
             });
 

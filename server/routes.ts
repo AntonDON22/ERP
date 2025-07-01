@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema, reserves } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema, orderSchema, documents, documentItems, inventory, orders, orderItems, insertOrderSchema, reserves } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql } from "drizzle-orm";
 
@@ -14,6 +14,19 @@ import { documentService } from "./services/documentService";
 import { inventoryService } from "./services/inventoryService";
 import { orderService } from "./services/orderService";
 import { transactionService } from "./services/transactionService";
+
+// Импорт middleware валидации
+import { 
+  validateBody, 
+  validateParams, 
+  idParamSchema, 
+  productIdsSchema, 
+  supplierIdsSchema, 
+  contractorIdsSchema,
+  documentIdsSchema,
+  orderIdsSchema,
+  warehouseIdsSchema
+} from "./middleware/validation";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
@@ -78,7 +91,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multiple products
-  app.post("/api/products/delete-multiple", async (req, res) => {
+  app.post("/api/products/delete-multiple", validateBody(productIdsSchema), async (req, res) => {
     try {
       const { productIds } = req.body;
       const result = await productService.deleteMultiple(productIds);
@@ -119,13 +132,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multiple suppliers
-  app.post("/api/suppliers/delete-multiple", async (req, res) => {
+  app.post("/api/suppliers/delete-multiple", validateBody(supplierIdsSchema), async (req, res) => {
     try {
-      const { ids } = req.body;
-      const result = await supplierService.deleteMultiple(ids);
+      const { supplierIds } = req.body;
+      const result = await supplierService.deleteMultiple(supplierIds);
       
       res.json({ 
-        message: `Удалено поставщиков: ${result.deletedCount} из ${ids.length}`,
+        message: `Удалено поставщиков: ${result.deletedCount} из ${supplierIds.length}`,
         deletedCount: result.deletedCount,
         results: result.results
       });
@@ -179,41 +192,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multiple contractors
-  app.post("/api/contractors/delete-multiple", async (req, res) => {
+  app.post("/api/contractors/delete-multiple", validateBody(contractorIdsSchema), async (req, res) => {
     try {
-      const { ids } = req.body;
+      const { contractorIds } = req.body;
+      const result = await contractorService.deleteMultiple(contractorIds);
       
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: "Укажите массив ID контрагентов для удаления" });
-      }
-
-      const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
-      if (validIds.length !== ids.length) {
-        return res.status(400).json({ message: "Некорректные ID контрагентов" });
-      }
-
-      let deletedCount = 0;
-      const results = [];
-
-      for (const id of validIds) {
-        try {
-          const success = await contractorService.delete(id);
-          if (success) {
-            deletedCount++;
-            results.push({ id, status: 'deleted' });
-          } else {
-            results.push({ id, status: 'not_found' });
-          }
-        } catch (error) {
-          console.error(`Error deleting contractor ${id}:`, error);
-          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
-        }
-      }
-
       res.json({ 
-        message: `Удалено контрагентов: ${deletedCount} из ${ids.length}`,
-        deletedCount,
-        results 
+        message: `Удалено контрагентов: ${result.deletedCount} из ${contractorIds.length}`,
+        deletedCount: result.deletedCount,
+        results: result.results
       });
     } catch (error) {
       console.error("Error deleting multiple contractors:", error);
@@ -281,10 +268,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create warehouse
-  app.post("/api/warehouses", async (req, res) => {
+  app.post("/api/warehouses", validateBody(insertWarehouseSchema), async (req, res) => {
     try {
-      const validatedData = insertWarehouseSchema.parse(req.body);
-      const warehouse = await storage.createWarehouse(validatedData);
+      const warehouse = await storage.createWarehouse(req.body);
       res.status(201).json(warehouse);
     } catch (error) {
       console.error("Error creating warehouse:", error);
@@ -504,41 +490,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multiple documents
-  app.post("/api/documents/delete-multiple", async (req, res) => {
+  app.post("/api/documents/delete-multiple", validateBody(documentIdsSchema), async (req, res) => {
     try {
-      const { ids } = req.body;
+      const { documentIds } = req.body;
+      const result = await documentService.deleteMultiple(documentIds);
       
-      if (!Array.isArray(ids) || ids.length === 0) {
-        return res.status(400).json({ message: "Укажите массив ID документов для удаления" });
-      }
-
-      const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
-      if (validIds.length !== ids.length) {
-        return res.status(400).json({ message: "Некорректные ID документов" });
-      }
-
-      let deletedCount = 0;
-      const results = [];
-
-      for (const id of validIds) {
-        try {
-          const success = await storage.deleteDocument(id);
-          if (success) {
-            deletedCount++;
-            results.push({ id, status: 'deleted' });
-          } else {
-            results.push({ id, status: 'not_found' });
-          }
-        } catch (error) {
-          console.error(`Error deleting document ${id}:`, error);
-          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
-        }
-      }
-
       res.json({ 
-        message: `Удалено документов: ${deletedCount} из ${ids.length}`,
-        deletedCount,
-        results 
+        message: `Удалено документов: ${result.deletedCount} из ${documentIds.length}`,
+        deletedCount: result.deletedCount,
+        results: result.results
       });
     } catch (error) {
       console.error("Error deleting multiple documents:", error);
@@ -547,7 +507,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create receipt document
-  app.post("/api/documents/create-receipt", async (req, res) => {
+  app.post("/api/documents/create-receipt", validateBody(receiptDocumentSchema), async (req, res) => {
     try {
       console.log("🔄 Создание документа:", req.body);
       
@@ -710,7 +670,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Create order
-  app.post("/api/orders/create", async (req, res) => {
+  app.post("/api/orders/create", validateBody(orderSchema), async (req, res) => {
     try {
       const { status, customerId, warehouseId, isReserved, items } = req.body;
       
@@ -802,33 +762,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multiple orders
-  app.post("/api/orders/delete-multiple", async (req, res) => {
+  app.post("/api/orders/delete-multiple", validateBody(orderIdsSchema), async (req, res) => {
     try {
       const { orderIds } = req.body;
+      const result = await orderService.deleteMultiple(orderIds);
       
-      if (!Array.isArray(orderIds) || orderIds.length === 0) {
-        return res.status(400).json({ message: "Укажите массив ID заказов для удаления" });
-      }
-
-      // Удаляем заказы и связанные записи
-      await db.transaction(async (tx) => {
-        // Сначала удаляем позиции заказов
-        for (const orderId of orderIds) {
-          await tx.delete(orderItems).where(eq(orderItems.orderId, orderId));
-        }
-        
-        // Удаляем резервы заказов
-        for (const orderId of orderIds) {
-          await tx.delete(reserves).where(eq(reserves.orderId, orderId));
-        }
-        
-        // Затем удаляем сами заказы
-        for (const orderId of orderIds) {
-          await tx.delete(orders).where(eq(orders.id, orderId));
-        }
+      res.json({ 
+        message: `Удалено заказов: ${result.deletedCount} из ${orderIds.length}`,
+        deletedCount: result.deletedCount,
+        results: result.results
       });
-
-      res.json({ message: `Удалено заказов: ${orderIds.length}` });
     } catch (error) {
       console.error("Error deleting orders:", error);
       res.status(500).json({ message: "Ошибка при удалении заказов" });
@@ -836,7 +779,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update order
-  app.put("/api/orders/:id", async (req, res) => {
+  app.put("/api/orders/:id", validateParams(idParamSchema), validateBody(orderSchema), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {

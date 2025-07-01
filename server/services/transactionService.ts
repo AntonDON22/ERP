@@ -2,6 +2,7 @@ import { db } from "../db";
 import { documents, documentItems, inventory, reserves, orders, orderItems } from "../../shared/schema";
 import { eq, sql } from "drizzle-orm";
 import type { InsertDocument, CreateDocumentItem } from "../../shared/schema";
+import { getMoscowTime } from "../../shared/timeUtils";
 
 export class TransactionService {
   // Транзакционное создание документа с пересчетом остатков
@@ -249,6 +250,7 @@ export class TransactionService {
           price: movement.price,
           movementType: 'IN',
           documentId: movement.documentId,
+          createdAt: getMoscowTime().toISOString(),
         });
     } else {
       // Расход - используем FIFO логику
@@ -292,6 +294,7 @@ export class TransactionService {
           price: stockItem.price,
           movementType: 'OUT' as const,
           documentId: documentId,
+          createdAt: getMoscowTime().toISOString(),
         });
 
         remainingToWriteoff -= quantityToTakeFromThisBatch;
@@ -316,6 +319,7 @@ export class TransactionService {
           price: writeoffPrice,
           movementType: 'OUT',
           documentId: documentId,
+          createdAt: getMoscowTime().toISOString(),
         });
     }
 

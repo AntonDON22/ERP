@@ -14,7 +14,23 @@ const columns: ColumnConfig<Order>[] = [
     copyable: true,
     format: (value) => `${Number(value || 0).toFixed(2)} ₽`
   },
-  { key: "date", label: "Дата", width: "30%", sortable: true, copyable: true },
+  { 
+    key: "date", 
+    label: "Дата", 
+    width: "30%", 
+    sortable: true, 
+    copyable: true,
+    format: (value: any) => {
+      if (!value) return '';
+      const date = new Date(value);
+      return date.toLocaleDateString('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      });
+    }
+  },
 ];
 
 export default function OrdersList() {

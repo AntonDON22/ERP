@@ -1,6 +1,7 @@
 import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
+import { getMoscowTime } from "../shared/timeUtils";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -703,16 +704,18 @@ export class DatabaseStorage implements IStorage {
           .values(document)
           .returning();
 
-        // 1.1. Генерируем название в формате "Тип день.месяц-номер"
-        const today = new Date().toLocaleDateString('ru-RU', { 
+        // 1.1. Генерируем название в формате "Тип день.месяц-номер" (по московскому времени)
+        const moscowTime = getMoscowTime();
+        const today = moscowTime.toLocaleDateString('ru-RU', { 
           day: '2-digit', 
-          month: '2-digit' 
+          month: '2-digit',
+          timeZone: 'Europe/Moscow'
         });
         
-        // Получаем количество документов данного типа за сегодня
-        const todayStart = new Date();
+        // Получаем количество документов данного типа за сегодня (по московскому времени)
+        const todayStart = getMoscowTime();
         todayStart.setHours(0, 0, 0, 0);
-        const todayEnd = new Date();
+        const todayEnd = getMoscowTime();
         todayEnd.setHours(23, 59, 59, 999);
         
         const todayDocuments = await tx

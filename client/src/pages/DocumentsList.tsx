@@ -28,6 +28,7 @@ const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnC
       if (!value) return '';
       const date = new Date(value);
       return date.toLocaleString('ru-RU', {
+        timeZone: 'Europe/Moscow',
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',

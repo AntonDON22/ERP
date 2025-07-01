@@ -1,6 +1,7 @@
 import { storage } from "../storage";
 import { insertDocumentSchema, insertDocumentItemSchema, type InsertDocument, type DocumentRecord, type CreateDocumentItem } from "../../shared/schema";
 import { transactionService } from "./transactionService";
+import { getMoscowDateForDocument } from "../../shared/timeUtils";
 
 export class DocumentService {
   async getAll(): Promise<DocumentRecord[]> {
@@ -76,14 +77,12 @@ export class DocumentService {
   }
 
   private generateDocumentName(type: string): string {
-    const now = new Date();
-    const day = String(now.getDate()).padStart(2, '0');
-    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const dateStr = getMoscowDateForDocument();
     
     // Простая генерация номера (в реальной системе нужно учитывать concurrent access)
     const number = Math.floor(Math.random() * 1000) + 1;
     
-    return `${type} ${day}.${month}-${number}`;
+    return `${type} ${dateStr}-${number}`;
   }
 }
 

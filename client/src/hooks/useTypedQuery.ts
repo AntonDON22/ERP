@@ -178,7 +178,13 @@ export const useCreateReceiptDocument = () => {
 export const useDocument = (id: number) => {
   return useQuery<any>({
     queryKey: ["/api/documents", id],  
-    queryFn: getQueryFn({ on401: "throw" }),
+    queryFn: async () => {
+      const response = await fetch(`/api/documents/${id}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch document');
+      }
+      return response.json();
+    },
     enabled: !!id,
   });
 };

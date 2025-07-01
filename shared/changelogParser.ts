@@ -197,10 +197,25 @@ function extractTimeFromDescription(description: string, index: number = 0): str
   }
   
   // Фиксированное время на основе индекса записи для стабильности
-  const baseHour = 9 + Math.floor(index / 4); // Каждые 4 записи = новый час
-  const baseMinute = (index % 4) * 15; // 0, 15, 30, 45 минут
-  const hour = Math.min(baseHour, 23); // Ограничиваем до 23:xx
-  return `${hour.toString().padStart(2, '0')}:${baseMinute.toString().padStart(2, '0')}`;
+  // Новые записи (малый индекс) должны иметь более позднее время
+  const currentHour = 22; // Текущий час
+  const currentMinute = 30; // Текущая минута
+  
+  // Генерируем время в обратном порядке - новые записи ближе к текущему времени
+  const minutesAgo = index * 5; // Каждая запись на 5 минут раньше
+  const totalMinutes = (currentHour * 60 + currentMinute) - minutesAgo;
+  
+  if (totalMinutes < 0) {
+    // Если время уходит в прошлые сутки, начинаем с утра
+    const morningMinutes = 540 + (index % 60); // 9:00 + случайные минуты
+    const hours = Math.floor(morningMinutes / 60);
+    const minutes = morningMinutes % 60;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+  }
+  
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
 }
 
 function determineUpdateType(content: string): "feature" | "fix" | "improvement" | "database" {

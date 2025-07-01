@@ -3,7 +3,6 @@ import { useQuery } from "@tanstack/react-query";
 import { Clock, ChevronDown, ChevronRight, CheckCircle, Wrench, Database } from "lucide-react";
 
 interface Update {
-  time: string;
   type: "feature" | "fix" | "improvement" | "database";
   title: string;
   description: string;
@@ -135,7 +134,6 @@ export default function Dashboard() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="text-sm font-medium text-gray-600">{update.time}</span>
                           <span className={`text-xs px-2 py-1 rounded-full font-medium ${getTypeColor(update.type)}`}>
                             {update.type === "feature" ? "Функция" : 
                              update.type === "fix" ? "Исправление" :

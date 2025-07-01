@@ -1,7 +1,6 @@
 // Упрощенный парсер без date-fns для избежания зависимостей
 
 export interface Update {
-  time: string;
   type: "feature" | "fix" | "improvement" | "database";
   title: string;
   description: string;
@@ -86,100 +85,55 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
   }
   
   const changelogLines = lines.slice(changelogStart + 1);
-  
-  let processedCount = 0;
-  let skippedCount = 0;
   const updates: Array<{
     date: string;
-    time: string;
     content: string;
   }> = [];
-  let updateIndex = 0; // Счетчик для генерации уникального времени
 
   for (const line of changelogLines) {
     if (line.trim().startsWith('- ') && line.includes('2025')) {
-      // Парсим строку вида: "- 1 июля 2025. Заголовок: Описание" или "- July 1, 2025. Title: Description"
-      const russianMatch = line.match(/^- (\d+ [а-яё]+ \d+)\.\s*(.+?):\s*(.+)$/i);
-      const englishMatch = line.match(/^- ([A-Za-z]+ \d+, \d+)\.\s*(.+?):\s*(.+)$/);
-      
-      if (russianMatch) {
-        const [, dateStr, title, description] = russianMatch;
-        
-        // Конвертируем русскую дату в ISO формат
+      // Простой парсер для всех записей
+      const match = line.match(/^- (\d+ [а-яё]+ \d+)\.\s*(.+)$/i);
+      if (match) {
+        const [, dateStr, content] = match;
         const isoDate = convertRussianDateToISO(dateStr);
         if (isoDate) {
-          const time = extractTimeFromDescription(description || title, updateIndex++);
-          
           updates.push({
             date: isoDate,
-            time,
-            content: `${title}: ${description || ''}`
+            content: content.trim()
           });
-        }
-      } else if (englishMatch) {
-        const [, dateStr, title, description] = englishMatch;
-        
-        // Конвертируем английскую дату в ISO формат
-        const isoDate = convertDateToISO(dateStr);
-        if (isoDate) {
-          const time = extractTimeFromDescription(description || title, updateIndex++);
-          
-          updates.push({
-            date: isoDate,
-            time,
-            content: `${title}: ${description || ''}`
-          });
-        }
-      } else {
-        // Упрощенное сопоставление для записей без строгого формата
-        const simpleMatch = line.match(/^- (\d+ [а-яё]+ \d+)\.\s*(.+)$/i);
-        if (simpleMatch) {
-          const [, dateStr, content] = simpleMatch;
-          const isoDate = convertRussianDateToISO(dateStr);
-          if (isoDate) {
-            const colonIndex = content.indexOf(':');
-            const title = colonIndex > 0 ? content.substring(0, colonIndex).trim() : content.trim();
-            const description = colonIndex > 0 ? content.substring(colonIndex + 1).trim() : '';
-            const time = extractTimeFromDescription(description || title, updateIndex++);
-            
-            updates.push({
-              date: isoDate,
-              time,
-              content: `${title}${description ? ': ' + description : ''}`
-            });
-          }
         }
       }
     }
   }
 
   // Группируем по датам
-  const groupedByDate = new Map<string, Array<{time: string, content: string}>>();
+  const groupedByDate = new Map<string, Array<string>>();
   
   for (const update of updates) {
     if (!groupedByDate.has(update.date)) {
       groupedByDate.set(update.date, []);
     }
-    groupedByDate.get(update.date)!.push({
-      time: update.time,
-      content: update.content
-    });
+    groupedByDate.get(update.date)!.push(update.content);
   }
 
   // Конвертируем в нужный формат
   const dayData: DayData[] = [];
   
-  for (const [date, dayUpdates] of Array.from(groupedByDate.entries())) {
+  for (const [date, dayContents] of Array.from(groupedByDate.entries())) {
     const displayDate = formatDateToRussian(date);
     
-    const updates: Update[] = dayUpdates
-      .map((update: {time: string, content: string}, index: number) => ({
-        time: update.time,
-        type: determineUpdateType(update.content),
-        title: extractTitle(update.content),
-        description: extractDescription(update.content)
-      }))
-      .sort((a, b) => b.time.localeCompare(a.time)); // Сортируем по времени после генерации
+    const updates: Update[] = dayContents.map((content: string) => {
+      const colonIndex = content.indexOf(':');
+      const title = colonIndex > 0 ? content.substring(0, colonIndex).trim() : content.trim();
+      const description = colonIndex > 0 ? content.substring(colonIndex + 1).trim() : '';
+      
+      return {
+        type: determineUpdateType(content),
+        title,
+        description
+      };
+    });
 
     dayData.push({
       date,
@@ -192,34 +146,7 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
   return dayData.sort((a, b) => b.date.localeCompare(a.date));
 }
 
-function extractTimeFromDescription(description: string, index: number = 0): string {
-  // Попытка извлечь время из описания (если есть упоминания времени)
-  const timeMatch = description.match(/(\d{1,2}:\d{2})/);
-  if (timeMatch) {
-    return timeMatch[1];
-  }
-  
-  // Фиксированное время на основе индекса записи для стабильности
-  // Новые записи (малый индекс) должны иметь более позднее время
-  const currentHour = 22; // Текущий час
-  const currentMinute = 30; // Текущая минута
-  
-  // Генерируем время в обратном порядке - новые записи ближе к текущему времени
-  const minutesAgo = index * 5; // Каждая запись на 5 минут раньше
-  const totalMinutes = (currentHour * 60 + currentMinute) - minutesAgo;
-  
-  if (totalMinutes < 0) {
-    // Если время уходит в прошлые сутки, начинаем с утра
-    const morningMinutes = 540 + (index % 60); // 9:00 + случайные минуты
-    const hours = Math.floor(morningMinutes / 60);
-    const minutes = morningMinutes % 60;
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-  }
-  
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-}
+
 
 function determineUpdateType(content: string): "feature" | "fix" | "improvement" | "database" {
   const lowerContent = content.toLowerCase();

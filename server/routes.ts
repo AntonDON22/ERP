@@ -279,7 +279,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Delete multiple warehouses
-  app.delete("/api/warehouses", async (req, res) => {
+  app.delete("/api/warehouses", validateBody(warehouseIdsSchema), async (req, res) => {
     try {
       const { warehouseIds } = req.body;
       
@@ -396,7 +396,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Update document
-  app.put("/api/documents/:id", async (req, res) => {
+  app.put("/api/documents/:id", validateParams(idParamSchema), validateBody(receiptDocumentSchema), async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {

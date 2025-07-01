@@ -74,7 +74,7 @@ export function validateQuery(schema: ZodSchema) {
         }));
 
         return res.status(400).json({
-          error: "Ошибка валидации параметров запроса",
+          error: "Ошибка валидации query параметров",
           details: validationErrors,
           success: false
         });
@@ -90,9 +90,9 @@ export function validateQuery(schema: ZodSchema) {
  */
 export const idParamSchema = z.object({
   id: z.string()
-    .regex(/^\d+$/, "ID должен быть числом")
-    .transform(val => parseInt(val, 10))
-    .refine(val => val > 0, "ID должен быть положительным числом")
+    .regex(/^\d+$/, "ID должен содержать только цифры")
+    .transform(Number)
+    .refine(val => val > 0, "ID должен быть положительным")
 });
 
 /**
@@ -103,7 +103,7 @@ export const productIdsSchema = z.object({
     z.number()
       .positive("ID должен быть положительным")
       .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID продукта")
+  ).min(1, "Укажите хотя бы один ID товара")
 });
 
 export const supplierIdsSchema = z.object({

@@ -86,6 +86,9 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
   }
   
   const changelogLines = lines.slice(changelogStart + 1);
+  
+  let processedCount = 0;
+  let skippedCount = 0;
   const updates: Array<{
     date: string;
     time: string;
@@ -135,14 +138,14 @@ export function parseChangelogFromReplit(replitContent: string): DayData[] {
           const isoDate = convertRussianDateToISO(dateStr);
           if (isoDate) {
             const colonIndex = content.indexOf(':');
-            const title = colonIndex > 0 ? content.substring(0, colonIndex).trim() : content.substring(0, 50) + '...';
-            const description = colonIndex > 0 ? content.substring(colonIndex + 1).trim() : content;
-            const time = extractTimeFromDescription(description, updateIndex++);
+            const title = colonIndex > 0 ? content.substring(0, colonIndex).trim() : content.trim();
+            const description = colonIndex > 0 ? content.substring(colonIndex + 1).trim() : '';
+            const time = extractTimeFromDescription(description || title, updateIndex++);
             
             updates.push({
               date: isoDate,
               time,
-              content: `${title}: ${description}`
+              content: `${title}${description ? ': ' + description : ''}`
             });
           }
         }

@@ -408,14 +408,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Некорректный ID документа" });
       }
 
-      const { warehouseId, items, type } = req.body;
+      const { warehouseId, items, type, status } = req.body;
       
-      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, items, type });
+      console.log(`🔄 Обновление документа ${id}:`, { warehouseId, items, type, status });
 
-      // Обновляем документ (склад и тип)
+      // Обновляем документ (склад, тип и статус)
       const [updatedDocument] = await db
         .update(documents)
-        .set({ warehouseId, type })
+        .set({ warehouseId, type, status })
         .where(eq(documents.id, id))
         .returning();
 
@@ -517,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("🔄 Создание документа:", req.body);
       
       // Создаем простую валидацию для нового формата данных
-      const { type, warehouseId, items } = req.body;
+      const { type, warehouseId, items, status = 'draft' } = req.body;
       
       if (!type || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ 
@@ -538,7 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const documentData = {
         type: type,
         warehouseId: warehouseId,
-        status: "draft" as const, // Новые документы создаются в статусе черновик
+        status: status, // Статус из запроса или 'draft' по умолчанию
         name: "", // Будет заполнено автоматически в storage
         date: new Date().toISOString().split('T')[0], // Текущая дата
       };

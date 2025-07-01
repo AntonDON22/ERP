@@ -32,7 +32,7 @@ export interface ExistingDocumentData {
   name: string;
   type: string;
   date: string;
-  status: string;
+  status: 'draft' | 'posted';
   warehouseId?: number;
   items: Array<{
     id: number;
@@ -52,6 +52,7 @@ const documentItemSchema = z.object({
 // Схема для формы документа
 const documentSchema = z.object({
   warehouseId: z.number().min(1, "Выберите склад"),
+  status: z.enum(['draft', 'posted']).default('draft'),
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
@@ -84,6 +85,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     resolver: zodResolver(documentSchema),
     defaultValues: {
       warehouseId: documentData?.warehouseId ?? 0,
+      status: documentData?.status ?? 'draft',
       items: documentData?.items?.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -102,6 +104,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     if (documentData) {
       form.reset({
         warehouseId: documentData.warehouseId ?? 0,
+        status: documentData.status ?? 'draft',
         items: documentData.items?.map(item => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -139,6 +142,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     try {
       const documentToSave = {
         type: documentType,
+        status: data.status,
         warehouseId: data.warehouseId,
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
@@ -154,6 +158,7 @@ export default function Document({ config, documentData }: DocumentProps) {
           id: documentData.id,
           data: {
             type: documentType,
+            status: data.status,
             warehouseId: data.warehouseId,
             items: data.items.map((item: FormDocumentItem) => ({
               productId: item.productId,
@@ -272,7 +277,7 @@ export default function Document({ config, documentData }: DocumentProps) {
           </div>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="documentType">Тип документа</Label>
               <Select
@@ -308,6 +313,26 @@ export default function Document({ config, documentData }: DocumentProps) {
               {form.formState.errors.warehouseId && (
                 <p className="text-sm text-red-500 mt-1">
                   {form.formState.errors.warehouseId.message}
+                </p>
+              )}
+            </div>
+            <div>
+              <Label>Статус</Label>
+              <Select
+                value={form.watch('status') || 'draft'}
+                onValueChange={(value: 'draft' | 'posted') => form.setValue('status', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите статус" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="draft">Черновик</SelectItem>
+                  <SelectItem value="posted">Проведен</SelectItem>
+                </SelectContent>
+              </Select>
+              {form.formState.errors.status && (
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.status.message}
                 </p>
               )}
             </div>

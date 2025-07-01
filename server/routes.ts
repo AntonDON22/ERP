@@ -2,7 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import express from "express";
 import { storage } from "./storage";
-import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertDocumentSchema, receiptDocumentSchema } from "@shared/schema";
+import { insertProductSchema, importProductSchema, insertSupplierSchema, insertContractorSchema, insertWarehouseSchema, insertDocumentSchema, receiptDocumentSchema } from "@shared/schema";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {
@@ -387,6 +387,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error importing contractors:", error);
       res.status(500).json({ message: "Ошибка при импорте контрагентов" });
+    }
+  });
+
+  // Warehouses routes
+  // Get all warehouses
+  app.get("/api/warehouses", async (req, res) => {
+    try {
+      const warehouses = await storage.getWarehouses();
+      res.json(warehouses);
+    } catch (error) {
+      console.error("Error fetching warehouses:", error);
+      res.status(500).json({ message: "Ошибка при получении складов" });
+    }
+  });
+
+  // Create warehouse
+  app.post("/api/warehouses", async (req, res) => {
+    try {
+      const validatedData = insertWarehouseSchema.parse(req.body);
+      const warehouse = await storage.createWarehouse(validatedData);
+      res.status(201).json(warehouse);
+    } catch (error) {
+      console.error("Error creating warehouse:", error);
+      res.status(400).json({ message: "Ошибка при создании склада" });
+    }
+  });
+
+  // Delete multiple warehouses
+  app.delete("/api/warehouses", async (req, res) => {
+    try {
+      const { warehouseIds } = req.body;
+      
+      if (!Array.isArray(warehouseIds)) {
+        return res.status(400).json({ message: "Ожидается массив ID складов" });
+      }
+
+      const results = [];
+      let deletedCount = 0;
+
+      for (const id of warehouseIds) {
+        try {
+          const success = await storage.deleteWarehouse(id);
+          if (success) {
+            deletedCount++;
+            results.push({ id, status: 'deleted' });
+          } else {
+            results.push({ id, status: 'not_found' });
+          }
+        } catch (error) {
+          console.error(`Error deleting warehouse ${id}:`, error);
+          results.push({ id, status: 'error', error: error instanceof Error ? error.message : 'Unknown error' });
+        }
+      }
+
+      res.json({ 
+        message: `Удалено складов: ${deletedCount} из ${warehouseIds.length}`,
+        deletedCount,
+        results 
+      });
+    } catch (error) {
+      console.error("Error deleting multiple warehouses:", error);
+      res.status(500).json({ message: "Ошибка при удалении складов" });
+    }
+  });
+
+  // Bulk import warehouses
+  app.post("/api/warehouses/import", async (req, res) => {
+    try {
+      const { warehouses } = req.body;
+
+      if (!Array.isArray(warehouses)) {
+        return res.status(400).json({ message: "Ожидается массив складов" });
+      }
+
+      const results = [];
+      for (const warehouseData of warehouses) {
+        try {
+          const validatedData = {
+            name: warehouseData.name || warehouseData.Название || "Без названия",
+            address: String(warehouseData.address || warehouseData.Адрес || ""),
+          };
+          
+          // Проверяем наличие ID для обновления
+          const id = warehouseData.ID || warehouseData.id;
+          let warehouse;
+          
+          if (id && Number.isInteger(Number(id))) {
+            const numericId = Number(id);
+            // Обновляем существующий склад
+            warehouse = await storage.updateWarehouse(numericId, validatedData);
+            if (!warehouse) {
+              // Если склад с таким ID не найден, создаем новый
+              warehouse = await storage.createWarehouse(validatedData);
+            }
+          } else {
+            // Создаем новый склад
+            warehouse = await storage.createWarehouse(validatedData);
+          }
+          
+          results.push(warehouse);
+        } catch (error) {
+          console.error('Error importing warehouse:', warehouseData, error);
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      console.error("Error importing warehouses:", error);
+      res.status(500).json({ message: "Ошибка при импорте складов" });
     }
   });
 

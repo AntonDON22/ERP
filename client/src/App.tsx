@@ -12,6 +12,7 @@ import DocumentsList from "@/pages/DocumentsList";
 import CreateReceiptDocument from "@/pages/CreateReceiptDocument";
 import EditDocument from "@/pages/EditDocument";
 import InventoryList from "@/pages/InventoryList";
+import WarehousesList from "@/pages/WarehousesList";
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
               <Route path="/products" component={ProductsList} />
               <Route path="/suppliers" component={SuppliersList} />
               <Route path="/contractors" component={ContractorsList} />
+              <Route path="/warehouses" component={WarehousesList} />
               <Route path="/documents" component={DocumentsList} />
               <Route path="/documents/create-receipt" component={CreateReceiptDocument} />
               <Route path="/documents/:id" component={EditDocument} />

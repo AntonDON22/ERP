@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor } from "@shared/schema";
+import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor, Warehouse, InsertWarehouse } from "@shared/schema";
 import { apiRequest, apiRequestJson } from "@/lib/queryClient";
 
 // Типизированные хуки для продуктов

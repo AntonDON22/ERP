@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, documents, inventory, documentItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc } from "drizzle-orm";
 
@@ -32,6 +32,13 @@ export interface IStorage {
   updateContractor(id: number, contractor: Partial<InsertContractor>): Promise<Contractor | undefined>;
   deleteContractor(id: number): Promise<boolean>;
   
+  // Warehouses
+  getWarehouses(): Promise<Warehouse[]>;
+  getWarehouse(id: number): Promise<Warehouse | undefined>;
+  createWarehouse(warehouse: InsertWarehouse): Promise<Warehouse>;
+  updateWarehouse(id: number, warehouse: Partial<InsertWarehouse>): Promise<Warehouse | undefined>;
+  deleteWarehouse(id: number): Promise<boolean>;
+  
   // Documents
   getDocuments(): Promise<DocumentRecord[]>;
   getDocument(id: number): Promise<DocumentRecord | undefined>;
@@ -48,20 +55,24 @@ export class MemStorage implements IStorage {
   private products: Map<number, Product>;
   private suppliers: Map<number, Supplier>;
   private contractors: Map<number, Contractor>;
+  private warehouses: Map<number, Warehouse>;
   private currentUserId: number;
   private currentProductId: number;
   private currentSupplierId: number;
   private currentContractorId: number;
+  private currentWarehouseId: number;
 
   constructor() {
     this.users = new Map();
     this.products = new Map();
     this.suppliers = new Map();
     this.contractors = new Map();
+    this.warehouses = new Map();
     this.currentUserId = 1;
     this.currentProductId = 1;
     this.currentSupplierId = 1;
     this.currentContractorId = 1;
+    this.currentWarehouseId = 1;
   }
 
   async getUser(id: number): Promise<User | undefined> {
@@ -206,6 +217,43 @@ export class MemStorage implements IStorage {
 
   async deleteContractor(id: number): Promise<boolean> {
     return this.contractors.delete(id);
+  }
+
+  // Warehouses
+  async getWarehouses(): Promise<Warehouse[]> {
+    return Array.from(this.warehouses.values());
+  }
+
+  async getWarehouse(id: number): Promise<Warehouse | undefined> {
+    return this.warehouses.get(id);
+  }
+
+  async createWarehouse(insertWarehouse: InsertWarehouse): Promise<Warehouse> {
+    const id = this.currentWarehouseId++;
+    const warehouse: Warehouse = { 
+      ...insertWarehouse, 
+      id,
+      address: insertWarehouse.address || null
+    };
+    this.warehouses.set(id, warehouse);
+    return warehouse;
+  }
+
+  async updateWarehouse(id: number, updateData: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+    const existingWarehouse = this.warehouses.get(id);
+    if (!existingWarehouse) return undefined;
+    
+    const updatedWarehouse: Warehouse = {
+      ...existingWarehouse,
+      ...updateData,
+      id,
+    };
+    this.warehouses.set(id, updatedWarehouse);
+    return updatedWarehouse;
+  }
+
+  async deleteWarehouse(id: number): Promise<boolean> {
+    return this.warehouses.delete(id);
   }
 
   // Document methods - not implemented in MemStorage
@@ -453,6 +501,52 @@ export class DatabaseStorage implements IStorage {
     const result = await db
       .delete(contractors)
       .where(eq(contractors.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  // Warehouses
+  async getWarehouses(): Promise<Warehouse[]> {
+    const startTime = Date.now();
+    console.log('[DB] Starting getWarehouses query...');
+    
+    try {
+      const result = await db.select().from(warehouses);
+      const endTime = Date.now();
+      console.log(`[DB] getWarehouses completed in ${endTime - startTime}ms, returned ${result.length} warehouses`);
+      return result;
+    } catch (error) {
+      const endTime = Date.now();
+      console.error(`[DB] getWarehouses failed after ${endTime - startTime}ms:`, error);
+      throw error;
+    }
+  }
+
+  async getWarehouse(id: number): Promise<Warehouse | undefined> {
+    const [warehouse] = await db.select().from(warehouses).where(eq(warehouses.id, id));
+    return warehouse || undefined;
+  }
+
+  async createWarehouse(insertWarehouse: InsertWarehouse): Promise<Warehouse> {
+    const [warehouse] = await db
+      .insert(warehouses)
+      .values(insertWarehouse)
+      .returning();
+    return warehouse;
+  }
+
+  async updateWarehouse(id: number, updateData: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+    const [warehouse] = await db
+      .update(warehouses)
+      .set(updateData)
+      .where(eq(warehouses.id, id))
+      .returning();
+    return warehouse || undefined;
+  }
+
+  async deleteWarehouse(id: number): Promise<boolean> {
+    const result = await db
+      .delete(warehouses)
+      .where(eq(warehouses.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 

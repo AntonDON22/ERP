@@ -594,8 +594,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDocument(id: number): Promise<DocumentRecord | undefined> {
-    const [document] = await db.select().from(documents).where(eq(documents.id, id));
-    return document || undefined;
+    console.log(`[DB] Starting getDocument for ID ${id}...`);
+    const startTime = Date.now();
+    
+    try {
+      const [document] = await db.select().from(documents).where(eq(documents.id, id));
+      
+      if (!document) {
+        console.log(`[DB] Document ${id} not found`);
+        return undefined;
+      }
+
+      // Получаем элементы документа
+      const items = await db
+        .select()
+        .from(documentItems)
+        .where(eq(documentItems.documentId, id));
+
+      const endTime = Date.now();
+      console.log(`[DB] getDocument completed in ${endTime - startTime}ms for document ${id} with ${items.length} items`);
+      
+      // Возвращаем документ с элементами
+      return {
+        ...document,
+        items: items.map(item => ({
+          id: item.id,
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price)
+        }))
+      } as any;
+    } catch (error) {
+      const endTime = Date.now();
+      console.error(`[DB] getDocument failed after ${endTime - startTime}ms:`, error);
+      throw error;
+    }
   }
 
   async createDocument(insertDocument: InsertDocument): Promise<DocumentRecord> {

@@ -310,7 +310,7 @@ export class DatabaseStorage implements IStorage {
                 SUM(
                   CASE 
                     WHEN documents.warehouse_id = ${warehouseId} OR documents.warehouse_id IS NULL 
-                    THEN inventory.quantity 
+                    THEN CAST(inventory.quantity AS DECIMAL)
                     ELSE 0 
                   END
                 ), 0
@@ -327,7 +327,7 @@ export class DatabaseStorage implements IStorage {
           .select({
             id: products.id,
             name: products.name,
-            quantity: sql<number>`COALESCE(SUM(${inventory.quantity}), 0)`.as('quantity')
+            quantity: sql<number>`COALESCE(SUM(CAST(${inventory.quantity} AS DECIMAL)), 0)`.as('quantity')
           })
           .from(products)
           .leftJoin(inventory, eq(products.id, inventory.productId))

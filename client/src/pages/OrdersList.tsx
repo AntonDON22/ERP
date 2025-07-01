@@ -4,24 +4,44 @@ import { Order } from "@shared/schema";
 import { useLocation } from "wouter";
 
 const columns: ColumnConfig<Order>[] = [
-  { key: "name", label: "Название", width: "35%", sortable: true, copyable: true, multiline: true },
-  { key: "status", label: "Статус", width: "15%", sortable: true, copyable: true },
+  { key: "name", label: "Название", width: "25%", sortable: true, copyable: true, multiline: true },
+  { key: "status", label: "Статус", width: "12%", sortable: true, copyable: true },
   { 
     key: "totalAmount", 
     label: "Сумма", 
-    width: "20%", 
+    width: "13%", 
     sortable: true,
     copyable: true,
     format: (value) => `${Number(value || 0).toFixed(2)} ₽`
   },
   { 
     key: "createdAt", 
-    label: "Дата и время", 
-    width: "30%", 
+    label: "Дата и время создания", 
+    width: "25%", 
     sortable: true, 
     copyable: true,
     format: (value: any) => {
       if (!value) return '';
+      const date = new Date(value);
+      return date.toLocaleString('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+  },
+  { 
+    key: "updatedAt", 
+    label: "Дата и время изменения", 
+    width: "25%", 
+    sortable: true, 
+    copyable: true,
+    format: (value: any) => {
+      if (!value) return '—';
       const date = new Date(value);
       return date.toLocaleString('ru-RU', {
         timeZone: 'Europe/Moscow',

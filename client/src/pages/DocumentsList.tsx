@@ -30,11 +30,30 @@ const createColumns = (warehouses: Array<{ id: number; name: string }>): ColumnC
   },
   { 
     key: 'createdAt', 
-    label: 'Дата и время', 
-    width: '36%', 
+    label: 'Дата и время создания', 
+    width: '18%', 
     copyable: true,
     format: (value: any) => {
       if (!value) return '';
+      const date = new Date(value);
+      return date.toLocaleString('ru-RU', {
+        timeZone: 'Europe/Moscow',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }
+  },
+  { 
+    key: 'updatedAt', 
+    label: 'Дата и время изменения', 
+    width: '18%', 
+    copyable: true,
+    format: (value: any) => {
+      if (!value) return '—';
       const date = new Date(value);
       return date.toLocaleString('ru-RU', {
         timeZone: 'Europe/Moscow',

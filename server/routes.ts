@@ -812,7 +812,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             customerId: customerId || null,
             warehouseId,
             isReserved: isReserved || false,
-            totalAmount: totalAmount.toFixed(2)
+            totalAmount: totalAmount.toFixed(2),
+            updatedAt: new Date() // Автоматически обновляем время изменения
           })
           .where(eq(orders.id, id))
           .returning();

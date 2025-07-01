@@ -651,9 +651,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
+    // Автоматически устанавливаем время изменения
+    const updatePayload = {
+      ...updateData,
+      updatedAt: new Date()
+    };
+    
     const [document] = await db
       .update(documents)
-      .set(updateData)
+      .set(updatePayload)
       .where(eq(documents.id, id))
       .returning();
     return document || undefined;

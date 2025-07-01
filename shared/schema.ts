@@ -48,6 +48,7 @@ export const documents = pgTable("documents", {
   date: text("date"),
   warehouseId: integer("warehouse_id").references(() => warehouses.id),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
   postedAt: timestamp("posted_at"), // Время проведения документа
 });
 
@@ -164,6 +165,7 @@ export const insertWarehouseSchema = createInsertSchema(warehouses).omit({
 export const insertDocumentSchema = createInsertSchema(documents).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
   postedAt: true,
 }).extend({
   name: z.string()
@@ -277,6 +279,7 @@ export const orders = pgTable("orders", {
   isReserved: boolean("is_reserved").notNull().default(false), // резерв товаров
   date: text("date").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   orderDateIdx: index("orders_date_idx").on(table.date),
   orderStatusIdx: index("orders_status_idx").on(table.status),
@@ -294,6 +297,7 @@ export const orderItems = pgTable("order_items", {
 export const insertOrderSchema = createInsertSchema(orders).omit({
   id: true,
   createdAt: true,
+  updatedAt: true,
 }).extend({
   name: z.string()
     .min(1, "Название заказа обязательно")

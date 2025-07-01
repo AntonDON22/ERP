@@ -225,58 +225,51 @@ export default function Document({ config, documentData }: DocumentProps) {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="documentType">Тип документа</Label>
-            <Select
-              value={documentType}
-              onValueChange={setDocumentType}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Выберите тип" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Оприходование">Оприходование</SelectItem>
-                <SelectItem value="Списание">Списание</SelectItem>
-              </SelectContent>
-            </Select>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="documentType">Тип документа</Label>
+              <Select
+                value={documentType}
+                onValueChange={setDocumentType}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите тип" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Оприходование">Оприходование</SelectItem>
+                  <SelectItem value="Списание">Списание</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Склад</Label>
+              <Select
+                value={form.watch('warehouseId')?.toString() || ""}
+                onValueChange={(value) => form.setValue('warehouseId', parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите склад" />
+                </SelectTrigger>
+                <SelectContent>
+                  {warehouses.map((warehouse: Warehouse) => (
+                    <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                      {warehouse.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.formState.errors.warehouseId && (
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.warehouseId.message}
+                </p>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <form id="document-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Склад</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label>Склад</Label>
-                <Select
-                  value={form.watch('warehouseId')?.toString() || ""}
-                  onValueChange={(value) => form.setValue('warehouseId', parseInt(value))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Выберите склад" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {warehouses.map((warehouse: Warehouse) => (
-                      <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
-                        {warehouse.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {form.formState.errors.warehouseId && (
-                  <p className="text-sm text-red-500 mt-1">
-                    {form.formState.errors.warehouseId.message}
-                  </p>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardHeader>

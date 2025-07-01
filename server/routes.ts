@@ -12,6 +12,8 @@ import { supplierService } from "./services/supplierService";
 import { contractorService } from "./services/contractorService";
 import { documentService } from "./services/documentService";
 import { inventoryService } from "./services/inventoryService";
+import { orderService } from "./services/orderService";
+import { transactionService } from "./services/transactionService";
 
 // Функция для очистки числовых значений от валютных символов и единиц измерения
 function cleanNumericValue(value: any): string | null {

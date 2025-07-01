@@ -1,5 +1,6 @@
 import { storage } from "../storage";
 import { insertDocumentSchema, insertDocumentItemSchema, type InsertDocument, type DocumentRecord, type CreateDocumentItem } from "../../shared/schema";
+import { transactionService } from "./transactionService";
 
 export class DocumentService {
   async getAll(): Promise<DocumentRecord[]> {
@@ -15,13 +16,21 @@ export class DocumentService {
     return await storage.createDocument(validatedData);
   }
 
-  async update(id: number, data: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
+  async update(id: number, data: Partial<InsertDocument>, items?: CreateDocumentItem[]): Promise<DocumentRecord | undefined> {
     const validatedData = insertDocumentSchema.partial().parse(data);
-    return await storage.updateDocument(id, validatedData);
+    
+    if (items && items.length > 0) {
+      // Если есть позиции товаров, используем транзакционное обновление
+      return await transactionService.updateDocumentWithInventory(id, validatedData, items);
+    } else {
+      // Простое обновление документа без позиций
+      return await storage.updateDocument(id, validatedData);
+    }
   }
 
   async delete(id: number): Promise<boolean> {
-    return await storage.deleteDocument(id);
+    // Всегда используем транзакционное удаление для целостности данных
+    return await transactionService.deleteDocumentWithInventory(id);
   }
 
   async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
@@ -62,7 +71,8 @@ export class DocumentService {
     // Валидация позиций
     const validatedItems = items.map(item => insertDocumentItemSchema.parse(item));
     
-    return await storage.createReceiptDocument(validatedDocument, validatedItems);
+    // Используем новый транзакционный метод для полной целостности данных
+    return await transactionService.createDocumentWithInventory(validatedDocument, validatedItems);
   }
 
   private generateDocumentName(type: string): string {

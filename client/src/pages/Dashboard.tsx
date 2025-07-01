@@ -31,6 +31,12 @@ export default function Dashboard() {
       displayDate: "1 июля 2025",
       updates: [
         {
+          time: "10:55",
+          type: "database",
+          title: "Создана транзакционная архитектура",
+          description: "Реализован TransactionService с атомарными операциями для всех операций с остатками. Добавлены методы createDocumentWithInventory, updateDocumentWithInventory, deleteDocumentWithInventory для гарантированной консистентности. Интегрированы транзакционные методы в DocumentService"
+        },
+        {
           time: "10:50",
           type: "feature",
           title: "Рефакторинг routes.ts → services/",

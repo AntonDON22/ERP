@@ -97,6 +97,24 @@ app.use((req, res, next) => {
     res.status(status).json({ message });
   });
 
+  // КРИТИЧЕСКИ ВАЖНО: Перехват неизвестных API-запросов
+  // Этот middleware должен быть зарегистрирован ПОСЛЕ всех API маршрутов,
+  // но ДО фронтенд-фолбэка, чтобы гарантировать возврат JSON вместо HTML
+  app.use("/api/*", (req, res) => {
+    logger.warn("API route not found", { 
+      path: req.path,
+      method: req.method,
+      userAgent: req.get('User-Agent'),
+      ip: req.ip
+    });
+    
+    res.status(404).json({ 
+      error: "API route not found",
+      path: req.path,
+      method: req.method
+    });
+  });
+
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes

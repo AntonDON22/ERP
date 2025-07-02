@@ -7,6 +7,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Используем модульные роутеры
   app.use("/api", apiRoutes);
 
+
+
   // Обработка ошибок
   app.use((err: any, req: any, res: any, next: any) => {
     apiLogger.error("Unhandled route error", { 

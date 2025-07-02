@@ -262,4 +262,22 @@ router.get("/metrics", async (req, res) => {
   }
 });
 
+// КРИТИЧЕСКИ ВАЖНО: Catch-all для неизвестных API маршрутов
+// Этот маршрут должен быть зарегистрирован в самом конце роутера
+// чтобы перехватывать все несуществующие API-запросы и возвращать JSON вместо HTML
+router.use("*", (req, res) => {
+  apiLogger.warn("API route not found", { 
+    path: req.originalUrl,
+    method: req.method,
+    userAgent: req.get('User-Agent'),
+    ip: req.ip
+  });
+  
+  res.status(404).json({ 
+    error: "API route not found",
+    path: req.originalUrl,
+    method: req.method
+  });
+});
+
 export default router;

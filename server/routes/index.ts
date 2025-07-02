@@ -7,7 +7,7 @@ import logRoutes from "./logRoutes";
 import { InventoryService } from "../services/inventoryService";
 import { ContractorService } from "../services/contractorService";
 import { WarehouseService } from "../services/warehouseService";
-import { CachedInventoryService } from "../services/cachedInventoryService";
+// Убрали CachedInventoryService - используем новую систему кеширования через inventoryService + cacheService
 import { PaginationService } from "../services/paginationService";
 import { PerformanceMetricsService } from "../services/performanceMetricsService";
 import { inventoryCache, mediumCache } from "../middleware/cacheMiddleware";
@@ -62,8 +62,8 @@ router.get("/inventory", inventoryCache, async (req, res) => {
   try {
     const warehouseId = req.query.warehouseId ? parseInt(req.query.warehouseId as string) : undefined;
     
-    // Используем кешированный сервис для улучшенной производительности
-    const inventory = await CachedInventoryService.getInventory(warehouseId);
+    // Используем обычный сервис - кеширование происходит через middleware
+    const inventory = await inventoryService.getInventory(warehouseId);
     
     // Валидация API ответа для гарантии согласованности
     try {
@@ -84,8 +84,8 @@ router.get("/inventory/availability", inventoryCache, async (req, res) => {
   try {
     const warehouseId = req.query.warehouseId ? parseInt(req.query.warehouseId as string) : undefined;
     
-    // Используем кешированный сервис для улучшенной производительности
-    const availability = await CachedInventoryService.getInventoryAvailability(warehouseId);
+    // Используем обычный сервис - кеширование происходит через middleware
+    const availability = await inventoryService.getInventoryAvailability(warehouseId);
     
     // Валидация API ответа для гарантии согласованности
     try {

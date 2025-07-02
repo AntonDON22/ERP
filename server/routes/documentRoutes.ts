@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { DocumentService } from "../services/documentService";
-import { CachedInventoryService } from "../services/cachedInventoryService";
+import { cacheService } from "../services/cacheService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
@@ -89,7 +89,8 @@ router.post("/create-receipt", async (req, res) => {
     res.status(201).json(document);
     
     // Инвалидируем кеш остатков после создания документа
-    await CachedInventoryService.invalidateInventoryCache(validatedData.warehouseId);
+    await cacheService.invalidatePattern("inventory:*");
+    apiLogger.info("Inventory cache invalidated after receipt document creation", { documentId: document.id });
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -113,12 +114,8 @@ router.put("/:id", async (req, res) => {
     }
     
     // Инвалидируем кеш остатков после обновления документа
-    if (validatedData.warehouseId) {
-      await CachedInventoryService.invalidateInventoryCache(validatedData.warehouseId);
-    } else {
-      // Если склад не указан, инвалидируем весь кеш
-      await CachedInventoryService.invalidateInventoryCache();
-    }
+    await cacheService.invalidatePattern("inventory:*");
+    apiLogger.info("Inventory cache invalidated after document update", { documentId: id });
     
     res.json(document);
   } catch (error) {
@@ -142,7 +139,8 @@ router.delete("/:id", async (req, res) => {
     }
     
     // Инвалидируем весь кеш остатков после удаления документа
-    await CachedInventoryService.invalidateInventoryCache();
+    await cacheService.invalidatePattern("inventory:*");
+    apiLogger.info("Inventory cache invalidated after document deletion", { documentId: id });
     
     res.json({ success: true });
   } catch (error) {
@@ -162,7 +160,8 @@ router.post("/delete-multiple", async (req, res) => {
     const result = await documentService.deleteMultiple(validatedData.documentIds);
     
     // Инвалидируем весь кеш остатков после множественного удаления
-    await CachedInventoryService.invalidateInventoryCache();
+    await cacheService.invalidatePattern("inventory:*");
+    apiLogger.info("Inventory cache invalidated after multiple document deletion", { deletedCount: result.deletedCount });
     
     res.json(result);
   } catch (error) {

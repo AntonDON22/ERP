@@ -306,7 +306,7 @@ export type Inventory = typeof inventory.$inferSelect;
 export const documentItemSchema = z.object({
   productId: zId,
   quantity: zQuantity,
-  price: zPrice,
+  price: zPrice.optional(), // Опциональное поле для документов списания
 });
 
 export const receiptDocumentSchema = z.object({

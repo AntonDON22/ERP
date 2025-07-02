@@ -113,7 +113,7 @@ router.post("/create", async (req, res) => {
       price: item.price
         ? typeof item.price === "string"
           ? parseFloat(item.price)
-          : item.price.toString()
+          : item.price
         : undefined,
     }));
 

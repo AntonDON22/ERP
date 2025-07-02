@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { documents, documentItems, inventory, reserves, orders, orderItems } from "../../shared/schema";
+import { documents, documentItems, inventory, reserves, orders, orderItems as orderItemsTable } from "../../shared/schema";
 import { eq, sql } from "drizzle-orm";
 import type { InsertDocument, CreateDocumentItem } from "../../shared/schema";
 import { getMoscowTime } from "../../shared/timeUtils";
@@ -203,7 +203,7 @@ export class TransactionService {
       // 2. Создаем позиции заказа
       for (const item of items) {
         await tx
-          .insert(orderItems)
+          .insert(orderItemsTable)
           .values({
             ...item,
             orderId: createdOrder.id,
@@ -360,6 +360,35 @@ export class TransactionService {
   async removeReservesForOrder(orderId: number): Promise<void> {
     await db.delete(reserves).where(eq(reserves.orderId, orderId));
     apiLogger.info("Reserves removed for order", { orderId });
+  }
+
+  // Метод для создания резервов для всех позиций заказа
+  async createReservesForOrder(orderId: number, warehouseId: number): Promise<void> {
+    try {
+      // Получаем все позиции заказа
+      const orderItemsList = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, orderId));
+      
+      if (orderItemsList.length === 0) {
+        apiLogger.warn("No order items found for creating reserves", { orderId });
+        return;
+      }
+
+      // Создаем резервы для каждой позиции
+      for (const orderItem of orderItemsList) {
+        await db.insert(reserves).values({
+          orderId,
+          productId: orderItem.productId,
+          warehouseId,
+          quantity: orderItem.quantity,
+          createdAt: getMoscowTime(),
+        });
+      }
+      
+      apiLogger.info("Reserves created for all order items", { orderId, warehouseId, itemsCount: orderItemsList.length });
+    } catch (error) {
+      apiLogger.error("Failed to create reserves for order", { orderId, warehouseId, error: error instanceof Error ? error.message : String(error) });
+      throw error;
+    }
   }
 
   // Метод для создания резерва для отдельной позиции заказа

@@ -149,11 +149,14 @@ export class OrderService {
       });
 
       if (newReserved && !currentOrder.isReserved) {
-        // Добавляем резервы - УПРОЩЕННАЯ ЛОГИКА для демонстрации
-        apiLogger.warn("Simplified reservation logic - adding reserves for existing order", { orderId });
-        
-        // В упрощенной версии просто логируем - реальная логика требует связанную таблицу order_items
-        apiLogger.info("Would add reserves for order items", { orderId, warehouseId: currentOrder.warehouseId });
+        // Добавляем резервы - создаем реальные записи в таблице reserves
+        try {
+          await transactionService.createReservesForOrder(orderId, currentOrder.warehouseId!);
+          apiLogger.info("Order reserves created successfully", { orderId, warehouseId: currentOrder.warehouseId });
+        } catch (error) {
+          apiLogger.error("Failed to create order reserves", { orderId, error: error instanceof Error ? error.message : String(error) });
+          throw error;
+        }
       } else if (!newReserved && currentOrder.isReserved) {
         // Удаляем резервы - используем прямой SQL запрос через transactionService
         try {

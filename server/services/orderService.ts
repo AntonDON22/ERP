@@ -7,6 +7,7 @@ import {
   type Order,
   type CreateOrderItem,
   reserves,
+  orderItems,
 } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { apiLogger } from "../../shared/logger";
@@ -21,6 +22,28 @@ export class OrderService {
 
   async getById(id: number): Promise<Order | undefined> {
     return storage.getOrder(id);
+  }
+
+  async getOrderItems(orderId: number): Promise<any[]> {
+    try {
+      const items = await db
+        .select({
+          id: orderItems.id,
+          productId: orderItems.productId,
+          quantity: orderItems.quantity,
+          price: orderItems.price,
+        })
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId));
+      
+      return items;
+    } catch (error) {
+      apiLogger.error("Failed to get order items", {
+        orderId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   async create(

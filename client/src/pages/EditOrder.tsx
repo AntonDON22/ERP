@@ -62,7 +62,46 @@ export default function EditOrder() {
     name: "items",
   });
 
-  // Заполнение данных формы при загрузке заказа
+  // Загрузка позиций заказа отдельно
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [isLoadingItems, setIsLoadingItems] = useState(false);
+
+  useEffect(() => {
+    const loadOrderItems = async () => {
+      if (orderId && orderData) {
+        try {
+          setIsLoadingItems(true);
+          const response = await fetch(`/api/orders/${orderId}/items`);
+          const items = await response.json();
+          setOrderItems(items);
+          
+          if (items && items.length > 0) {
+            form.setValue(
+              "items",
+              items.map((item: any) => ({
+                productId: item.productId,
+                quantity: parseFloat(item.quantity),
+                price: parseFloat(item.price),
+              }))
+            );
+          } else {
+            // Если нет товаров, создаем пустой товар
+            form.setValue("items", [{ productId: 6, quantity: 1, price: 0 }]);
+          }
+        } catch (error) {
+          console.error("Ошибка загрузки позиций заказа:", error);
+          // Fallback к пустому товару
+          form.setValue("items", [{ productId: 6, quantity: 1, price: 0 }]);
+        } finally {
+          setIsLoadingItems(false);
+        }
+      }
+    };
+
+    loadOrderItems();
+  }, [orderId, orderData, form]);
+
+  // Заполнение основных данных формы при загрузке заказа
   useEffect(() => {
     if (orderData) {
       console.log("🔄 Заполнение формы данными заказа:", orderData);
@@ -77,21 +116,6 @@ export default function EditOrder() {
         "status",
         (orderData.status || "Новый") as "Новый" | "В работе" | "Выполнен" | "Отменен"
       );
-
-      if (orderData.items && orderData.items.length > 0) {
-        // Очищаем существующие элементы и добавляем новые
-        form.setValue(
-          "items",
-          orderData.items.map((item: any) => ({
-            productId: item.productId,
-            quantity: item.quantity,
-            price: item.price,
-          }))
-        );
-      } else {
-        // Если нет товаров, создаем пустой товар но с правильным productId
-        form.setValue("items", [{ productId: 6, quantity: 1, price: 0 }]); // Используем ID существующего товара
-      }
     }
   }, [orderData, form]);
 

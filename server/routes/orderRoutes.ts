@@ -48,6 +48,25 @@ router.get("/:id", async (req, res) => {
   }
 });
 
+// GET /api/orders/:id/items
+router.get("/:id/items", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Некорректный ID заказа" });
+    }
+
+    const orderItems = await orderService.getOrderItems(id);
+    res.json(orderItems);
+  } catch (error) {
+    apiLogger.error("Failed to get order items", {
+      orderId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    res.status(500).json({ error: "Ошибка получения позиций заказа" });
+  }
+});
+
 // POST /api/orders/create
 router.post("/create", async (req, res) => {
   try {

@@ -144,8 +144,7 @@ export class InventoryService {
             WHERE warehouse_id = $1
             GROUP BY product_id
           ) warehouse_reserved ON p.id = warehouse_reserved.product_id
-          WHERE COALESCE(warehouse_qty.quantity, 0) > 0 
-             OR COALESCE(warehouse_reserved.reserved, 0) > 0
+          -- Показываем ВСЕ товары для склада (даже с нулевыми остатками)
           ORDER BY p.name
         `;
         result = await pool.query(queryText, [warehouseId]);

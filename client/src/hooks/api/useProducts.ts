@@ -69,7 +69,7 @@ export function useDeleteProducts() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ids: number[]) => apiRequest("/api/products/batch-delete", "DELETE", { ids }),
+    mutationFn: (ids: number[]) => apiRequest("/api/products/delete-multiple", "POST", { productIds: ids }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },

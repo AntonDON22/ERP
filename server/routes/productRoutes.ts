@@ -15,6 +15,8 @@ const updateProductSchema = insertProductSchema.partial();
 const deleteProductsSchema = z.object({
   productIds: z.array(z.number()).min(1, "Укажите хотя бы один товар для удаления"),
 });
+
+
 const getProductSchema = z.object({
   id: z
     .string()
@@ -126,6 +128,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Ошибка удаления товара" });
   }
 });
+
 
 // POST /api/products/delete-multiple
 router.post("/delete-multiple", async (req, res) => {

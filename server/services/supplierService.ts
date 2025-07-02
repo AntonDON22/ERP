@@ -25,12 +25,14 @@ export class SupplierService {
     return await storage.deleteSupplier(id);
   }
 
-  async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
+  async deleteMultiple(
+    ids: number[]
+  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error("Укажите массив ID поставщиков для удаления");
     }
 
-    const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
+    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
     if (validIds.length !== ids.length) {
       throw new Error("Некорректные ID поставщиков");
     }
@@ -43,13 +45,16 @@ export class SupplierService {
         const success = await storage.deleteSupplier(id);
         if (success) {
           deletedCount++;
-          results.push({ id, status: 'deleted' });
+          results.push({ id, status: "deleted" });
         } else {
-          results.push({ id, status: 'not_found' });
+          results.push({ id, status: "not_found" });
         }
       } catch (error) {
-        apiLogger.error(`Error deleting supplier ${id}`, { supplierId: id, error: error instanceof Error ? error.message : String(error) });
-        results.push({ id, status: 'error' });
+        apiLogger.error(`Error deleting supplier ${id}`, {
+          supplierId: id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        results.push({ id, status: "error" });
       }
     }
 
@@ -68,11 +73,11 @@ export class SupplierService {
           name: supplierData.name || supplierData.Название || "Без названия",
           website: String(supplierData.website || supplierData.Вебсайт || ""),
         };
-        
+
         // Проверяем наличие ID для обновления
         const id = supplierData.ID || supplierData.id;
         let supplier;
-        
+
         if (id && Number.isInteger(Number(id))) {
           const numericId = Number(id);
           // Обновляем существующего поставщика
@@ -85,10 +90,13 @@ export class SupplierService {
           // Создаем нового поставщика
           supplier = await storage.createSupplier(validatedData);
         }
-        
+
         results.push(supplier);
       } catch (error) {
-        apiLogger.error('Error importing supplier', { supplierData, error: error instanceof Error ? error.message : String(error) });
+        apiLogger.error("Error importing supplier", {
+          supplierData,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

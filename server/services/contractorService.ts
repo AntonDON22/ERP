@@ -1,5 +1,9 @@
 import { storage } from "../storage";
-import { insertContractorSchema, type InsertContractor, type Contractor } from "../../shared/schema";
+import {
+  insertContractorSchema,
+  type InsertContractor,
+  type Contractor,
+} from "../../shared/schema";
 import { apiLogger } from "../../shared/logger";
 
 export class ContractorService {
@@ -29,12 +33,14 @@ export class ContractorService {
     return await storage.deleteContractor(id);
   }
 
-  async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
+  async deleteMultiple(
+    ids: number[]
+  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error("Укажите массив ID контрагентов для удаления");
     }
 
-    const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
+    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
     if (validIds.length !== ids.length) {
       throw new Error("Некорректные ID контрагентов");
     }
@@ -47,13 +53,16 @@ export class ContractorService {
         const success = await storage.deleteContractor(id);
         if (success) {
           deletedCount++;
-          results.push({ id, status: 'deleted' });
+          results.push({ id, status: "deleted" });
         } else {
-          results.push({ id, status: 'not_found' });
+          results.push({ id, status: "not_found" });
         }
       } catch (error) {
-        apiLogger.error(`Error deleting contractor ${id}`, { contractorId: id, error: error instanceof Error ? error.message : String(error) });
-        results.push({ id, status: 'error' });
+        apiLogger.error(`Error deleting contractor ${id}`, {
+          contractorId: id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        results.push({ id, status: "error" });
       }
     }
 
@@ -72,11 +81,11 @@ export class ContractorService {
           name: contractorData.name || contractorData.Название || "Без названия",
           website: String(contractorData.website || contractorData.Вебсайт || ""),
         };
-        
+
         // Проверяем наличие ID для обновления
         const id = contractorData.ID || contractorData.id;
         let contractor;
-        
+
         if (id && Number.isInteger(Number(id))) {
           const numericId = Number(id);
           // Обновляем существующего контрагента
@@ -89,10 +98,13 @@ export class ContractorService {
           // Создаем нового контрагента
           contractor = await storage.createContractor(validatedData);
         }
-        
+
         results.push(contractor);
       } catch (error) {
-        apiLogger.error('Error importing contractor', { contractorData, error: error instanceof Error ? error.message : String(error) });
+        apiLogger.error("Error importing contractor", {
+          contractorData,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

@@ -9,13 +9,13 @@ const editConfig: DocumentTypeConfig = {
   submitLabel: "Сохранить",
   successMessage: "Документ успешно сохранен",
   backUrl: "/documents",
-  mutationHook: useCreateReceiptDocument
+  mutationHook: useCreateReceiptDocument,
 };
 
 export default function EditDocument() {
   const { id } = useParams();
   const documentId = Number(id);
-  
+
   const { data: document, isLoading, error } = useDocument(documentId);
 
   if (isLoading) {
@@ -29,13 +29,8 @@ export default function EditDocument() {
   // Адаптер для совместимости типов (null -> undefined)
   const adaptedDocument = {
     ...document,
-    warehouseId: document.warehouseId ?? undefined
+    warehouseId: document.warehouseId ?? undefined,
   } as any; // Временный cast для совместимости типов
 
-  return (
-    <Document 
-      config={editConfig}
-      documentData={adaptedDocument}
-    />
-  );
+  return <Document config={editConfig} documentData={adaptedDocument} />;
 }

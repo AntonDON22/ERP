@@ -16,7 +16,7 @@ const columns: ColumnConfig<Warehouse>[] = [
     multiline: true,
   },
   {
-    key: "address", 
+    key: "address",
     label: "Адрес",
     minWidth: 300,
     sortable: true,

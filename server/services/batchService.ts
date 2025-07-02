@@ -9,26 +9,25 @@ import { BATCH_SIZES } from "@shared/constants";
  * Заменяет N+1 запросы на эффективные массовые операции
  */
 export class BatchService {
-  
   /**
    * 📦 Массовое удаление товаров
    */
   async deleteProducts(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
-    
-    const endOperation = dbLogger.startOperation('batchDeleteProducts');
+
+    const endOperation = dbLogger.startOperation("batchDeleteProducts");
     try {
       // Разделяем на batch'и для предотвращения timeout'ов
       await this.processBatches(ids, async (batch) => {
         await db.delete(products).where(inArray(products.id, batch));
       });
-      
+
       endOperation();
       return true;
     } catch (error) {
-      dbLogger.error('Error in batch delete products', { 
+      dbLogger.error("Error in batch delete products", {
         error: getErrorMessage(error),
-        idsCount: ids.length 
+        idsCount: ids.length,
       });
       endOperation();
       return false;
@@ -40,19 +39,19 @@ export class BatchService {
    */
   async deleteSuppliers(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
-    
-    const endOperation = dbLogger.startOperation('batchDeleteSuppliers');
+
+    const endOperation = dbLogger.startOperation("batchDeleteSuppliers");
     try {
       await this.processBatches(ids, async (batch) => {
         await db.delete(suppliers).where(inArray(suppliers.id, batch));
       });
-      
+
       endOperation();
       return true;
     } catch (error) {
-      dbLogger.error('Error in batch delete suppliers', { 
+      dbLogger.error("Error in batch delete suppliers", {
         error: getErrorMessage(error),
-        idsCount: ids.length 
+        idsCount: ids.length,
       });
       endOperation();
       return false;
@@ -64,19 +63,19 @@ export class BatchService {
    */
   async deleteContractors(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
-    
-    const endOperation = dbLogger.startOperation('batchDeleteContractors');
+
+    const endOperation = dbLogger.startOperation("batchDeleteContractors");
     try {
       await this.processBatches(ids, async (batch) => {
         await db.delete(contractors).where(inArray(contractors.id, batch));
       });
-      
+
       endOperation();
       return true;
     } catch (error) {
-      dbLogger.error('Error in batch delete contractors', { 
+      dbLogger.error("Error in batch delete contractors", {
         error: getErrorMessage(error),
-        idsCount: ids.length 
+        idsCount: ids.length,
       });
       endOperation();
       return false;
@@ -88,19 +87,19 @@ export class BatchService {
    */
   async deleteWarehouses(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
-    
-    const endOperation = dbLogger.startOperation('batchDeleteWarehouses');
+
+    const endOperation = dbLogger.startOperation("batchDeleteWarehouses");
     try {
       await this.processBatches(ids, async (batch) => {
         await db.delete(warehouses).where(inArray(warehouses.id, batch));
       });
-      
+
       endOperation();
       return true;
     } catch (error) {
-      dbLogger.error('Error in batch delete warehouses', { 
+      dbLogger.error("Error in batch delete warehouses", {
         error: getErrorMessage(error),
-        idsCount: ids.length 
+        idsCount: ids.length,
       });
       endOperation();
       return false;
@@ -112,19 +111,19 @@ export class BatchService {
    */
   async deleteDocuments(ids: number[]): Promise<boolean> {
     if (ids.length === 0) return true;
-    
-    const endOperation = dbLogger.startOperation('batchDeleteDocuments');
+
+    const endOperation = dbLogger.startOperation("batchDeleteDocuments");
     try {
       await this.processBatches(ids, async (batch) => {
         await db.delete(documents).where(inArray(documents.id, batch));
       });
-      
+
       endOperation();
       return true;
     } catch (error) {
-      dbLogger.error('Error in batch delete documents', { 
+      dbLogger.error("Error in batch delete documents", {
         error: getErrorMessage(error),
-        idsCount: ids.length 
+        idsCount: ids.length,
       });
       endOperation();
       return false;
@@ -161,7 +160,7 @@ export class BatchService {
     return {
       totalItems,
       batchCount,
-      estimatedTime
+      estimatedTime,
     };
   }
 
@@ -175,11 +174,11 @@ export class BatchService {
     batchSize: number = BATCH_SIZES.MEDIUM
   ): Promise<void> {
     const totalBatches = Math.ceil(items.length / batchSize);
-    
+
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
       await operation(batch);
-      
+
       const currentBatch = Math.floor(i / batchSize) + 1;
       if (onProgress) {
         onProgress(currentBatch, totalBatches);

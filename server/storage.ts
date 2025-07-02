@@ -1,4 +1,36 @@
-import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, logs, orders, orderItems, reserves, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse, type Log, type Order, type InsertOrder, type OrderItem } from "@shared/schema";
+import {
+  users,
+  products,
+  suppliers,
+  contractors,
+  documents,
+  inventory,
+  documentItems,
+  warehouses,
+  logs,
+  orders,
+  orderItems,
+  reserves,
+  type User,
+  type InsertUser,
+  type Product,
+  type InsertProduct,
+  type Supplier,
+  type InsertSupplier,
+  type Contractor,
+  type InsertContractor,
+  type DocumentRecord,
+  type InsertDocument,
+  type DocumentItem,
+  type CreateDocumentItem,
+  type Inventory,
+  type Warehouse,
+  type InsertWarehouse,
+  type Log,
+  type Order,
+  type InsertOrder,
+  type OrderItem,
+} from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
 import { getMoscowTime } from "../shared/timeUtils";
@@ -8,10 +40,12 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Inventory
-  getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>>;
-  
+  getInventory(
+    warehouseId?: number
+  ): Promise<Array<{ id: number; name: string; quantity: number }>>;
+
   // Products
   getProducts(): Promise<Product[]>;
   getProduct(id: number): Promise<Product | undefined>;
@@ -19,45 +53,54 @@ export interface IStorage {
   createProduct(product: InsertProduct): Promise<Product>;
   updateProduct(id: number, product: Partial<InsertProduct>): Promise<Product | undefined>;
   deleteProduct(id: number): Promise<boolean>;
-  
+
   // Suppliers
   getSuppliers(): Promise<Supplier[]>;
   getSupplier(id: number): Promise<Supplier | undefined>;
   createSupplier(supplier: InsertSupplier): Promise<Supplier>;
   updateSupplier(id: number, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
   deleteSupplier(id: number): Promise<boolean>;
-  
+
   // Contractors
   getContractors(): Promise<Contractor[]>;
   getContractor(id: number): Promise<Contractor | undefined>;
   createContractor(contractor: InsertContractor): Promise<Contractor>;
-  updateContractor(id: number, contractor: Partial<InsertContractor>): Promise<Contractor | undefined>;
+  updateContractor(
+    id: number,
+    contractor: Partial<InsertContractor>
+  ): Promise<Contractor | undefined>;
   deleteContractor(id: number): Promise<boolean>;
-  
+
   // Warehouses
   getWarehouses(): Promise<Warehouse[]>;
   getWarehouse(id: number): Promise<Warehouse | undefined>;
   createWarehouse(warehouse: InsertWarehouse): Promise<Warehouse>;
   updateWarehouse(id: number, warehouse: Partial<InsertWarehouse>): Promise<Warehouse | undefined>;
   deleteWarehouse(id: number): Promise<boolean>;
-  
+
   // Documents
   getDocuments(): Promise<DocumentRecord[]>;
   getDocument(id: number): Promise<DocumentRecord | undefined>;
   createDocument(document: InsertDocument): Promise<DocumentRecord>;
-  updateDocument(id: number, document: Partial<InsertDocument>): Promise<DocumentRecord | undefined>;
+  updateDocument(
+    id: number,
+    document: Partial<InsertDocument>
+  ): Promise<DocumentRecord | undefined>;
   deleteDocument(id: number): Promise<boolean>;
-  
+
   // Receipt Documents with FIFO
-  createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord>;
-  
+  createReceiptDocument(
+    document: InsertDocument,
+    items: CreateDocumentItem[]
+  ): Promise<DocumentRecord>;
+
   // Orders
   getOrders(): Promise<Order[]>;
   getOrder(id: number): Promise<Order | undefined>;
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order | undefined>;
   deleteOrder(id: number): Promise<boolean>;
-  
+
   // Logs
   getLogs(params: {
     level?: string;
@@ -100,14 +143,12 @@ export class MemStorage implements IStorage {
   }
 
   async getUserByUsername(username: string): Promise<User | undefined> {
-    return Array.from(this.users.values()).find(
-      (user) => user.username === username,
-    );
+    return Array.from(this.users.values()).find((user) => user.username === username);
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id, role: 'user' };
+    const user: User = { ...insertUser, id, role: "user" };
     this.users.set(id, user);
     return user;
   }
@@ -121,15 +162,13 @@ export class MemStorage implements IStorage {
   }
 
   async getProductBySku(sku: string): Promise<Product | undefined> {
-    return Array.from(this.products.values()).find(
-      (product) => product.sku === sku,
-    );
+    return Array.from(this.products.values()).find((product) => product.sku === sku);
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
     const id = this.currentProductId++;
-    const product: Product = { 
-      ...insertProduct, 
+    const product: Product = {
+      ...insertProduct,
       id,
       price: insertProduct.price || "0",
       purchasePrice: insertProduct.purchasePrice || null,
@@ -143,14 +182,17 @@ export class MemStorage implements IStorage {
     return product;
   }
 
-  async updateProduct(id: number, updateData: Partial<InsertProduct>): Promise<Product | undefined> {
+  async updateProduct(
+    id: number,
+    updateData: Partial<InsertProduct>
+  ): Promise<Product | undefined> {
     const product = this.products.get(id);
     if (!product) {
       return undefined;
     }
 
-    const updatedProduct: Product = { 
-      ...product, 
+    const updatedProduct: Product = {
+      ...product,
       ...updateData,
       id, // Ensure ID doesn't change
     };
@@ -173,23 +215,26 @@ export class MemStorage implements IStorage {
 
   async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
     const id = this.currentSupplierId++;
-    const supplier: Supplier = { 
-      ...insertSupplier, 
+    const supplier: Supplier = {
+      ...insertSupplier,
       id,
-      website: insertSupplier.website || null
+      website: insertSupplier.website || null,
     };
     this.suppliers.set(id, supplier);
     return supplier;
   }
 
-  async updateSupplier(id: number, updateData: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+  async updateSupplier(
+    id: number,
+    updateData: Partial<InsertSupplier>
+  ): Promise<Supplier | undefined> {
     const supplier = this.suppliers.get(id);
     if (!supplier) {
       return undefined;
     }
 
-    const updatedSupplier: Supplier = { 
-      ...supplier, 
+    const updatedSupplier: Supplier = {
+      ...supplier,
       ...updateData,
       id,
     };
@@ -212,19 +257,22 @@ export class MemStorage implements IStorage {
 
   async createContractor(insertContractor: InsertContractor): Promise<Contractor> {
     const id = this.currentContractorId++;
-    const contractor: Contractor = { 
+    const contractor: Contractor = {
       ...insertContractor,
       website: insertContractor.website || null,
-      id 
+      id,
     };
     this.contractors.set(id, contractor);
     return contractor;
   }
 
-  async updateContractor(id: number, updateData: Partial<InsertContractor>): Promise<Contractor | undefined> {
+  async updateContractor(
+    id: number,
+    updateData: Partial<InsertContractor>
+  ): Promise<Contractor | undefined> {
     const existingContractor = this.contractors.get(id);
     if (!existingContractor) return undefined;
-    
+
     const updatedContractor: Contractor = {
       ...existingContractor,
       ...updateData,
@@ -249,19 +297,22 @@ export class MemStorage implements IStorage {
 
   async createWarehouse(insertWarehouse: InsertWarehouse): Promise<Warehouse> {
     const id = this.currentWarehouseId++;
-    const warehouse: Warehouse = { 
-      ...insertWarehouse, 
+    const warehouse: Warehouse = {
+      ...insertWarehouse,
       id,
-      address: insertWarehouse.address || null
+      address: insertWarehouse.address || null,
     };
     this.warehouses.set(id, warehouse);
     return warehouse;
   }
 
-  async updateWarehouse(id: number, updateData: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+  async updateWarehouse(
+    id: number,
+    updateData: Partial<InsertWarehouse>
+  ): Promise<Warehouse | undefined> {
     const existingWarehouse = this.warehouses.get(id);
     if (!existingWarehouse) return undefined;
-    
+
     const updatedWarehouse: Warehouse = {
       ...existingWarehouse,
       ...updateData,
@@ -288,7 +339,10 @@ export class MemStorage implements IStorage {
     throw new Error("Documents not supported in MemStorage");
   }
 
-  async updateDocument(id: number, document: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
+  async updateDocument(
+    id: number,
+    document: Partial<InsertDocument>
+  ): Promise<DocumentRecord | undefined> {
     return undefined;
   }
 
@@ -296,16 +350,21 @@ export class MemStorage implements IStorage {
     return false;
   }
 
-  async getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
+  async getInventory(
+    warehouseId?: number
+  ): Promise<Array<{ id: number; name: string; quantity: number }>> {
     const allProducts = Array.from(this.products.values());
-    return allProducts.map(product => ({
+    return allProducts.map((product) => ({
       id: product.id,
       name: product.name,
-      quantity: 0 // MemStorage doesn't support real inventory tracking
+      quantity: 0, // MemStorage doesn't support real inventory tracking
     }));
   }
 
-  async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
+  async createReceiptDocument(
+    document: InsertDocument,
+    items: CreateDocumentItem[]
+  ): Promise<DocumentRecord> {
     throw new Error("Receipt documents not supported in MemStorage");
   }
 
@@ -339,13 +398,15 @@ export class MemStorage implements IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
-    const endOperation = dbLogger.startOperation('getInventory', { warehouseId });
-    
+  async getInventory(
+    warehouseId?: number
+  ): Promise<Array<{ id: number; name: string; quantity: number }>> {
+    const endOperation = dbLogger.startOperation("getInventory", { warehouseId });
+
     try {
-      console.log('[DB] Starting getInventory query...');
+      console.log("[DB] Starting getInventory query...");
       let result;
-      
+
       // Попытка использовать материализованное представление для лучшей производительности
       try {
         if (warehouseId) {
@@ -372,15 +433,18 @@ export class DatabaseStorage implements IStorage {
             ORDER BY p.id
           `);
         }
-        dbLogger.info('Материализованное представление использовано для getInventory', { 
-          warehouseId, 
-          rowCount: result.rows?.length || 0 
+        dbLogger.info("Материализованное представление использовано для getInventory", {
+          warehouseId,
+          rowCount: result.rows?.length || 0,
         });
       } catch (materializedError) {
-        dbLogger.warn('Материализованное представление недоступно, fallback к стандартному запросу', { 
-          error: getErrorMessage(materializedError) 
-        });
-        
+        dbLogger.warn(
+          "Материализованное представление недоступно, fallback к стандартному запросу",
+          {
+            error: getErrorMessage(materializedError),
+          }
+        );
+
         // Fallback к стандартному запросу
         if (warehouseId) {
           result = await db
@@ -398,7 +462,7 @@ export class DatabaseStorage implements IStorage {
                     END
                   ), 0
                 )
-              `.as('quantity')
+              `.as("quantity"),
             })
             .from(products)
             .leftJoin(inventory, eq(products.id, inventory.productId))
@@ -419,7 +483,7 @@ export class DatabaseStorage implements IStorage {
                     END
                   ), 0
                 )
-              `.as('quantity')
+              `.as("quantity"),
             })
             .from(products)
             .leftJoin(inventory, eq(products.id, inventory.productId))
@@ -427,19 +491,21 @@ export class DatabaseStorage implements IStorage {
             .groupBy(products.id, products.name);
         }
       }
-      
+
       // Преобразуем результат в унифицированный формат
-      const resultData = Array.isArray(result) ? result : ((result as any).rows || []);
+      const resultData = Array.isArray(result) ? result : (result as any).rows || [];
       const mappedResult = resultData.map((item: any) => ({
         id: Number(item.id),
         name: String(item.name),
-        quantity: Number(item.quantity) || 0
+        quantity: Number(item.quantity) || 0,
       }));
-      
-      console.log(`[DB] getInventory completed in ${endOperation()}ms, returned ${mappedResult.length} items`);
+
+      console.log(
+        `[DB] getInventory completed in ${endOperation()}ms, returned ${mappedResult.length} items`
+      );
       return mappedResult;
     } catch (error) {
-      dbLogger.error('Error in getInventory', { error: getErrorMessage(error), warehouseId });
+      dbLogger.error("Error in getInventory", { error: getErrorMessage(error), warehouseId });
       endOperation();
       throw error;
     }
@@ -456,21 +522,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
+    const [user] = await db.insert(users).values(insertUser).returning();
     return user;
   }
 
   async getProducts(): Promise<Product[]> {
-    const endOperation = dbLogger.startOperation('getProducts');
+    const endOperation = dbLogger.startOperation("getProducts");
     try {
       const result = await db.select().from(products);
       endOperation();
       return result;
     } catch (error) {
-      dbLogger.error('Error in getProducts', { error: getErrorMessage(error) });
+      dbLogger.error("Error in getProducts", { error: getErrorMessage(error) });
       endOperation();
       throw error;
     }
@@ -491,8 +554,8 @@ export class DatabaseStorage implements IStorage {
     const cleanNumericValue = (value: string | null | undefined): string | null => {
       if (!value || value === "") return null;
       const cleaned = String(value)
-        .replace(/[^\d.,]/g, '') // Удаляем все кроме цифр, точек и запятых
-        .replace(',', '.') // Заменяем запятые на точки
+        .replace(/[^\d.,]/g, "") // Удаляем все кроме цифр, точек и запятых
+        .replace(",", ".") // Заменяем запятые на точки
         .trim();
       return cleaned || null;
     };
@@ -507,16 +570,14 @@ export class DatabaseStorage implements IStorage {
       height: cleanNumericValue(insertProduct.height),
     };
 
-
-
-    const [product] = await db
-      .insert(products)
-      .values(cleanedProduct)
-      .returning();
+    const [product] = await db.insert(products).values(cleanedProduct).returning();
     return product;
   }
 
-  async updateProduct(id: number, updateData: Partial<InsertProduct>): Promise<Product | undefined> {
+  async updateProduct(
+    id: number,
+    updateData: Partial<InsertProduct>
+  ): Promise<Product | undefined> {
     const [product] = await db
       .update(products)
       .set(updateData)
@@ -526,21 +587,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    const result = await db
-      .delete(products)
-      .where(eq(products.id, id));
+    const result = await db.delete(products).where(eq(products.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Suppliers
   async getSuppliers(): Promise<Supplier[]> {
     const startTime = Date.now();
-    console.log('[DB] Starting getSuppliers query...');
-    
+    console.log("[DB] Starting getSuppliers query...");
+
     try {
       const result = await db.select().from(suppliers);
       const endTime = Date.now();
-      console.log(`[DB] getSuppliers completed in ${endTime - startTime}ms, returned ${result.length} suppliers`);
+      console.log(
+        `[DB] getSuppliers completed in ${endTime - startTime}ms, returned ${result.length} suppliers`
+      );
       return result;
     } catch (error) {
       const endTime = Date.now();
@@ -555,14 +616,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSupplier(insertSupplier: InsertSupplier): Promise<Supplier> {
-    const [supplier] = await db
-      .insert(suppliers)
-      .values(insertSupplier)
-      .returning();
+    const [supplier] = await db.insert(suppliers).values(insertSupplier).returning();
     return supplier;
   }
 
-  async updateSupplier(id: number, updateData: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+  async updateSupplier(
+    id: number,
+    updateData: Partial<InsertSupplier>
+  ): Promise<Supplier | undefined> {
     const [supplier] = await db
       .update(suppliers)
       .set(updateData)
@@ -572,20 +633,20 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteSupplier(id: number): Promise<boolean> {
-    const result = await db
-      .delete(suppliers)
-      .where(eq(suppliers.id, id));
+    const result = await db.delete(suppliers).where(eq(suppliers.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   async getContractors(): Promise<Contractor[]> {
     console.log(`[DB] Starting getContractors query...`);
     const startTime = Date.now();
-    
+
     try {
       const result = await db.select().from(contractors);
       const endTime = Date.now();
-      console.log(`[DB] getContractors completed in ${endTime - startTime}ms, returned ${result.length} contractors`);
+      console.log(
+        `[DB] getContractors completed in ${endTime - startTime}ms, returned ${result.length} contractors`
+      );
       return result;
     } catch (error) {
       const endTime = Date.now();
@@ -600,14 +661,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createContractor(insertContractor: InsertContractor): Promise<Contractor> {
-    const [contractor] = await db
-      .insert(contractors)
-      .values(insertContractor)
-      .returning();
+    const [contractor] = await db.insert(contractors).values(insertContractor).returning();
     return contractor;
   }
 
-  async updateContractor(id: number, updateData: Partial<InsertContractor>): Promise<Contractor | undefined> {
+  async updateContractor(
+    id: number,
+    updateData: Partial<InsertContractor>
+  ): Promise<Contractor | undefined> {
     const [contractor] = await db
       .update(contractors)
       .set(updateData)
@@ -617,21 +678,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteContractor(id: number): Promise<boolean> {
-    const result = await db
-      .delete(contractors)
-      .where(eq(contractors.id, id));
+    const result = await db.delete(contractors).where(eq(contractors.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Warehouses
   async getWarehouses(): Promise<Warehouse[]> {
     const startTime = Date.now();
-    console.log('[DB] Starting getWarehouses query...');
-    
+    console.log("[DB] Starting getWarehouses query...");
+
     try {
       const result = await db.select().from(warehouses);
       const endTime = Date.now();
-      console.log(`[DB] getWarehouses completed in ${endTime - startTime}ms, returned ${result.length} warehouses`);
+      console.log(
+        `[DB] getWarehouses completed in ${endTime - startTime}ms, returned ${result.length} warehouses`
+      );
       return result;
     } catch (error) {
       const endTime = Date.now();
@@ -646,14 +707,14 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWarehouse(insertWarehouse: InsertWarehouse): Promise<Warehouse> {
-    const [warehouse] = await db
-      .insert(warehouses)
-      .values(insertWarehouse)
-      .returning();
+    const [warehouse] = await db.insert(warehouses).values(insertWarehouse).returning();
     return warehouse;
   }
 
-  async updateWarehouse(id: number, updateData: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+  async updateWarehouse(
+    id: number,
+    updateData: Partial<InsertWarehouse>
+  ): Promise<Warehouse | undefined> {
     const [warehouse] = await db
       .update(warehouses)
       .set(updateData)
@@ -663,21 +724,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteWarehouse(id: number): Promise<boolean> {
-    const result = await db
-      .delete(warehouses)
-      .where(eq(warehouses.id, id));
+    const result = await db.delete(warehouses).where(eq(warehouses.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 
   // Documents
   async getDocuments(): Promise<DocumentRecord[]> {
     const startTime = Date.now();
-    console.log('[DB] Starting getDocuments query...');
-    
+    console.log("[DB] Starting getDocuments query...");
+
     try {
       const result = await db.select().from(documents);
       const endTime = Date.now();
-      console.log(`[DB] getDocuments completed in ${endTime - startTime}ms, returned ${result.length} documents`);
+      console.log(
+        `[DB] getDocuments completed in ${endTime - startTime}ms, returned ${result.length} documents`
+      );
       return result;
     } catch (error) {
       const endTime = Date.now();
@@ -689,33 +750,32 @@ export class DatabaseStorage implements IStorage {
   async getDocument(id: number): Promise<DocumentRecord | undefined> {
     console.log(`[DB] Starting getDocument for ID ${id}...`);
     const startTime = Date.now();
-    
+
     try {
       const [document] = await db.select().from(documents).where(eq(documents.id, id));
-      
+
       if (!document) {
         console.log(`[DB] Document ${id} not found`);
         return undefined;
       }
 
       // Получаем элементы документа
-      const items = await db
-        .select()
-        .from(documentItems)
-        .where(eq(documentItems.documentId, id));
+      const items = await db.select().from(documentItems).where(eq(documentItems.documentId, id));
 
       const endTime = Date.now();
-      console.log(`[DB] getDocument completed in ${endTime - startTime}ms for document ${id} with ${items.length} items`);
-      
+      console.log(
+        `[DB] getDocument completed in ${endTime - startTime}ms for document ${id} with ${items.length} items`
+      );
+
       // Возвращаем документ с элементами
       return {
         ...document,
-        items: items.map(item => ({
+        items: items.map((item) => ({
           id: item.id,
           productId: item.productId,
           quantity: Number(item.quantity),
-          price: Number(item.price)
-        }))
+          price: Number(item.price),
+        })),
       } as any;
     } catch (error) {
       const endTime = Date.now();
@@ -726,30 +786,30 @@ export class DatabaseStorage implements IStorage {
 
   async createDocument(insertDocument: InsertDocument): Promise<DocumentRecord> {
     // Сначала создаем документ без имени, чтобы получить ID
-    const [document] = await db
-      .insert(documents)
-      .values(insertDocument)
-      .returning();
-    
+    const [document] = await db.insert(documents).values(insertDocument).returning();
+
     // Генерируем название в формате "Тип+ID"
     const name = `${document.type}${document.id}`;
-    
+
     // Обновляем документ с сгенерированным названием
     const [updatedDocument] = await db
       .update(documents)
       .set({ name })
       .where(eq(documents.id, document.id))
       .returning();
-    
+
     return updatedDocument;
   }
 
-  async updateDocument(id: number, updateData: Partial<InsertDocument>): Promise<DocumentRecord | undefined> {
+  async updateDocument(
+    id: number,
+    updateData: Partial<InsertDocument>
+  ): Promise<DocumentRecord | undefined> {
     try {
       return await db.transaction(async (tx) => {
         // Получаем текущий документ для сравнения статуса
         const [currentDocument] = await tx.select().from(documents).where(eq(documents.id, id));
-        
+
         if (!currentDocument) {
           return undefined;
         }
@@ -757,9 +817,9 @@ export class DatabaseStorage implements IStorage {
         // Автоматически устанавливаем время изменения
         const updatePayload = {
           ...updateData,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         };
-        
+
         const [updatedDocument] = await tx
           .update(documents)
           .set(updatePayload)
@@ -781,26 +841,29 @@ export class DatabaseStorage implements IStorage {
             .from(documentItems)
             .where(eq(documentItems.documentId, id));
 
-          if (oldStatus === 'posted' && newStatus === 'draft') {
+          if (oldStatus === "posted" && newStatus === "draft") {
             // Документ был проведен, теперь черновик - отменяем движения инвентаря
             await tx.delete(inventory).where(eq(inventory.documentId, id));
             console.log(`📝 Документ ${id} переведен в черновик, движения инвентаря отменены`);
-            
-          } else if (oldStatus === 'draft' && newStatus === 'posted') {
+          } else if (oldStatus === "draft" && newStatus === "posted") {
             // Документ был черновиком, теперь проведен - создаем движения инвентаря
             for (const item of items) {
-              if (updatedDocument.type === 'income') {
-                await tx
-                  .insert(inventory)
-                  .values({
-                    productId: item.productId,
-                    quantity: item.quantity,
-                    price: item.price,
-                    movementType: 'IN',
-                    documentId: id,
-                  });
-              } else if (updatedDocument.type === 'outcome') {
-                await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price, id);
+              if (updatedDocument.type === "income") {
+                await tx.insert(inventory).values({
+                  productId: item.productId,
+                  quantity: item.quantity,
+                  price: item.price,
+                  movementType: "IN",
+                  documentId: id,
+                });
+              } else if (updatedDocument.type === "outcome") {
+                await this.processWriteoffFIFO(
+                  tx,
+                  item.productId,
+                  Number(item.quantity),
+                  item.price,
+                  id
+                );
               }
             }
             console.log(`✅ Документ ${id} проведен, движения инвентаря созданы`);
@@ -818,29 +881,25 @@ export class DatabaseStorage implements IStorage {
   async deleteDocument(id: number): Promise<boolean> {
     console.log(`[DB] Starting deleteDocument for ID ${id}...`);
     const startTime = Date.now();
-    
+
     try {
       // Сначала удаляем связанные записи из inventory
-      const inventoryResult = await db
-        .delete(inventory)
-        .where(eq(inventory.documentId, id));
-      console.log(`[DB] Deleted ${inventoryResult.rowCount ?? 0} inventory records for document ${id}`);
+      const inventoryResult = await db.delete(inventory).where(eq(inventory.documentId, id));
+      console.log(
+        `[DB] Deleted ${inventoryResult.rowCount ?? 0} inventory records for document ${id}`
+      );
 
-      // Затем удаляем связанные записи из document_items  
-      const itemsResult = await db
-        .delete(documentItems)
-        .where(eq(documentItems.documentId, id));
+      // Затем удаляем связанные записи из document_items
+      const itemsResult = await db.delete(documentItems).where(eq(documentItems.documentId, id));
       console.log(`[DB] Deleted ${itemsResult.rowCount ?? 0} document items for document ${id}`);
 
       // Наконец удаляем сам документ
-      const documentResult = await db
-        .delete(documents)
-        .where(eq(documents.id, id));
-      
+      const documentResult = await db.delete(documents).where(eq(documents.id, id));
+
       const endTime = Date.now();
       const success = (documentResult.rowCount ?? 0) > 0;
       console.log(`[DB] deleteDocument completed in ${endTime - startTime}ms, success: ${success}`);
-      
+
       return success;
     } catch (error) {
       const endTime = Date.now();
@@ -849,45 +908,48 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
+  async createReceiptDocument(
+    document: InsertDocument,
+    items: CreateDocumentItem[]
+  ): Promise<DocumentRecord> {
     try {
       return await db.transaction(async (tx) => {
         // 1. Создаем документ
-        const [createdDocument] = await tx
-          .insert(documents)
-          .values(document)
-          .returning();
+        const [createdDocument] = await tx.insert(documents).values(document).returning();
 
         // 1.1. Генерируем название в формате "Тип день.месяц-номер" (по московскому времени)
         const moscowTime = getMoscowTime();
-        const today = moscowTime.toLocaleDateString('ru-RU', { 
-          day: '2-digit', 
-          month: '2-digit',
-          timeZone: 'Europe/Moscow'
+        const today = moscowTime.toLocaleDateString("ru-RU", {
+          day: "2-digit",
+          month: "2-digit",
+          timeZone: "Europe/Moscow",
         });
-        
+
         // Получаем количество документов данного типа за сегодня (по московскому времени)
         const todayStart = getMoscowTime();
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = getMoscowTime();
         todayEnd.setHours(23, 59, 59, 999);
-        
+
         const todayDocuments = await tx
           .select()
           .from(documents)
-          .where(sql`${documents.type} = ${createdDocument.type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`);
-        
+          .where(
+            sql`${documents.type} = ${createdDocument.type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`
+          );
+
         const dayNumber = todayDocuments.length;
-        
+
         // Преобразуем тип документа в русское название
         const typeNames = {
-          'income': 'Оприходование',
-          'outcome': 'Списание', 
-          'return': 'Возврат'
+          income: "Оприходование",
+          outcome: "Списание",
+          return: "Возврат",
         };
-        const typeName = typeNames[createdDocument.type as keyof typeof typeNames] || createdDocument.type;
+        const typeName =
+          typeNames[createdDocument.type as keyof typeof typeNames] || createdDocument.type;
         const name = `${typeName} ${today}-${dayNumber}`;
-        
+
         const [updatedDocument] = await tx
           .update(documents)
           .set({ name })
@@ -896,31 +958,33 @@ export class DatabaseStorage implements IStorage {
 
         // 2. Создаем позиции документа
         for (const item of items) {
-          await tx
-            .insert(documentItems)
-            .values({
-              productId: item.productId,
-              quantity: item.quantity.toString(),
-              price: item.price ?? "0",
-              documentId: createdDocument.id,
-            });
+          await tx.insert(documentItems).values({
+            productId: item.productId,
+            quantity: item.quantity.toString(),
+            price: item.price ?? "0",
+            documentId: createdDocument.id,
+          });
 
           // 3. Обрабатываем движения инвентаря по FIFO только для проведенных документов
-          if (updatedDocument.status === 'posted') {
-            if (updatedDocument.type === 'income') {
+          if (updatedDocument.status === "posted") {
+            if (updatedDocument.type === "income") {
               // Приход товара - просто добавляем запись
-              await tx
-                .insert(inventory)
-                .values({
-                  productId: item.productId,
-                  quantity: item.quantity,
-                  price: item.price,
-                  movementType: 'IN',
-                  documentId: createdDocument.id,
-                });
-            } else if (updatedDocument.type === 'outcome') {
+              await tx.insert(inventory).values({
+                productId: item.productId,
+                quantity: item.quantity,
+                price: item.price,
+                movementType: "IN",
+                documentId: createdDocument.id,
+              });
+            } else if (updatedDocument.type === "outcome") {
               // Списание товара - используем FIFO логику
-              await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price ?? "0", createdDocument.id);
+              await this.processWriteoffFIFO(
+                tx,
+                item.productId,
+                Number(item.quantity),
+                item.price ?? "0",
+                createdDocument.id
+              );
             }
           }
         }
@@ -935,22 +999,19 @@ export class DatabaseStorage implements IStorage {
 
   // Метод для обработки списания по FIFO
   private async processWriteoffFIFO(
-    tx: any, 
-    productId: number, 
-    quantityToWriteoff: number, 
-    writeoffPrice: string, 
+    tx: any,
+    productId: number,
+    quantityToWriteoff: number,
+    writeoffPrice: string,
     documentId: number
   ): Promise<void> {
     console.log(`🔄 FIFO-списание товара ${productId}, количество: ${quantityToWriteoff}`);
-    
+
     // 1. Получаем все приходы товара в порядке FIFO (по дате создания)
     const availableStock = await tx
       .select()
       .from(inventory)
-      .where(and(
-        eq(inventory.productId, productId),
-        eq(inventory.movementType, 'IN')
-      ))
+      .where(and(eq(inventory.productId, productId), eq(inventory.movementType, "IN")))
       .orderBy(asc(inventory.createdAt));
 
     console.log(`📦 Найдено приходов: ${availableStock.length}`);
@@ -970,12 +1031,14 @@ export class DatabaseStorage implements IStorage {
           productId: productId,
           quantity: `-${quantityToTakeFromThisBatch}`,
           price: stockItem.price,
-          movementType: 'OUT' as const,
+          movementType: "OUT" as const,
           documentId: documentId,
         });
 
         remainingToWriteoff -= quantityToTakeFromThisBatch;
-        console.log(`📤 Списано ${quantityToTakeFromThisBatch} из партии ${stockItem.id}, остается списать: ${remainingToWriteoff}`);
+        console.log(
+          `📤 Списано ${quantityToTakeFromThisBatch} из партии ${stockItem.id}, остается списать: ${remainingToWriteoff}`
+        );
       }
     }
 
@@ -987,16 +1050,14 @@ export class DatabaseStorage implements IStorage {
     // 3. Если остались несписанные товары - создаем запись о списании в минус
     if (remainingToWriteoff > 0) {
       console.log(`⚠️ Списание в минус: ${remainingToWriteoff} единиц`);
-      
-      await tx
-        .insert(inventory)
-        .values({
-          productId: productId,
-          quantity: `-${remainingToWriteoff}`,
-          price: writeoffPrice, // Используем цену из документа списания
-          movementType: 'OUT',
-          documentId: documentId,
-        });
+
+      await tx.insert(inventory).values({
+        productId: productId,
+        quantity: `-${remainingToWriteoff}`,
+        price: writeoffPrice, // Используем цену из документа списания
+        movementType: "OUT",
+        documentId: documentId,
+      });
     }
 
     console.log(`✅ FIFO-списание завершено`);
@@ -1013,42 +1074,42 @@ export class DatabaseStorage implements IStorage {
   }): Promise<Log[]> {
     try {
       let query = db.select().from(logs).$dynamic();
-      
+
       // Применяем фильтры
       const conditions = [];
-      
+
       if (params.level) {
         conditions.push(eq(logs.level, params.level));
       }
-      
+
       if (params.module) {
         conditions.push(eq(logs.module, params.module));
       }
-      
+
       if (params.from) {
         conditions.push(sql`${logs.timestamp} >= ${params.from}`);
       }
-      
+
       if (params.to) {
         conditions.push(sql`${logs.timestamp} <= ${params.to}`);
       }
-      
+
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
-      
+
       // Сортировка по дате (новые сверху)
       query = query.orderBy(sql`${logs.timestamp} DESC`);
-      
+
       // Пагинация
       if (params.limit) {
         query = query.limit(params.limit);
       }
-      
+
       if (params.offset) {
         query = query.offset(params.offset);
       }
-      
+
       return await query;
     } catch (error) {
       console.error("Error fetching logs:", error);
@@ -1062,8 +1123,8 @@ export class DatabaseStorage implements IStorage {
         .selectDistinct({ module: logs.module })
         .from(logs)
         .orderBy(logs.module);
-      
-      return result.map(row => row.module);
+
+      return result.map((row) => row.module);
     } catch (error) {
       console.error("Error fetching log modules:", error);
       throw error;
@@ -1094,15 +1155,12 @@ export class DatabaseStorage implements IStorage {
       // Гарантируем что обязательные поля заполнены
       const orderData = {
         ...insertOrder,
-        date: insertOrder.date || getMoscowTime().toISOString().split('T')[0],
+        date: insertOrder.date || getMoscowTime().toISOString().split("T")[0],
         createdAt: getMoscowTime(),
-        updatedAt: getMoscowTime()
+        updatedAt: getMoscowTime(),
       };
 
-      const [order] = await db
-        .insert(orders)
-        .values(orderData)
-        .returning();
+      const [order] = await db.insert(orders).values(orderData).returning();
       return order;
     } catch (error) {
       dbLogger.error("Error in createOrder", { error: getErrorMessage(error), order: insertOrder });
@@ -1129,7 +1187,7 @@ export class DatabaseStorage implements IStorage {
       // Сначала удаляем связанные записи
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
       await db.delete(reserves).where(eq(reserves.orderId, id));
-      
+
       const result = await db.delete(orders).where(eq(orders.id, id));
       return (result.rowCount || 0) > 0;
     } catch (error) {

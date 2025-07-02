@@ -18,7 +18,9 @@ router.get("/", async (req, res) => {
     const warehouses = await warehouseService.getAll();
     res.json(warehouses);
   } catch (error) {
-    apiLogger.error("Failed to get warehouses", { error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to get warehouses", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка получения складов" });
   }
 });
@@ -30,15 +32,18 @@ router.get("/:id", async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: "Некорректный ID склада" });
     }
-    
+
     const warehouse = await warehouseService.getById(id);
     if (!warehouse) {
       return res.status(404).json({ error: "Склад не найден" });
     }
-    
+
     res.json(warehouse);
   } catch (error) {
-    apiLogger.error("Failed to get warehouse", { warehouseId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to get warehouse", {
+      warehouseId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка получения склада" });
   }
 });
@@ -49,7 +54,10 @@ router.post("/", async (req, res) => {
     const warehouse = await warehouseService.create(req.body);
     res.status(201).json(warehouse);
   } catch (error) {
-    apiLogger.error("Failed to create warehouse", { body: req.body, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to create warehouse", {
+      body: req.body,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка создания склада" });
   }
 });
@@ -61,15 +69,19 @@ router.put("/:id", async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: "Некорректный ID склада" });
     }
-    
+
     const warehouse = await warehouseService.update(id, req.body);
     if (!warehouse) {
       return res.status(404).json({ error: "Склад не найден" });
     }
-    
+
     res.json(warehouse);
   } catch (error) {
-    apiLogger.error("Failed to update warehouse", { warehouseId: req.params.id, body: req.body, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to update warehouse", {
+      warehouseId: req.params.id,
+      body: req.body,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка обновления склада" });
   }
 });
@@ -81,15 +93,18 @@ router.delete("/:id", async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: "Некорректный ID склада" });
     }
-    
+
     const success = await warehouseService.delete(id);
     if (!success) {
       return res.status(404).json({ error: "Склад не найден" });
     }
-    
+
     res.json({ success: true });
   } catch (error) {
-    apiLogger.error("Failed to delete warehouse", { warehouseId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to delete warehouse", {
+      warehouseId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка удаления склада" });
   }
 });
@@ -105,8 +120,11 @@ router.post("/delete-multiple", async (req, res) => {
       const validationError = fromZodError(error);
       return res.status(400).json({ error: validationError.message });
     }
-    
-    apiLogger.error("Failed to delete multiple warehouses", { body: req.body, error: error instanceof Error ? error.message : String(error) });
+
+    apiLogger.error("Failed to delete multiple warehouses", {
+      body: req.body,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка удаления складов" });
   }
 });

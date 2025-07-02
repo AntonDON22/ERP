@@ -9,64 +9,69 @@ export interface CreateDocumentItem {
 
 export function useDocuments() {
   return useQuery<DocumentRecord[]>({
-    queryKey: ['/api/documents'],
+    queryKey: ["/api/documents"],
   });
 }
 
 export function useDocument(id: number) {
   return useQuery<DocumentRecord>({
-    queryKey: ['/api/documents', id],
+    queryKey: ["/api/documents", id],
     enabled: !!id,
   });
 }
 
 export function useCreateDocument() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: { document: InsertDocument; items: CreateDocumentItem[] }) =>
-      apiRequest('/api/documents', 'POST', data),
+      apiRequest("/api/documents", "POST", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
     },
   });
 }
 
 export function useUpdateDocument() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { document: Partial<InsertDocument>; items: CreateDocumentItem[] } }) =>
-      apiRequest(`/api/documents/${id}`, 'PUT', data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: { document: Partial<InsertDocument>; items: CreateDocumentItem[] };
+    }) => apiRequest(`/api/documents/${id}`, "PUT", data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/documents', id] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents", id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
     },
   });
 }
 
 export function useDeleteDocument() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/documents/${id}`, 'DELETE'),
+    mutationFn: (id: number) => apiRequest(`/api/documents/${id}`, "DELETE"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
     },
   });
 }
 
 export function useDeleteDocuments() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
-    mutationFn: (ids: number[]) => apiRequest('/api/documents/batch-delete', 'DELETE', { ids }),
+    mutationFn: (ids: number[]) => apiRequest("/api/documents/batch-delete", "DELETE", { ids }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/documents'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/inventory'] });
+      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
     },
   });
 }

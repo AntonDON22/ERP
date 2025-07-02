@@ -18,8 +18,6 @@ import { cacheWarmupService } from "../services/cacheWarmupService";
 
 const router = Router();
 
-
-
 // Подключение модульных роутеров
 router.use("/products", productRoutes);
 router.use("/suppliers", supplierRoutes);
@@ -33,22 +31,18 @@ router.use("/logs", logRoutes);
 // Endpoint для логирования клиентских ошибок
 router.post("/client-errors", (req, res) => {
   const { message, stack, url, lineNumber, columnNumber, userAgent } = req.body;
-  
+
   apiLogger.error(`Client-side error: ${message}`, {
     stack,
     url,
     lineNumber,
     columnNumber,
     userAgent,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
-  
+
   res.status(200).json({ status: "logged" });
 });
-
-
-
-
 
 // Endpoint для материализованных представлений
 router.get("/materialized-views/status", async (req, res) => {
@@ -57,25 +51,27 @@ router.get("/materialized-views/status", async (req, res) => {
       status: "active",
       views: [
         { name: "inventory_summary", active: true },
-        { name: "inventory_availability", active: true }
-      ]
+        { name: "inventory_availability", active: true },
+      ],
     });
   } catch (error) {
-    apiLogger.error("Failed to check materialized views status", { error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to check materialized views status", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка проверки статуса представлений" });
   }
 });
 
-
-
 // GET /api/changelog - получение истории обновлений из replit.md
 router.get("/changelog", async (req, res) => {
   try {
-    const replitContent = readFileSync('./replit.md', 'utf-8');
+    const replitContent = readFileSync("./replit.md", "utf-8");
     const dayData = parseChangelogFromReplit(replitContent);
     res.json(dayData);
   } catch (error) {
-    apiLogger.error("Failed to get changelog", { error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to get changelog", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка получения истории обновлений" });
   }
 });
@@ -93,10 +89,12 @@ router.get("/metrics", async (req, res) => {
       endpoints: endpointStats,
       cache: cacheMetrics,
       trends: trends,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    apiLogger.error("Failed to get performance metrics", { error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to get performance metrics", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка получения метрик производительности" });
   }
 });
@@ -104,29 +102,32 @@ router.get("/metrics", async (req, res) => {
 // Принудительный разогрев кеша (для критических ситуаций)
 router.post("/cache/warmup", async (req, res) => {
   try {
-    apiLogger.info("Manual cache warmup initiated", { ip: req.ip, userAgent: req.get('User-Agent') });
+    apiLogger.info("Manual cache warmup initiated", {
+      ip: req.ip,
+      userAgent: req.get("User-Agent"),
+    });
     await cacheWarmupService.forceWarmupAll();
-    
+
     // Проверяем статус разогрева
     const status = await cacheWarmupService.getWarmupStatus();
-    const successCount = status.filter(s => s.isCached).length;
-    
-    res.json({ 
+    const successCount = status.filter((s) => s.isCached).length;
+
+    res.json({
       success: true,
       message: "Принудительный разогрев кеша завершен",
       stats: {
         total: status.length,
         cached: successCount,
-        success_rate: `${Math.round((successCount / status.length) * 100)}%`
+        success_rate: `${Math.round((successCount / status.length) * 100)}%`,
       },
-      details: status
+      details: status,
     });
   } catch (error) {
-    apiLogger.error("Manual cache warmup failed", { 
-      error: error instanceof Error ? error.message : String(error) 
+    apiLogger.error("Manual cache warmup failed", {
+      error: error instanceof Error ? error.message : String(error),
     });
-    res.status(500).json({ 
-      error: "Ошибка принудительного разогрева кеша" 
+    res.status(500).json({
+      error: "Ошибка принудительного разогрева кеша",
     });
   }
 });
@@ -136,22 +137,22 @@ router.get("/cache/status", async (req, res) => {
   try {
     const status = await cacheWarmupService.getWarmupStatus();
     const configs = cacheWarmupService.getWarmupConfigs();
-    
+
     res.json({
       configs,
       status,
       summary: {
         total: status.length,
-        cached: status.filter(s => s.isCached).length,
-        cache_hit_rate: `${Math.round((status.filter(s => s.isCached).length / status.length) * 100)}%`
-      }
+        cached: status.filter((s) => s.isCached).length,
+        cache_hit_rate: `${Math.round((status.filter((s) => s.isCached).length / status.length) * 100)}%`,
+      },
     });
   } catch (error) {
-    apiLogger.error("Failed to get cache status", { 
-      error: error instanceof Error ? error.message : String(error) 
+    apiLogger.error("Failed to get cache status", {
+      error: error instanceof Error ? error.message : String(error),
     });
-    res.status(500).json({ 
-      error: "Ошибка получения статуса кеша" 
+    res.status(500).json({
+      error: "Ошибка получения статуса кеша",
     });
   }
 });
@@ -160,17 +161,17 @@ router.get("/cache/status", async (req, res) => {
 // Этот маршрут должен быть зарегистрирован в самом конце роутера
 // чтобы перехватывать все несуществующие API-запросы и возвращать JSON вместо HTML
 router.use("*", (req, res) => {
-  apiLogger.warn("API route not found", { 
+  apiLogger.warn("API route not found", {
     path: req.originalUrl,
     method: req.method,
-    userAgent: req.get('User-Agent'),
-    ip: req.ip
+    userAgent: req.get("User-Agent"),
+    ip: req.ip,
   });
-  
-  res.status(404).json({ 
+
+  res.status(404).json({
     error: "API route not found",
     path: req.originalUrl,
-    method: req.method
+    method: req.method,
   });
 });
 

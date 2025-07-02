@@ -1,20 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Product, Supplier, Contractor, DocumentRecord, InsertProduct, InsertSupplier, InsertContractor, Warehouse, InsertWarehouse, Order, OrderItem } from "@shared/schema";
-import { OrderWithItems, DocumentWithItems, CreateOrderData, CreateDocumentData, UpdateOrderData, UpdateDocumentData, InventoryItem, InventoryAvailabilityItem } from "@shared/types";
+import {
+  Product,
+  Supplier,
+  Contractor,
+  DocumentRecord,
+  InsertProduct,
+  InsertSupplier,
+  InsertContractor,
+  Warehouse,
+  InsertWarehouse,
+  Order,
+  OrderItem,
+} from "@shared/schema";
+import {
+  OrderWithItems,
+  DocumentWithItems,
+  CreateOrderData,
+  CreateDocumentData,
+  UpdateOrderData,
+  UpdateDocumentData,
+  InventoryItem,
+  InventoryAvailabilityItem,
+} from "@shared/types";
 import { apiRequest, apiRequestJson, getQueryFn } from "@/lib/queryClient";
 import { useInvalidate } from "./useInvalidate";
 
 // Типизированные хуки для продуктов
 export const useProducts = () => {
   return useQuery<Product[]>({
-    queryKey: ['products'],
-    queryFn: () => apiRequestJson<Product[]>('/api/products'),
+    queryKey: ["products"],
+    queryFn: () => apiRequestJson<Product[]>("/api/products"),
   });
 };
 
 export const useProduct = (id: number) => {
   return useQuery<Product>({
-    queryKey: ['product', id],
+    queryKey: ["product", id],
     queryFn: () => apiRequestJson<Product>(`/api/products/${id}`),
     enabled: !!id,
   });
@@ -48,14 +69,14 @@ export const useImportProducts = () => {
 // Типизированные хуки для поставщиков
 export const useSuppliers = () => {
   return useQuery<Supplier[]>({
-    queryKey: ['suppliers'],
-    queryFn: () => apiRequestJson<Supplier[]>('/api/suppliers'),
+    queryKey: ["suppliers"],
+    queryFn: () => apiRequestJson<Supplier[]>("/api/suppliers"),
   });
 };
 
 export const useSupplier = (id: number) => {
   return useQuery<Supplier>({
-    queryKey: ['supplier', id],
+    queryKey: ["supplier", id],
     queryFn: () => apiRequestJson<Supplier>(`/api/suppliers/${id}`),
     enabled: !!id,
   });
@@ -100,14 +121,14 @@ export const useCreateSupplier = () => {
 // Типизированные хуки для контрагентов
 export const useContractors = () => {
   return useQuery<Contractor[]>({
-    queryKey: ['contractors'],
-    queryFn: () => apiRequestJson<Contractor[]>('/api/contractors'),
+    queryKey: ["contractors"],
+    queryFn: () => apiRequestJson<Contractor[]>("/api/contractors"),
   });
 };
 
 export const useContractor = (id: number) => {
   return useQuery<Contractor>({
-    queryKey: ['contractor', id],
+    queryKey: ["contractor", id],
     queryFn: () => apiRequestJson<Contractor>(`/api/contractors/${id}`),
     enabled: !!id,
   });
@@ -152,8 +173,8 @@ export const useCreateContractor = () => {
 // Типизированные хуки для документов
 export const useDocuments = () => {
   return useQuery<DocumentRecord[]>({
-    queryKey: ['documents'],
-    queryFn: () => apiRequestJson<DocumentRecord[]>('/api/documents'),
+    queryKey: ["documents"],
+    queryFn: () => apiRequestJson<DocumentRecord[]>("/api/documents"),
   });
 };
 
@@ -171,16 +192,14 @@ export const useDeleteDocuments = () => {
 
 // Типизированный хук для остатков
 export const useInventory = (warehouseId?: number) => {
-  const url = warehouseId 
-    ? `/api/inventory?warehouseId=${warehouseId}` 
-    : "/api/inventory";
-    
+  const url = warehouseId ? `/api/inventory?warehouseId=${warehouseId}` : "/api/inventory";
+
   return useQuery<{ id: number; name: string; quantity: number }[]>({
-    queryKey: warehouseId ? ['inventory', 'warehouse', warehouseId] : ['inventory'],
+    queryKey: warehouseId ? ["inventory", "warehouse", warehouseId] : ["inventory"],
     queryFn: async () => {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch inventory');
+        throw new Error("Failed to fetch inventory");
       }
       return response.json();
     },
@@ -189,23 +208,23 @@ export const useInventory = (warehouseId?: number) => {
 
 // Типизированный хук для доступности товаров (с учетом резервов)
 export const useInventoryAvailability = (warehouseId?: number) => {
-  const url = warehouseId 
-    ? `/api/inventory/availability?warehouseId=${warehouseId}` 
+  const url = warehouseId
+    ? `/api/inventory/availability?warehouseId=${warehouseId}`
     : "/api/inventory/availability";
-    
+
   return useQuery<InventoryAvailabilityItem[]>({
-    queryKey: warehouseId ? ['inventory', 'availability', 'warehouse', warehouseId] : ['inventory', 'availability'],
+    queryKey: warehouseId
+      ? ["inventory", "availability", "warehouse", warehouseId]
+      : ["inventory", "availability"],
     queryFn: async () => {
       const response = await fetch(url);
       if (!response.ok) {
-        throw new Error('Failed to fetch inventory availability');
+        throw new Error("Failed to fetch inventory availability");
       }
       return response.json();
     },
   });
 };
-
-
 
 export const useCreateReceiptDocument = () => {
   const invalidate = useInvalidate();
@@ -220,7 +239,7 @@ export const useCreateReceiptDocument = () => {
 };
 export const useDocument = (id: number) => {
   return useQuery<DocumentWithItems>({
-    queryKey: ['document', id],
+    queryKey: ["document", id],
     queryFn: () => apiRequestJson<DocumentWithItems>(`/api/documents/${id}`),
     enabled: !!id,
   });
@@ -231,12 +250,12 @@ export const useUpdateDocument = () => {
   return useMutation({
     mutationFn: async ({ id, data }: UpdateDocumentData) => {
       const response = await fetch(`/api/documents/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error('Failed to update document');
+        throw new Error("Failed to update document");
       }
       return response.json();
     },
@@ -250,8 +269,8 @@ export const useUpdateDocument = () => {
 // Типизированные хуки для заказов
 export const useOrders = () => {
   return useQuery<OrderWithItems[]>({
-    queryKey: ['orders'],
-    queryFn: () => apiRequestJson<OrderWithItems[]>('/api/orders'),
+    queryKey: ["orders"],
+    queryFn: () => apiRequestJson<OrderWithItems[]>("/api/orders"),
   });
 };
 
@@ -281,7 +300,7 @@ export const useCreateOrder = () => {
 
 export const useOrder = (id: number) => {
   return useQuery<OrderWithItems>({
-    queryKey: ['order', id],
+    queryKey: ["order", id],
     queryFn: () => apiRequestJson<OrderWithItems>(`/api/orders/${id}`),
     enabled: !!id,
   });
@@ -292,12 +311,12 @@ export const useUpdateOrder = () => {
   return useMutation({
     mutationFn: async ({ id, data }: UpdateOrderData) => {
       const response = await fetch(`/api/orders/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
       if (!response.ok) {
-        throw new Error('Failed to update order');
+        throw new Error("Failed to update order");
       }
       return response.json();
     },
@@ -311,14 +330,14 @@ export const useUpdateOrder = () => {
 // Типизированные хуки для складов
 export const useWarehouses = () => {
   return useQuery<Warehouse[]>({
-    queryKey: ['warehouses'],
-    queryFn: () => apiRequestJson<Warehouse[]>('/api/warehouses'),
+    queryKey: ["warehouses"],
+    queryFn: () => apiRequestJson<Warehouse[]>("/api/warehouses"),
   });
 };
 
 export const useWarehouse = (id: number) => {
   return useQuery<Warehouse>({
-    queryKey: ['warehouse', id],
+    queryKey: ["warehouse", id],
     queryFn: () => apiRequestJson<Warehouse>(`/api/warehouses/${id}`),
     enabled: !!id,
   });

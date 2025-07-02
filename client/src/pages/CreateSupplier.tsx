@@ -7,15 +7,15 @@ const supplierFields: FormField[] = [
     label: "Название",
     type: "text",
     required: true,
-    placeholder: "Введите название поставщика"
+    placeholder: "Введите название поставщика",
   },
   {
     name: "website",
     label: "Вебсайт",
     type: "url",
     required: false,
-    placeholder: "https://example.com"
-  }
+    placeholder: "https://example.com",
+  },
 ];
 
 export default function CreateSupplier() {

@@ -11,29 +11,33 @@ export class InventoryService {
    */
   setUseMaterializedViews(use: boolean): void {
     this.useMaterializedViews = use;
-    console.log(`📊 Режим материализованных представлений: ${use ? 'ВКЛЮЧЕН' : 'ВЫКЛЮЧЕН'}`);
+    console.log(`📊 Режим материализованных представлений: ${use ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН"}`);
   }
 
-  async getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
+  async getInventory(
+    warehouseId?: number
+  ): Promise<Array<{ id: number; name: string; quantity: number }>> {
     if (this.useMaterializedViews && !warehouseId) {
       return this.getInventoryFromMaterializedView();
     }
-    
+
     return this.getInventoryFromDirectQuery(warehouseId);
   }
 
   /**
    * Получение остатков из материализованного представления (быстро)
    */
-  private async getInventoryFromMaterializedView(): Promise<Array<{id: number; name: string; quantity: number}>> {
+  private async getInventoryFromMaterializedView(): Promise<
+    Array<{ id: number; name: string; quantity: number }>
+  > {
     try {
       const result = await materializedViewService.getInventorySummary();
-      
+
       // Данные уже нормализованы MaterializedViewService
-      return result.map(row => ({
+      return result.map((row) => ({
         id: row.id,
         name: row.name,
-        quantity: row.quantity
+        quantity: row.quantity,
       }));
     } catch (error) {
       console.error("[MATERIALIZED] Error, falling back to direct query:", error);
@@ -44,13 +48,15 @@ export class InventoryService {
   /**
    * Получение остатков прямым запросом (для складов или fallback)
    */
-  private async getInventoryFromDirectQuery(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
+  private async getInventoryFromDirectQuery(
+    warehouseId?: number
+  ): Promise<Array<{ id: number; name: string; quantity: number }>> {
     console.log("[DB] Starting getInventory query...");
     const startTime = Date.now();
-    
+
     try {
       const warehouseFilter = warehouseId ? sql`AND i.warehouse_id = ${warehouseId}` : sql``;
-      
+
       const result = await db.execute(sql`
         SELECT 
           p.id,
@@ -63,14 +69,16 @@ export class InventoryService {
         GROUP BY p.id, p.name
         ORDER BY p.name
       `);
-      
+
       const duration = Date.now() - startTime;
-      console.log(`[DB] getInventory completed in ${duration}ms, returned ${result.rows.length} items`);
-      
+      console.log(
+        `[DB] getInventory completed in ${duration}ms, returned ${result.rows.length} items`
+      );
+
       return result.rows.map((row: any) => ({
         id: row.id as number,
         name: row.name as string,
-        quantity: parseFloat(row.quantity as string) || 0
+        quantity: parseFloat(row.quantity as string) || 0,
       }));
     } catch (error) {
       console.error("[DB] Error in getInventory:", error);
@@ -78,28 +86,34 @@ export class InventoryService {
     }
   }
 
-  async getInventoryAvailability(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number; reserved: number; available: number}>> {
+  async getInventoryAvailability(
+    warehouseId?: number
+  ): Promise<
+    Array<{ id: number; name: string; quantity: number; reserved: number; available: number }>
+  > {
     if (this.useMaterializedViews && !warehouseId) {
       return this.getInventoryAvailabilityFromMaterializedView();
     }
-    
+
     return this.getInventoryAvailabilityFromDirectQuery(warehouseId);
   }
 
   /**
    * Получение доступных остатков из материализованного представления (быстро)
    */
-  private async getInventoryAvailabilityFromMaterializedView(): Promise<Array<{id: number; name: string; quantity: number; reserved: number; available: number}>> {
+  private async getInventoryAvailabilityFromMaterializedView(): Promise<
+    Array<{ id: number; name: string; quantity: number; reserved: number; available: number }>
+  > {
     try {
       const result = await materializedViewService.getInventoryAvailability();
-      
+
       // Данные уже нормализованы MaterializedViewService, просто возвращаем их
-      return result.map(row => ({
+      return result.map((row) => ({
         id: row.id,
         name: row.name,
         quantity: row.quantity,
         reserved: row.reserved || 0,
-        available: row.available || 0
+        available: row.available || 0,
       }));
     } catch (error) {
       console.error("[MATERIALIZED] Error, falling back to direct query:", error);
@@ -110,14 +124,18 @@ export class InventoryService {
   /**
    * Получение доступных остатков прямым запросом (для складов или fallback)
    */
-  private async getInventoryAvailabilityFromDirectQuery(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number; reserved: number; available: number}>> {
+  private async getInventoryAvailabilityFromDirectQuery(
+    warehouseId?: number
+  ): Promise<
+    Array<{ id: number; name: string; quantity: number; reserved: number; available: number }>
+  > {
     console.log("[DB] Starting inventory availability query...");
     const startTime = Date.now();
-    
+
     try {
       // Используем pool для прямого SQL запроса с параметрами
       let result;
-      
+
       if (warehouseId) {
         const queryText = `
           SELECT 
@@ -166,16 +184,18 @@ export class InventoryService {
         `;
         result = await pool.query(queryText);
       }
-      
+
       const duration = Date.now() - startTime;
-      console.log(`[DB] Inventory availability completed in ${duration}ms, returned ${result.rows.length} items`);
-      
+      console.log(
+        `[DB] Inventory availability completed in ${duration}ms, returned ${result.rows.length} items`
+      );
+
       return result.rows.map((row: any) => ({
         id: row.id as number,
         name: row.name as string,
         quantity: parseFloat(row.quantity as string) || 0,
         reserved: parseFloat(row.reserved as string) || 0,
-        available: parseFloat(row.available as string) || 0
+        available: parseFloat(row.available as string) || 0,
       }));
     } catch (error) {
       console.error("[DB] Error in getInventoryAvailability:", error);
@@ -191,10 +211,10 @@ export class InventoryService {
     views_status: any[];
   }> {
     const viewsStatus = await materializedViewService.getViewsStatus();
-    
+
     return {
       materialized_views_enabled: this.useMaterializedViews,
-      views_status: viewsStatus
+      views_status: viewsStatus,
     };
   }
 

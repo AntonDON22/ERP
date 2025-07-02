@@ -29,7 +29,9 @@ export class WarehouseService {
     return await storage.deleteWarehouse(id);
   }
 
-  async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
+  async deleteMultiple(
+    ids: number[]
+  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error("Укажите массив ID складов для удаления");
     }
@@ -42,13 +44,16 @@ export class WarehouseService {
         const deleted = await storage.deleteWarehouse(id);
         if (deleted) {
           deletedCount++;
-          results.push({ id, status: 'deleted' });
+          results.push({ id, status: "deleted" });
         } else {
-          results.push({ id, status: 'not_found' });
+          results.push({ id, status: "not_found" });
         }
       } catch (error) {
-        apiLogger.error(`Error deleting warehouse ${id}`, { warehouseId: id, error: error instanceof Error ? error.message : String(error) });
-        results.push({ id, status: 'error' });
+        apiLogger.error(`Error deleting warehouse ${id}`, {
+          warehouseId: id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        results.push({ id, status: "error" });
       }
     }
 
@@ -57,7 +62,7 @@ export class WarehouseService {
 
   async import(warehouses: any[]): Promise<Warehouse[]> {
     const results: Warehouse[] = [];
-    
+
     for (const warehouseData of warehouses) {
       try {
         // Попытка обновить существующий склад (если есть ID)
@@ -68,12 +73,15 @@ export class WarehouseService {
             continue;
           }
         }
-        
+
         // Создание нового склада
         const warehouse = await this.create(warehouseData);
         results.push(warehouse);
       } catch (error) {
-        apiLogger.error('Error importing warehouse', { warehouseData, error: error instanceof Error ? error.message : String(error) });
+        apiLogger.error("Error importing warehouse", {
+          warehouseData,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

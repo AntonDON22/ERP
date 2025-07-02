@@ -23,21 +23,21 @@ const productsColumns: ColumnConfig<Product>[] = [
     key: "price",
     label: "Цена",
     minWidth: 100,
-    format: (value) => value ? formatPrice(value) : "",
+    format: (value) => (value ? formatPrice(value) : ""),
     className: "text-right",
   },
   {
     key: "purchasePrice",
     label: "Закупочная цена",
     minWidth: 140,
-    format: (value) => value ? formatPrice(value) : "",
+    format: (value) => (value ? formatPrice(value) : ""),
     className: "text-right",
   },
   {
     key: "weight",
     label: "Вес",
     minWidth: 80,
-    format: (value) => value ? formatWeight(value) : "",
+    format: (value) => (value ? formatWeight(value) : ""),
     className: "text-right",
   },
   {
@@ -46,7 +46,7 @@ const productsColumns: ColumnConfig<Product>[] = [
     minWidth: 80,
     format: (value) => {
       if (!value) return "";
-      const num = typeof value === 'string' ? parseFloat(value) : value;
+      const num = typeof value === "string" ? parseFloat(value) : value;
       const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
       return `${formatted} мм`;
     },
@@ -54,11 +54,11 @@ const productsColumns: ColumnConfig<Product>[] = [
   },
   {
     key: "width",
-    label: "Ширина", 
+    label: "Ширина",
     minWidth: 80,
     format: (value) => {
       if (!value) return "";
-      const num = typeof value === 'string' ? parseFloat(value) : value;
+      const num = typeof value === "string" ? parseFloat(value) : value;
       const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
       return `${formatted} мм`;
     },
@@ -67,10 +67,10 @@ const productsColumns: ColumnConfig<Product>[] = [
   {
     key: "height",
     label: "Высота",
-    minWidth: 80, 
+    minWidth: 80,
     format: (value) => {
       if (!value) return "";
-      const num = typeof value === 'string' ? parseFloat(value) : value;
+      const num = typeof value === "string" ? parseFloat(value) : value;
       const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
       return `${formatted} мм`;
     },
@@ -89,7 +89,7 @@ const excelConfig: ExcelExportConfig = {
   sheetName: "Товары",
   headers: {
     name: "Название",
-    sku: "Артикул", 
+    sku: "Артикул",
     price: "Цена",
     purchasePrice: "Закупочная цена",
     weight: "Вес",
@@ -114,15 +114,15 @@ export default function ProductsList() {
   const handleImport = async (data: unknown[]) => {
     // TODO: Implement import logic with new API hooks
     // Structured logging instead of console.log
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       // Only log in development, structured format
       const logData = {
-        operation: 'product_import',
+        operation: "product_import",
         recordCount: data.length,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
       // Use structured logging when available
-      console.debug('[ProductsList]', 'Import data received', logData);
+      console.debug("[ProductsList]", "Import data received", logData);
     }
   };
 

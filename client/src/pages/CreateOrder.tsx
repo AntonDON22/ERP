@@ -6,7 +6,13 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -17,7 +23,7 @@ import { useContractors } from "@/hooks/useTypedQuery";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Product, Warehouse, Contractor, orderSchema } from "@shared/schema";
 
-type FormOrderItem = z.infer<typeof orderSchema>['items'][0];
+type FormOrderItem = z.infer<typeof orderSchema>["items"][0];
 type FormOrder = z.infer<typeof orderSchema>;
 
 export default function CreateOrder() {
@@ -27,7 +33,7 @@ export default function CreateOrder() {
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
   const { data: contractors = [] } = useContractors();
-  
+
   // Состояние для статуса заказа и резерва
   const [orderStatus, setOrderStatus] = useState("Новый");
   const [isReserved, setIsReserved] = useState(false);
@@ -70,7 +76,9 @@ export default function CreateOrder() {
 
     // Проверка последовательности ID
     if (currentSubmissionId !== submissionCounter.current) {
-      console.log(`❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`);
+      console.log(
+        `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
+      );
       return;
     }
 
@@ -138,18 +146,11 @@ export default function CreateOrder() {
           <div className="flex justify-between items-center">
             <CardTitle>Новый заказ</CardTitle>
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setLocation("/orders")}
-              >
+              <Button variant="outline" onClick={() => setLocation("/orders")}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Назад
               </Button>
-              <Button 
-                form="order-form"
-                type="submit"
-                disabled={isSubmitting || mutation.isPending}
-              >
+              <Button form="order-form" type="submit" disabled={isSubmitting || mutation.isPending}>
                 Создать
               </Button>
             </div>
@@ -159,10 +160,7 @@ export default function CreateOrder() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="orderStatus">Статус заказа</Label>
-              <Select
-                value={orderStatus}
-                onValueChange={setOrderStatus}
-              >
+              <Select value={orderStatus} onValueChange={setOrderStatus}>
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите статус" />
                 </SelectTrigger>
@@ -177,8 +175,8 @@ export default function CreateOrder() {
             <div>
               <Label>Склад</Label>
               <Select
-                value={form.watch('warehouseId')?.toString() || ""}
-                onValueChange={(value) => form.setValue('warehouseId', parseInt(value))}
+                value={form.watch("warehouseId")?.toString() || ""}
+                onValueChange={(value) => form.setValue("warehouseId", parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите склад" />
@@ -210,8 +208,8 @@ export default function CreateOrder() {
             <div>
               <Label>Контрагент</Label>
               <Select
-                value={form.watch('customerId')?.toString() || ""}
-                onValueChange={(value) => form.setValue('customerId', parseInt(value))}
+                value={form.watch("customerId")?.toString() || ""}
+                onValueChange={(value) => form.setValue("customerId", parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите контрагента" />
@@ -230,14 +228,18 @@ export default function CreateOrder() {
         </CardContent>
       </Card>
 
-      <form id="order-form" onSubmit={form.handleSubmit(handleSave, (errors) => {
-        console.log("❌ Form validation failed:", errors);
-        toast({
-          title: "Ошибка валидации",
-          description: "Обязательно выберите контрагента и склад",
-          variant: "destructive",
-        });
-      })} className="space-y-6">
+      <form
+        id="order-form"
+        onSubmit={form.handleSubmit(handleSave, (errors) => {
+          console.log("❌ Form validation failed:", errors);
+          toast({
+            title: "Ошибка валидации",
+            description: "Обязательно выберите контрагента и склад",
+            variant: "destructive",
+          });
+        })}
+        className="space-y-6"
+      >
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -251,7 +253,10 @@ export default function CreateOrder() {
           <CardContent>
             <div className="space-y-4">
               {fields.map((field: any, index: number) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+                <div
+                  key={field.id}
+                  className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg"
+                >
                   <div className="md:col-span-3">
                     <Label>Товар</Label>
                     <Select
@@ -281,8 +286,8 @@ export default function CreateOrder() {
                       type="number"
                       step="1"
                       min="1"
-                      {...form.register(`items.${index}.quantity`, { 
-                        valueAsNumber: true 
+                      {...form.register(`items.${index}.quantity`, {
+                        valueAsNumber: true,
                       })}
                     />
                   </div>
@@ -292,16 +297,16 @@ export default function CreateOrder() {
                       type="number"
                       step="0.01"
                       min="0"
-                      {...form.register(`items.${index}.price`, { 
-                        valueAsNumber: true 
+                      {...form.register(`items.${index}.price`, {
+                        valueAsNumber: true,
                       })}
                     />
                   </div>
                   <div className="flex items-end">
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      size="sm" 
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
                       onClick={() => removeItem(index)}
                       disabled={fields.length === 1}
                     >

@@ -12,19 +12,19 @@ export function validateBody(schema: ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
+        const validationErrors = error.errors.map((err) => ({
+          field: err.path.join("."),
           message: err.message,
-          code: err.code
+          code: err.code,
         }));
 
         return res.status(400).json({
           error: "Ошибка валидации данных",
           details: validationErrors,
-          success: false
+          success: false,
         });
       }
-      
+
       next(error);
     }
   };
@@ -40,19 +40,19 @@ export function validateParams(schema: ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
+        const validationErrors = error.errors.map((err) => ({
+          field: err.path.join("."),
           message: err.message,
-          code: err.code
+          code: err.code,
         }));
 
         return res.status(400).json({
           error: "Ошибка валидации параметров",
           details: validationErrors,
-          success: false
+          success: false,
         });
       }
-      
+
       next(error);
     }
   };
@@ -68,19 +68,19 @@ export function validateQuery(schema: ZodSchema) {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        const validationErrors = error.errors.map(err => ({
-          field: err.path.join('.'),
+        const validationErrors = error.errors.map((err) => ({
+          field: err.path.join("."),
           message: err.message,
-          code: err.code
+          code: err.code,
         }));
 
         return res.status(400).json({
           error: "Ошибка валидации query параметров",
           details: validationErrors,
-          success: false
+          success: false,
         });
       }
-      
+
       next(error);
     }
   };
@@ -90,32 +90,32 @@ export function validateQuery(schema: ZodSchema) {
  * ✅ Схема для валидации ID в параметрах - использует централизованное поле zFields.ts
  */
 export const idParamSchema = z.object({
-  id: zIdString  // ✅ Мигрировано на централизованное поле
+  id: zIdString, // ✅ Мигрировано на централизованное поле
 });
 
 /**
  * ✅ Схемы для валидации массивов ID - используют централизованные поля zFields.ts
  */
 export const productIdsSchema = z.object({
-  productIds: z.array(zId).min(1, "Укажите хотя бы один ID товара")  // ✅ Мигрировано
+  productIds: z.array(zId).min(1, "Укажите хотя бы один ID товара"), // ✅ Мигрировано
 });
 
 export const supplierIdsSchema = z.object({
-  supplierIds: z.array(zId).min(1, "Укажите хотя бы один ID поставщика")  // ✅ Мигрировано
+  supplierIds: z.array(zId).min(1, "Укажите хотя бы один ID поставщика"), // ✅ Мигрировано
 });
 
 export const contractorIdsSchema = z.object({
-  contractorIds: z.array(zId).min(1, "Укажите хотя бы один ID контрагента")  // ✅ Мигрировано
+  contractorIds: z.array(zId).min(1, "Укажите хотя бы один ID контрагента"), // ✅ Мигрировано
 });
 
 export const documentIdsSchema = z.object({
-  documentIds: z.array(zId).min(1, "Укажите хотя бы один ID документа")  // ✅ Мигрировано
+  documentIds: z.array(zId).min(1, "Укажите хотя бы один ID документа"), // ✅ Мигрировано
 });
 
 export const orderIdsSchema = z.object({
-  orderIds: z.array(zId).min(1, "Укажите хотя бы один ID заказа")  // ✅ Мигрировано
+  orderIds: z.array(zId).min(1, "Укажите хотя бы один ID заказа"), // ✅ Мигрировано
 });
 
 export const warehouseIdsSchema = z.object({
-  warehouseIds: z.array(zId).min(1, "Укажите хотя бы один ID склада")  // ✅ Мигрировано
+  warehouseIds: z.array(zId).min(1, "Укажите хотя бы один ID склада"), // ✅ Мигрировано
 });

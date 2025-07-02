@@ -30,9 +30,9 @@ export interface CreateOrderData {
 
 // Данные для создания документа
 export interface CreateDocumentData {
-  type: 'Оприходование' | 'Списание';
+  type: "Оприходование" | "Списание";
   warehouseId: number;
-  status: 'draft' | 'posted';
+  status: "draft" | "posted";
   items: Array<{
     productId: number;
     quantity: number;

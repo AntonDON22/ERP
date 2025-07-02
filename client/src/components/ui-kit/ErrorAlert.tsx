@@ -11,12 +11,12 @@ interface ErrorAlertProps {
   variant?: "destructive" | "default";
 }
 
-export function ErrorAlert({ 
+export function ErrorAlert({
   title = "Ошибка",
   message,
   onClose,
   className,
-  variant = "destructive"
+  variant = "destructive",
 }: ErrorAlertProps) {
   return (
     <Alert variant={variant} className={cn("relative", className)}>

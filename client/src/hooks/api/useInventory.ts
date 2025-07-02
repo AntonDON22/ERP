@@ -9,8 +9,8 @@ export interface InventoryItem {
 }
 
 export function useInventory(warehouseId?: number) {
-  const queryParams = warehouseId ? `?warehouseId=${warehouseId}` : '';
-  
+  const queryParams = warehouseId ? `?warehouseId=${warehouseId}` : "";
+
   return useQuery<InventoryItem[]>({
     queryKey: [`/api/inventory${queryParams}`],
   });
@@ -18,6 +18,6 @@ export function useInventory(warehouseId?: number) {
 
 export function useInventoryAvailability() {
   return useQuery<InventoryItem[]>({
-    queryKey: ['/api/inventory/availability'],
+    queryKey: ["/api/inventory/availability"],
   });
 }

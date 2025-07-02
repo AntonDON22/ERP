@@ -1,10 +1,39 @@
-import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp, pgEnum } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  text,
+  serial,
+  integer,
+  boolean,
+  decimal,
+  varchar,
+  index,
+  numeric,
+  timestamp,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName, zNameOptional, zDocumentName, zNotes, zDate, zOrderStatus, zOrderStatusOptional } from "./zFields";
+import {
+  zPrice,
+  zQuantity,
+  zQuantityInteger,
+  zQuantityString,
+  zPriceString,
+  zWeight,
+  zWeightString,
+  zDimensionString,
+  zId,
+  zName,
+  zNameOptional,
+  zDocumentName,
+  zNotes,
+  zDate,
+  zOrderStatus,
+  zOrderStatusOptional,
+} from "./zFields";
 
 // Enum для типов документов
-export const documentTypeEnum = pgEnum('document_type_enum', ['income', 'outcome', 'return']);
+export const documentTypeEnum = pgEnum("document_type_enum", ["income", "outcome", "return"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -63,112 +92,175 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
-export const insertProductSchema = createInsertSchema(products).omit({
-  id: true,
-}).extend({
-  name: z.string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim(),
-  sku: z.string()
-    .min(1, "Артикул обязателен")
-    .max(100, "Артикул не должен превышать 100 символов")
-    .regex(/^[A-Za-z0-9_-]+$/, "Артикул может содержать только буквы, цифры, дефисы и подчеркивания")
-    .trim(),
-  price: zPriceString,
-  purchasePrice: zPriceString.optional(),
-  weight: zWeightString.optional(),
-  height: zDimensionString.optional(),
-  width: zDimensionString.optional(),
-  length: zDimensionString.optional(),
-});
+export const insertProductSchema = createInsertSchema(products)
+  .omit({
+    id: true,
+  })
+  .extend({
+    name: z
+      .string()
+      .min(1, "Название обязательно")
+      .max(255, "Название не должно превышать 255 символов")
+      .trim(),
+    sku: z
+      .string()
+      .min(1, "Артикул обязателен")
+      .max(100, "Артикул не должен превышать 100 символов")
+      .regex(
+        /^[A-Za-z0-9_-]+$/,
+        "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
+      )
+      .trim(),
+    price: zPriceString,
+    purchasePrice: zPriceString.optional(),
+    weight: zWeightString.optional(),
+    height: zDimensionString.optional(),
+    width: zDimensionString.optional(),
+    length: zDimensionString.optional(),
+  });
 
 // Гибкая схема для импорта Excel
 export const importProductSchema = z.object({
-  name: z.string().optional().transform(val => val && val.trim() ? val.trim() : "Без названия"),
-  sku: z.string().optional().transform(val => val && val.trim() ? val.trim() : `SKU-${Date.now()}`),
-  price: z.union([z.string(), z.number()]).optional().transform(val => 
-    val ? String(val).replace(/[^\d.,]/g, '').replace(',', '.') || "0" : "0"
-  ),
-  purchasePrice: z.union([z.string(), z.number()]).optional().transform(val => 
-    val ? String(val).replace(/[^\d.,]/g, '').replace(',', '.') || "" : ""
-  ),
-  weight: z.union([z.string(), z.number()]).optional().transform(val => 
-    val ? String(val).replace(/[^\d.,]/g, '').replace(',', '.') || "" : ""
-  ),
-  length: z.union([z.string(), z.number()]).optional().transform(val => 
-    val ? String(val).replace(/[^\d]/g, '') || "" : ""
-  ),
-  width: z.union([z.string(), z.number()]).optional().transform(val => 
-    val ? String(val).replace(/[^\d]/g, '') || "" : ""
-  ),
-  height: z.union([z.string(), z.number()]).optional().transform(val => 
-    val ? String(val).replace(/[^\d]/g, '') || "" : ""
-  ),
-  barcode: z.string().optional().transform(val => val && val.trim() ? val.trim() : ""),
-});
-
-export const insertSupplierSchema = createInsertSchema(suppliers).omit({
-  id: true,
-}).extend({
-  name: z.string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .refine(val => val.length > 0, "Название не может быть пустым"),
-  website: z.string()
+  name: z
+    .string()
     .optional()
-    .refine((val) => !val || val.trim() === "" || val.startsWith('http'), "Вебсайт должен начинаться с http или https")
-    .transform(val => val?.trim() || undefined),
-});
-
-export const insertContractorSchema = createInsertSchema(contractors).omit({
-  id: true,
-}).extend({
-  name: z.string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .refine(val => val.length > 0, "Название не может быть пустым"),
-  website: z.string()
+    .transform((val) => (val && val.trim() ? val.trim() : "Без названия")),
+  sku: z
+    .string()
     .optional()
-    .refine((val) => !val || val.trim() === "" || val.startsWith('http'), "Вебсайт должен начинаться с http или https")
-    .transform(val => val?.trim() || undefined),
-});
-
-export const insertWarehouseSchema = createInsertSchema(warehouses).omit({
-  id: true,
-}).extend({
-  name: z.string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .refine(val => val.length > 0, "Название не может быть пустым"),
-  address: z.string()
+    .transform((val) => (val && val.trim() ? val.trim() : `SKU-${Date.now()}`)),
+  price: z
+    .union([z.string(), z.number()])
     .optional()
-    .transform(val => val?.trim() || undefined)
-    .refine(val => !val || val.length <= 500, "Адрес не должен превышать 500 символов"),
-});
-
-export const insertDocumentSchema = createInsertSchema(documents).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  name: z.string()
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
+    .transform((val) =>
+      val
+        ? String(val)
+            .replace(/[^\d.,]/g, "")
+            .replace(",", ".") || "0"
+        : "0"
+    ),
+  purchasePrice: z
+    .union([z.string(), z.number()])
     .optional()
-    .default(""),
-  type: z.enum(['income', 'outcome', 'return'], {
-    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" })
-  }),
-  status: z.enum(['draft', 'posted'], {
-    errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
-  }).default('draft'),
-
-  warehouseId: zId.optional(),
+    .transform((val) =>
+      val
+        ? String(val)
+            .replace(/[^\d.,]/g, "")
+            .replace(",", ".") || ""
+        : ""
+    ),
+  weight: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) =>
+      val
+        ? String(val)
+            .replace(/[^\d.,]/g, "")
+            .replace(",", ".") || ""
+        : ""
+    ),
+  length: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) => (val ? String(val).replace(/[^\d]/g, "") || "" : "")),
+  width: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) => (val ? String(val).replace(/[^\d]/g, "") || "" : "")),
+  height: z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((val) => (val ? String(val).replace(/[^\d]/g, "") || "" : "")),
+  barcode: z
+    .string()
+    .optional()
+    .transform((val) => (val && val.trim() ? val.trim() : "")),
 });
+
+export const insertSupplierSchema = createInsertSchema(suppliers)
+  .omit({
+    id: true,
+  })
+  .extend({
+    name: z
+      .string()
+      .min(1, "Название обязательно")
+      .max(255, "Название не должно превышать 255 символов")
+      .trim()
+      .refine((val) => val.length > 0, "Название не может быть пустым"),
+    website: z
+      .string()
+      .optional()
+      .refine(
+        (val) => !val || val.trim() === "" || val.startsWith("http"),
+        "Вебсайт должен начинаться с http или https"
+      )
+      .transform((val) => val?.trim() || undefined),
+  });
+
+export const insertContractorSchema = createInsertSchema(contractors)
+  .omit({
+    id: true,
+  })
+  .extend({
+    name: z
+      .string()
+      .min(1, "Название обязательно")
+      .max(255, "Название не должно превышать 255 символов")
+      .trim()
+      .refine((val) => val.length > 0, "Название не может быть пустым"),
+    website: z
+      .string()
+      .optional()
+      .refine(
+        (val) => !val || val.trim() === "" || val.startsWith("http"),
+        "Вебсайт должен начинаться с http или https"
+      )
+      .transform((val) => val?.trim() || undefined),
+  });
+
+export const insertWarehouseSchema = createInsertSchema(warehouses)
+  .omit({
+    id: true,
+  })
+  .extend({
+    name: z
+      .string()
+      .min(1, "Название обязательно")
+      .max(255, "Название не должно превышать 255 символов")
+      .trim()
+      .refine((val) => val.length > 0, "Название не может быть пустым"),
+    address: z
+      .string()
+      .optional()
+      .transform((val) => val?.trim() || undefined)
+      .refine((val) => !val || val.length <= 500, "Адрес не должен превышать 500 символов"),
+  });
+
+export const insertDocumentSchema = createInsertSchema(documents)
+  .omit({
+    id: true,
+    createdAt: true,
+    updatedAt: true,
+  })
+  .extend({
+    name: z
+      .string()
+      .max(255, "Название не должно превышать 255 символов")
+      .trim()
+      .optional()
+      .default(""),
+    type: z.enum(["income", "outcome", "return"], {
+      errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" }),
+    }),
+    status: z
+      .enum(["draft", "posted"], {
+        errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" }),
+      })
+      .default("draft"),
+
+    warehouseId: zId.optional(),
+  });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -189,19 +281,23 @@ export type InsertDocument = z.infer<typeof insertDocumentSchema>;
 export type DocumentRecord = typeof documents.$inferSelect;
 
 // Таблица складских движений (FIFO инвентарь)
-export const inventory = pgTable("inventory", {
-  id: serial("id").primaryKey(),
-  productId: integer("product_id").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // положительное для прихода, отрицательное для расхода
-  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"), // закупочная цена (только для приходов)
-  movementType: text("movement_type").notNull(), // 'IN' для прихода, 'OUT' для расхода
-  documentId: integer("document_id").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  // Индексы для оптимизации FIFO-выборок
-  productDateIdx: index("inventory_product_date_idx").on(table.productId, table.createdAt),
-  productTypeIdx: index("inventory_product_type_idx").on(table.productId, table.movementType),
-}));
+export const inventory = pgTable(
+  "inventory",
+  {
+    id: serial("id").primaryKey(),
+    productId: integer("product_id").notNull(),
+    quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // положительное для прихода, отрицательное для расхода
+    price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"), // закупочная цена (только для приходов)
+    movementType: text("movement_type").notNull(), // 'IN' для прихода, 'OUT' для расхода
+    documentId: integer("document_id").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    // Индексы для оптимизации FIFO-выборок
+    productDateIdx: index("inventory_product_date_idx").on(table.productId, table.createdAt),
+    productTypeIdx: index("inventory_product_type_idx").on(table.productId, table.movementType),
+  })
+);
 
 // Таблица позиций документов оприходования
 export const documentItems = pgTable("document_items", {
@@ -215,19 +311,21 @@ export const documentItems = pgTable("document_items", {
 // КРИТИЧЕСКИ ВАЖНО: Данная схема использует поля из zFields.ts для единообразной валидации.
 // НЕ изменяйте вручную правила валидации — только через zFields.
 // Эта схема используется для записи в БД через Drizzle ORM.
-export const insertDocumentItemSchema = createInsertSchema(documentItems).omit({
-  id: true,
-  documentId: true,
-}).extend({
-  productId: zId,
-  quantity: zQuantityString,
-  price: zPriceString.optional(),
-});
+export const insertDocumentItemSchema = createInsertSchema(documentItems)
+  .omit({
+    id: true,
+    documentId: true,
+  })
+  .extend({
+    productId: zId,
+    quantity: zQuantityString,
+    price: zPriceString.optional(),
+  });
 
 // Type for items when creating receipts (without documentId)
 export type CreateDocumentItem = z.infer<typeof insertDocumentItemSchema>;
 
-// Type for items with documentId (for full CRUD operations)  
+// Type for items with documentId (for full CRUD operations)
 export type InsertDocumentItem = CreateDocumentItem & { documentId?: number };
 export type DocumentItem = typeof documentItems.$inferSelect;
 
@@ -242,11 +340,11 @@ export const documentItemSchema = z.object({
 });
 
 export const receiptDocumentSchema = z.object({
-  type: z.enum(['income', 'outcome', 'return'], {
-    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" })
+  type: z.enum(["income", "outcome", "return"], {
+    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" }),
   }),
-  status: z.enum(['draft', 'posted'], {
-    errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
+  status: z.enum(["draft", "posted"], {
+    errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" }),
   }),
   name: zDocumentName, // Поддерживает пустые значения для автогенерации
   warehouseId: zId,
@@ -254,22 +352,26 @@ export const receiptDocumentSchema = z.object({
 });
 
 // Таблица заказов
-export const orders = pgTable("orders", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  status: text("status").notNull().default("Новый"), // Новый, В работе, Выполнен, Отменен
-  customerId: integer("customer_id"), // может быть контрагент
-  warehouseId: integer("warehouse_id"),
-  totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
-  notes: text("notes"),
-  isReserved: boolean("is_reserved").notNull().default(false), // резерв товаров
-  date: text("date").notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  orderDateIdx: index("orders_date_idx").on(table.date),
-  orderStatusIdx: index("orders_status_idx").on(table.status),
-}));
+export const orders = pgTable(
+  "orders",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    status: text("status").notNull().default("Новый"), // Новый, В работе, Выполнен, Отменен
+    customerId: integer("customer_id"), // может быть контрагент
+    warehouseId: integer("warehouse_id"),
+    totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+    notes: text("notes"),
+    isReserved: boolean("is_reserved").notNull().default(false), // резерв товаров
+    date: text("date").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    orderDateIdx: index("orders_date_idx").on(table.date),
+    orderStatusIdx: index("orders_status_idx").on(table.status),
+  })
+);
 
 // Таблица позиций заказов
 export const orderItems = pgTable("order_items", {
@@ -282,32 +384,34 @@ export const orderItems = pgTable("order_items", {
 
 // ✅ Схема для создания заказов - использует централизованные поля zFields.ts
 export const createOrderSchema = z.object({
-  name: zNameOptional,  // ✅ Мигрировано на централизованное поле
+  name: zNameOptional, // ✅ Мигрировано на централизованное поле
   status: zOrderStatusOptional, // ✅ Мигрировано на централизованное поле (опционально)
   customerId: zId.optional(),
   warehouseId: zId,
   totalAmount: zPriceString.optional(),
-  notes: zNotes,        // ✅ Мигрировано на централизованное поле
-  date: zDate,          // ✅ Мигрировано на централизованное поле
+  notes: zNotes, // ✅ Мигрировано на централизованное поле
+  date: zDate, // ✅ Мигрировано на централизованное поле
   isReserved: z.boolean().optional(),
 });
 
 // ✅ Схема для полного заказа - использует централизованные поля zFields.ts
 export const insertOrderSchema = createOrderSchema.extend({
-  name: zName,          // ✅ Мигрировано на централизованное поле (обязательно)
+  name: zName, // ✅ Мигрировано на централизованное поле (обязательно)
   status: zOrderStatus, // ✅ Обязательное поле без дефолта (обрабатывается в сервисе)
   totalAmount: zPriceString,
   isReserved: z.boolean().default(false), // Обязательное поле с дефолтом
 });
 
-export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
-  id: true,
-  orderId: true,
-}).extend({
-  productId: zId,
-  quantity: zQuantityInteger,
-  price: zPrice,  // ✅ Исправлено: используем zPrice вместо zPriceString
-});
+export const insertOrderItemSchema = createInsertSchema(orderItems)
+  .omit({
+    id: true,
+    orderId: true,
+  })
+  .extend({
+    productId: zId,
+    quantity: zQuantityInteger,
+    price: zPrice, // ✅ Исправлено: используем zPrice вместо zPriceString
+  });
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
@@ -315,7 +419,7 @@ export type CreateOrderItem = z.infer<typeof insertOrderItemSchema>;
 export type InsertOrderItem = CreateOrderItem & { orderId?: number };
 export type OrderItem = typeof orderItems.$inferSelect;
 
-// ВАЖНО: Данная схема должна использовать поля из zFields.ts. 
+// ВАЖНО: Данная схема должна использовать поля из zFields.ts.
 // НЕ изменяйте вручную правила валидации — только через zFields.
 export const orderItemSchema = z.object({
   productId: zId,
@@ -327,38 +431,46 @@ export const orderItemSchema = z.object({
 export const orderSchema = z.object({
   customerId: zId, // Обязательное поле - контрагент должен быть выбран
   warehouseId: zId,
-  status: zOrderStatus,  // ✅ Мигрировано на централизованное поле
+  status: zOrderStatus, // ✅ Мигрировано на централизованное поле
   isReserved: z.boolean().optional(),
   items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
 // Таблица резервов товаров
-export const reserves = pgTable("reserves", {
-  id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull(),
-  productId: integer("product_id").notNull(),
-  warehouseId: integer("warehouse_id").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-}, (table) => ({
-  reserveOrderIdx: index("reserves_order_idx").on(table.orderId),
-  reserveProductIdx: index("reserves_product_idx").on(table.productId),
-  reserveWarehouseIdx: index("reserves_warehouse_idx").on(table.warehouseId),
-}));
+export const reserves = pgTable(
+  "reserves",
+  {
+    id: serial("id").primaryKey(),
+    orderId: integer("order_id").notNull(),
+    productId: integer("product_id").notNull(),
+    warehouseId: integer("warehouse_id").notNull(),
+    quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    reserveOrderIdx: index("reserves_order_idx").on(table.orderId),
+    reserveProductIdx: index("reserves_product_idx").on(table.productId),
+    reserveWarehouseIdx: index("reserves_warehouse_idx").on(table.warehouseId),
+  })
+);
 
 // Таблица логов системы
-export const logs = pgTable("logs", {
-  id: serial("id").primaryKey(),
-  timestamp: timestamp("timestamp").defaultNow().notNull(),
-  level: text("level").notNull(), // DEBUG, INFO, WARN, ERROR
-  message: text("message").notNull(),
-  module: text("module").notNull(), // api, database, inventory, etc.
-  details: text("details"), // JSON string для дополнительных данных
-}, (table) => ({
-  timestampIdx: index("logs_timestamp_idx").on(table.timestamp),
-  levelIdx: index("logs_level_idx").on(table.level),
-  moduleIdx: index("logs_module_idx").on(table.module),
-}));
+export const logs = pgTable(
+  "logs",
+  {
+    id: serial("id").primaryKey(),
+    timestamp: timestamp("timestamp").defaultNow().notNull(),
+    level: text("level").notNull(), // DEBUG, INFO, WARN, ERROR
+    message: text("message").notNull(),
+    module: text("module").notNull(), // api, database, inventory, etc.
+    details: text("details"), // JSON string для дополнительных данных
+  },
+  (table) => ({
+    timestampIdx: index("logs_timestamp_idx").on(table.timestamp),
+    levelIdx: index("logs_level_idx").on(table.level),
+    moduleIdx: index("logs_module_idx").on(table.module),
+  })
+);
 
 // Схемы валидации для логов
 export const insertLogSchema = createInsertSchema(logs).omit({

@@ -1,5 +1,5 @@
-import { createClient, RedisClientType } from 'redis';
-import { logger } from '@shared/logger';
+import { createClient, RedisClientType } from "redis";
+import { logger } from "@shared/logger";
 
 // Простой in-memory кеш для fallback
 interface CacheEntry {
@@ -13,8 +13,8 @@ class CacheService {
   private memoryCache = new Map<string, CacheEntry>();
 
   constructor() {
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
-    
+    const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+
     // Настройки для Upstash и облачного Redis с TLS
     const redisConfig: any = {
       url: redisUrl,
@@ -22,27 +22,27 @@ class CacheService {
         connectTimeout: 10000,
         lazyConnect: true,
         // Для rediss:// (TLS) добавляем настройки SSL
-        ...(redisUrl.startsWith('rediss://') && {
+        ...(redisUrl.startsWith("rediss://") && {
           tls: true,
-          rejectUnauthorized: false  // Для работы с Upstash
-        })
-      }
+          rejectUnauthorized: false, // Для работы с Upstash
+        }),
+      },
     };
 
     this.client = createClient(redisConfig);
 
-    this.client.on('error', (err) => {
-      logger.warn('Redis connection failed, using memory cache', { error: err.message });
+    this.client.on("error", (err) => {
+      logger.warn("Redis connection failed, using memory cache", { error: err.message });
       this.isConnected = false;
     });
 
-    this.client.on('connect', () => {
-      logger.info('Redis connected successfully');
+    this.client.on("connect", () => {
+      logger.info("Redis connected successfully");
       this.isConnected = true;
     });
 
-    this.client.on('disconnect', () => {
-      logger.warn('Redis disconnected, falling back to memory');
+    this.client.on("disconnect", () => {
+      logger.warn("Redis disconnected, falling back to memory");
       this.isConnected = false;
     });
 
@@ -54,7 +54,9 @@ class CacheService {
     try {
       await this.client.connect();
     } catch (error) {
-      logger.info('Using memory cache (Redis unavailable)', { error: error instanceof Error ? error.message : String(error) });
+      logger.info("Using memory cache (Redis unavailable)", {
+        error: error instanceof Error ? error.message : String(error),
+      });
       this.isConnected = false;
     }
   }
@@ -78,7 +80,7 @@ class CacheService {
           return JSON.parse(value);
         }
       } catch (error) {
-        logger.warn('Redis get failed, trying memory cache', { key, error });
+        logger.warn("Redis get failed, trying memory cache", { key, error });
       }
     }
 
@@ -102,13 +104,13 @@ class CacheService {
       try {
         await this.client.setEx(key, ttlSeconds, JSON.stringify(value));
       } catch (error) {
-        logger.warn('Redis set failed, using memory cache', { key, error });
+        logger.warn("Redis set failed, using memory cache", { key, error });
         this.isConnected = false;
       }
     }
 
     // Всегда сохраняем в memory cache как fallback
-    const expiry = Date.now() + (ttlSeconds * 1000);
+    const expiry = Date.now() + ttlSeconds * 1000;
     this.memoryCache.set(key, { value, expiry });
   }
 
@@ -118,7 +120,7 @@ class CacheService {
       try {
         await this.client.del(key);
       } catch (error) {
-        logger.warn('Redis delete failed', { key, error });
+        logger.warn("Redis delete failed", { key, error });
       }
     }
 
@@ -128,7 +130,7 @@ class CacheService {
 
   async invalidatePattern(pattern: string): Promise<void> {
     let redisKeysCount = 0;
-    
+
     // Удаляем из Redis если возможно
     if (this.isConnected) {
       try {
@@ -138,7 +140,7 @@ class CacheService {
           redisKeysCount = keys.length;
         }
       } catch (error) {
-        logger.warn('Redis pattern invalidation failed', { pattern, error });
+        logger.warn("Redis pattern invalidation failed", { pattern, error });
       }
     }
 
@@ -149,23 +151,23 @@ class CacheService {
         memoryKeysToDelete.push(key);
       }
     });
-    
+
     for (const key of memoryKeysToDelete) {
       this.memoryCache.delete(key);
     }
 
     if (redisKeysCount > 0 || memoryKeysToDelete.length > 0) {
-      logger.info('Cache pattern invalidated', { 
-        pattern, 
-        redisKeys: redisKeysCount, 
-        memoryKeys: memoryKeysToDelete.length 
+      logger.info("Cache pattern invalidated", {
+        pattern,
+        redisKeys: redisKeysCount,
+        memoryKeys: memoryKeysToDelete.length,
       });
     }
   }
 
   private matchesPattern(key: string, pattern: string): boolean {
     // Простое сопоставление паттернов Redis (только * в конце)
-    if (pattern.endsWith('*')) {
+    if (pattern.endsWith("*")) {
       const prefix = pattern.slice(0, -1);
       return key.startsWith(prefix);
     }
@@ -174,15 +176,11 @@ class CacheService {
 
   // Утилитарные методы для генерации ключей кеша
   static generateKey(prefix: string, ...parts: (string | number)[]): string {
-    return `${prefix}:${parts.join(':')}`;
+    return `${prefix}:${parts.join(":")}`;
   }
 
   // Кеширование с автоматическим обновлением
-  async getOrSet<T>(
-    key: string, 
-    fetchFn: () => Promise<T>, 
-    ttlSeconds = 300
-  ): Promise<T> {
+  async getOrSet<T>(key: string, fetchFn: () => Promise<T>, ttlSeconds = 300): Promise<T> {
     const cached = await this.get<T>(key);
     if (cached !== null) {
       return cached;
@@ -202,12 +200,12 @@ class CacheService {
         const exists = await this.client.exists(key);
         return exists === 1;
       }
-      
+
       return this.memoryCache.has(key);
     } catch (error) {
-      logger.error('Ошибка проверки существования ключа в кеше', { 
-        key, 
-        error: error instanceof Error ? error.message : String(error)
+      logger.error("Ошибка проверки существования ключа в кеше", {
+        key,
+        error: error instanceof Error ? error.message : String(error),
       });
       return this.memoryCache.has(key);
     }

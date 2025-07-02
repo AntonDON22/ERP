@@ -37,8 +37,8 @@ export abstract class BaseStorage<T, InsertT> implements BaseStorageInterface<T,
       endOperation();
       return result;
     } catch (error) {
-      dbLogger.error(`Error in ${operationName}${this.entityName}`, { 
-        error: getErrorMessage(error) 
+      dbLogger.error(`Error in ${operationName}${this.entityName}`, {
+        error: getErrorMessage(error),
       });
       endOperation();
       throw error;
@@ -58,14 +58,12 @@ export abstract class BaseStorage<T, InsertT> implements BaseStorageInterface<T,
    */
   async deleteMultiple(ids: number[]): Promise<boolean> {
     try {
-      const results = await Promise.all(
-        ids.map(id => this.delete(id))
-      );
-      return results.every(result => result === true);
+      const results = await Promise.all(ids.map((id) => this.delete(id)));
+      return results.every((result) => result === true);
     } catch (error) {
-      dbLogger.error(`Error in deleteMultiple${this.entityName}`, { 
+      dbLogger.error(`Error in deleteMultiple${this.entityName}`, {
         error: getErrorMessage(error),
-        ids 
+        ids,
       });
       return false;
     }
@@ -85,7 +83,7 @@ export interface PaginationParams {
   limit?: number;
   offset?: number;
   sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortOrder?: "asc" | "desc";
 }
 
 export interface PaginatedResult<T> {
@@ -104,12 +102,12 @@ export class DataCleaningUtils {
    */
   static cleanNumericValue(value: string | null | undefined): string | null {
     if (!value || value === "") return null;
-    
+
     const cleaned = String(value)
-      .replace(/[^\d.,]/g, '') // Удаляем все кроме цифр, точек и запятых
-      .replace(',', '.') // Заменяем запятые на точки
+      .replace(/[^\d.,]/g, "") // Удаляем все кроме цифр, точек и запятых
+      .replace(",", ".") // Заменяем запятые на точки
       .trim();
-      
+
     return cleaned || null;
   }
 
@@ -126,10 +124,12 @@ export class DataCleaningUtils {
    */
   static cleanSKU(sku: string | null | undefined): string | null {
     if (!sku || sku === "") return null;
-    return String(sku)
-      .toUpperCase()
-      .replace(/[^A-Z0-9-_]/g, '')
-      .trim() || null;
+    return (
+      String(sku)
+        .toUpperCase()
+        .replace(/[^A-Z0-9-_]/g, "")
+        .trim() || null
+    );
   }
 }
 
@@ -141,8 +141,8 @@ export const STORAGE_CONSTANTS = {
   MAX_PAGE_SIZE: 1000,
   BATCH_SIZE: 100,
   CACHE_TTL: {
-    SHORT: 60,    // 1 минута для изменчивых данных
-    MEDIUM: 300,  // 5 минут для обычных данных  
-    LONG: 3600    // 1 час для статических данных
-  }
+    SHORT: 60, // 1 минута для изменчивых данных
+    MEDIUM: 300, // 5 минут для обычных данных
+    LONG: 3600, // 1 час для статических данных
+  },
 } as const;

@@ -7,12 +7,12 @@ export class ProductStorage {
   async getProducts(): Promise<Product[]> {
     dbLogger.debug("Starting: getProducts");
     const startTime = Date.now();
-    
+
     const result = await db.select().from(products);
-    
+
     const duration = Date.now() - startTime;
     dbLogger.info(`Performance: getProducts (${duration}ms)`);
-    
+
     return result;
   }
 
@@ -27,14 +27,14 @@ export class ProductStorage {
   }
 
   async createProduct(insertProduct: InsertProduct): Promise<Product> {
-    const [product] = await db
-      .insert(products)
-      .values(insertProduct)
-      .returning();
+    const [product] = await db.insert(products).values(insertProduct).returning();
     return product;
   }
 
-  async updateProduct(id: number, updateData: Partial<InsertProduct>): Promise<Product | undefined> {
+  async updateProduct(
+    id: number,
+    updateData: Partial<InsertProduct>
+  ): Promise<Product | undefined> {
     const [product] = await db
       .update(products)
       .set(updateData)
@@ -44,9 +44,7 @@ export class ProductStorage {
   }
 
   async deleteProduct(id: number): Promise<boolean> {
-    const result = await db
-      .delete(products)
-      .where(eq(products.id, id));
+    const result = await db.delete(products).where(eq(products.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

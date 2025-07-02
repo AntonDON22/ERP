@@ -2,12 +2,37 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Calendar, Clock, Wrench, Bug, Zap, Database, Activity, RefreshCw, Filter, Search, AlertCircle, User, MessageSquare, Copy, Check, ChevronLeft } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Calendar,
+  Clock,
+  Wrench,
+  Bug,
+  Zap,
+  Database,
+  Activity,
+  RefreshCw,
+  Filter,
+  Search,
+  AlertCircle,
+  User,
+  MessageSquare,
+  Copy,
+  Check,
+  ChevronLeft,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Update {
   type: "feature" | "fix" | "improvement" | "database";
@@ -24,7 +49,7 @@ interface DayData {
 interface LogEntry {
   id: number;
   timestamp: string;
-  level: 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+  level: "DEBUG" | "INFO" | "WARN" | "ERROR";
   message: string;
   module: string;
   details?: string;
@@ -36,14 +61,17 @@ interface PerformanceMetrics {
     averageResponseTime: number;
     databaseQueryCount: number;
     totalRequests: number;
-    systemHealth: 'healthy' | 'warning' | 'critical';
+    systemHealth: "healthy" | "warning" | "critical";
   };
-  endpoints: Record<string, {
-    totalRequests: number;
-    avgResponseTime: number;
-    cacheHitRate: number;
-    totalDbQueries: number;
-  }>;
+  endpoints: Record<
+    string,
+    {
+      totalRequests: number;
+      avgResponseTime: number;
+      cacheHitRate: number;
+      totalDbQueries: number;
+    }
+  >;
   cache: {
     hit_rate: number;
     memory_usage: string;
@@ -51,7 +79,7 @@ interface PerformanceMetrics {
     status: string;
   };
   trends: {
-    trend: 'improving' | 'stable' | 'degrading';
+    trend: "improving" | "stable" | "degrading";
     improvement: number;
   };
   timestamp: string;
@@ -60,9 +88,9 @@ interface PerformanceMetrics {
 export default function Dashboard() {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState({
-    level: 'all',
-    module: 'all',
-    search: ''
+    level: "all",
+    module: "all",
+    search: "",
   });
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
@@ -70,22 +98,30 @@ export default function Dashboard() {
 
   // История изменений
   const { data: changelog, isLoading: changelogLoading } = useQuery<DayData[]>({
-    queryKey: ['/api/changelog'],
+    queryKey: ["/api/changelog"],
   });
 
   // Логи
-  const { data: logs, isLoading: logsLoading, refetch: refetchLogs } = useQuery<LogEntry[]>({
-    queryKey: ['/api/logs'],
+  const {
+    data: logs,
+    isLoading: logsLoading,
+    refetch: refetchLogs,
+  } = useQuery<LogEntry[]>({
+    queryKey: ["/api/logs"],
     refetchInterval: 30000, // Обновляем каждые 30 секунд
   });
 
   const { data: modules } = useQuery<string[]>({
-    queryKey: ['/api/logs/modules'],
+    queryKey: ["/api/logs/modules"],
   });
 
   // Метрики производительности
-  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery<PerformanceMetrics>({
-    queryKey: ['/api/metrics'],
+  const {
+    data: metrics,
+    isLoading: metricsLoading,
+    refetch: refetchMetrics,
+  } = useQuery<PerformanceMetrics>({
+    queryKey: ["/api/metrics"],
     refetchInterval: 10000, // Обновляем каждые 10 секунд
   });
 
@@ -99,29 +135,29 @@ export default function Dashboard() {
     setOpenSections(newOpenSections);
   };
 
-  const getUpdateIcon = (type: Update['type']) => {
+  const getUpdateIcon = (type: Update["type"]) => {
     switch (type) {
-      case 'feature':
+      case "feature":
         return <Zap className="w-4 h-4 text-blue-600" />;
-      case 'fix':
+      case "fix":
         return <Bug className="w-4 h-4 text-red-600" />;
-      case 'improvement':
+      case "improvement":
         return <Wrench className="w-4 h-4 text-green-600" />;
-      case 'database':
+      case "database":
         return <Database className="w-4 h-4 text-purple-600" />;
       default:
         return <Clock className="w-4 h-4 text-gray-600" />;
     }
   };
 
-  const getUpdateBadge = (type: Update['type']) => {
+  const getUpdateBadge = (type: Update["type"]) => {
     const variants = {
       feature: { variant: "default" as const, text: "Новое" },
       fix: { variant: "destructive" as const, text: "Исправление" },
       improvement: { variant: "secondary" as const, text: "Улучшение" },
-      database: { variant: "outline" as const, text: "База данных" }
+      database: { variant: "outline" as const, text: "База данных" },
     };
-    
+
     const config = variants[type];
     return (
       <Badge variant={config.variant} className="text-xs">
@@ -131,17 +167,17 @@ export default function Dashboard() {
   };
 
   // Логика для логов
-  const getLevelBadge = (level: LogEntry['level']) => {
+  const getLevelBadge = (level: LogEntry["level"]) => {
     const variants = {
       DEBUG: { variant: "outline" as const, icon: MessageSquare, color: "text-gray-600" },
       INFO: { variant: "default" as const, icon: Clock, color: "text-blue-600" },
       WARN: { variant: "secondary" as const, icon: AlertCircle, color: "text-yellow-600" },
-      ERROR: { variant: "destructive" as const, icon: AlertCircle, color: "text-red-600" }
+      ERROR: { variant: "destructive" as const, icon: AlertCircle, color: "text-red-600" },
     };
-    
+
     const config = variants[level];
     const IconComponent = config.icon;
-    
+
     return (
       <Badge variant={config.variant} className="flex items-center gap-1">
         <IconComponent className={`w-3 h-3 ${config.color}`} />
@@ -153,13 +189,13 @@ export default function Dashboard() {
   const formatTimestamp = (timestamp: string) => {
     try {
       const date = new Date(timestamp);
-      return date.toLocaleString('ru-RU', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
+      return date.toLocaleString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
       });
     } catch {
       return timestamp;
@@ -170,12 +206,12 @@ export default function Dashboard() {
     try {
       await navigator.clipboard.writeText(text);
       const key = `${type}-${text}`;
-      setCopiedStates(prev => ({ ...prev, [key]: true }));
+      setCopiedStates((prev) => ({ ...prev, [key]: true }));
       setTimeout(() => {
-        setCopiedStates(prev => ({ ...prev, [key]: false }));
+        setCopiedStates((prev) => ({ ...prev, [key]: false }));
       }, 2000);
     } catch (err) {
-      console.error('Ошибка копирования:', err);
+      console.error("Ошибка копирования:", err);
     }
   };
 
@@ -185,9 +221,7 @@ export default function Dashboard() {
 
     return (
       <div className="group flex items-start gap-2">
-        <span className="flex-1 text-sm leading-relaxed break-words">
-          {text}
-        </span>
+        <span className="flex-1 text-sm leading-relaxed break-words">{text}</span>
         <Button
           variant="ghost"
           size="sm"
@@ -207,22 +241,24 @@ export default function Dashboard() {
   // Фильтрация логов
   const filteredLogs = useMemo(() => {
     if (!logs) return [];
-    
+
     return logs.filter((log: LogEntry) => {
-      if (filters.level && filters.level !== 'all' && log.level !== filters.level) {
+      if (filters.level && filters.level !== "all" && log.level !== filters.level) {
         return false;
       }
-      
-      if (filters.module && filters.module !== 'all' && log.module !== filters.module) {
+
+      if (filters.module && filters.module !== "all" && log.module !== filters.module) {
         return false;
       }
-      
+
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        return log.message.toLowerCase().includes(searchLower) ||
-               log.module.toLowerCase().includes(searchLower);
+        return (
+          log.message.toLowerCase().includes(searchLower) ||
+          log.module.toLowerCase().includes(searchLower)
+        );
       }
-      
+
       return true;
     });
   }, [logs, filters]);
@@ -250,12 +286,17 @@ export default function Dashboard() {
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       <div className="text-center sm:text-left">
         <h1 className="text-2xl sm:text-3xl font-bold">Главная панель</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Мониторинг системы и история обновлений</p>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">
+          Мониторинг системы и история обновлений
+        </p>
       </div>
 
       <Tabs defaultValue="updates" className="space-y-4 sm:space-y-6">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="updates"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+          >
             <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Обновления</span>
             <span className="sm:hidden">Обновл.</span>
@@ -265,7 +306,10 @@ export default function Dashboard() {
             <span className="hidden sm:inline">Логи</span>
             <span className="sm:hidden">Логи</span>
           </TabsTrigger>
-          <TabsTrigger value="metrics" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+          <TabsTrigger
+            value="metrics"
+            className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
+          >
             <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Метрики</span>
             <span className="sm:hidden">Метрики</span>
@@ -286,9 +330,7 @@ export default function Dashboard() {
                   <div className="text-gray-500">Загрузка истории изменений...</div>
                 </div>
               ) : !changelog || changelog.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  История изменений не найдена
-                </div>
+                <div className="text-center py-8 text-gray-500">История изменений не найдена</div>
               ) : (
                 <div className="space-y-4">
                   {changelog.map((day) => (
@@ -313,11 +355,14 @@ export default function Dashboard() {
                           {day.updates.length} обновлений
                         </Badge>
                       </CollapsibleTrigger>
-                      
+
                       <CollapsibleContent className="pt-2">
                         <div className="pl-6 space-y-3">
                           {day.updates.map((update, index) => (
-                            <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                            <div
+                              key={index}
+                              className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg"
+                            >
                               {getUpdateIcon(update.type)}
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
@@ -349,7 +394,7 @@ export default function Dashboard() {
                   Системные логи
                 </CardTitle>
                 <Button onClick={handleRefresh} variant="outline" size="sm" disabled={logsLoading}>
-                  <RefreshCw className={`w-4 h-4 mr-2 ${logsLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`w-4 h-4 mr-2 ${logsLoading ? "animate-spin" : ""}`} />
                   Обновить
                 </Button>
               </div>
@@ -359,7 +404,10 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-medium">Уровень</label>
-                  <Select value={filters.level} onValueChange={(value) => setFilters(prev => ({ ...prev, level: value }))}>
+                  <Select
+                    value={filters.level}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, level: value }))}
+                  >
                     <SelectTrigger className="text-xs sm:text-sm">
                       <SelectValue placeholder="Все уровни" />
                     </SelectTrigger>
@@ -375,7 +423,10 @@ export default function Dashboard() {
 
                 <div className="space-y-2">
                   <label className="text-xs sm:text-sm font-medium">Модуль</label>
-                  <Select value={filters.module} onValueChange={(value) => setFilters(prev => ({ ...prev, module: value }))}>
+                  <Select
+                    value={filters.module}
+                    onValueChange={(value) => setFilters((prev) => ({ ...prev, module: value }))}
+                  >
                     <SelectTrigger className="text-xs sm:text-sm">
                       <SelectValue placeholder="Все модули" />
                     </SelectTrigger>
@@ -397,7 +448,7 @@ export default function Dashboard() {
                     <Input
                       placeholder="Поиск по сообщению..."
                       value={filters.search}
-                      onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+                      onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
                       className="pl-8 sm:pl-10 text-xs sm:text-sm"
                     />
                   </div>
@@ -410,26 +461,24 @@ export default function Dashboard() {
                   <div className="text-center">
                     <div className="text-xs sm:text-sm text-gray-600">Ошибки</div>
                     <div className="text-base sm:text-lg font-semibold text-red-600">
-                      {filteredLogs.filter((log: LogEntry) => log.level === 'ERROR').length}
+                      {filteredLogs.filter((log: LogEntry) => log.level === "ERROR").length}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs sm:text-sm text-gray-600">Предупр.</div>
                     <div className="text-base sm:text-lg font-semibold text-yellow-600">
-                      {filteredLogs.filter((log: LogEntry) => log.level === 'WARN').length}
+                      {filteredLogs.filter((log: LogEntry) => log.level === "WARN").length}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs sm:text-sm text-gray-600">Информ.</div>
                     <div className="text-base sm:text-lg font-semibold text-blue-600">
-                      {filteredLogs.filter((log: LogEntry) => log.level === 'INFO').length}
+                      {filteredLogs.filter((log: LogEntry) => log.level === "INFO").length}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-xs sm:text-sm text-gray-600">Всего</div>
-                    <div className="text-base sm:text-lg font-semibold">
-                      {filteredLogs.length}
-                    </div>
+                    <div className="text-base sm:text-lg font-semibold">{filteredLogs.length}</div>
                   </div>
                 </div>
               )}
@@ -458,32 +507,35 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-2">
                   {currentLogs.map((log: LogEntry) => (
-                    <div key={log.id} className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-sm transition-shadow">
+                    <div
+                      key={log.id}
+                      className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-sm transition-shadow"
+                    >
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-3">
                         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
                             <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
                             <span className="truncate">{formatTimestamp(log.timestamp)}</span>
                           </div>
-                          
+
                           {getLevelBadge(log.level)}
-                          
+
                           <Badge variant="outline" className="flex items-center gap-1 text-xs">
                             <User className="w-3 h-3" />
                             <span className="hidden sm:inline">{log.module}</span>
                             <span className="sm:hidden">{log.module.substring(0, 3)}</span>
                           </Badge>
                         </div>
-                        
+
                         <Badge variant="secondary" className="text-xs">
                           #{log.id}
                         </Badge>
                       </div>
-                      
+
                       <div className="mb-3">
                         <CopyableText text={log.message} type="сообщение" />
                       </div>
-                      
+
                       {log.details && (
                         <details className="mt-2">
                           <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
@@ -503,28 +555,29 @@ export default function Dashboard() {
               {filteredLogs.length > itemsPerPage && (
                 <div className="flex items-center justify-between pt-4 border-t">
                   <div className="text-sm text-gray-700">
-                    Показано {startIndex + 1}-{Math.min(endIndex, filteredLogs.length)} из {filteredLogs.length} записей
+                    Показано {startIndex + 1}-{Math.min(endIndex, filteredLogs.length)} из{" "}
+                    {filteredLogs.length} записей
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                       disabled={currentPage === 1}
                     >
                       <ChevronLeft className="w-4 h-4 mr-1" />
                       Назад
                     </Button>
-                    
+
                     <span className="text-sm text-gray-700">
                       Страница {currentPage} из {totalPages}
                     </span>
-                    
+
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                       disabled={currentPage === totalPages}
                     >
                       Вперед
@@ -587,17 +640,23 @@ export default function Dashboard() {
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">
-                    <Badge 
+                    <Badge
                       variant={
-                        metrics?.overview.systemHealth === 'healthy' ? 'default' :
-                        metrics?.overview.systemHealth === 'warning' ? 'secondary' : 'destructive'
+                        metrics?.overview.systemHealth === "healthy"
+                          ? "default"
+                          : metrics?.overview.systemHealth === "warning"
+                            ? "secondary"
+                            : "destructive"
                       }
                       className="text-sm"
                     >
-                      {metricsLoading ? "..." : 
-                        metrics?.overview.systemHealth === 'healthy' ? 'Отлично' :
-                        metrics?.overview.systemHealth === 'warning' ? 'Норма' : 'Проблемы'
-                      }
+                      {metricsLoading
+                        ? "..."
+                        : metrics?.overview.systemHealth === "healthy"
+                          ? "Отлично"
+                          : metrics?.overview.systemHealth === "warning"
+                            ? "Норма"
+                            : "Проблемы"}
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">Состояние системы</p>
@@ -624,16 +683,18 @@ export default function Dashboard() {
                       <div className="text-gray-500">Загрузка метрик...</div>
                     </div>
                   ) : !metrics?.endpoints || Object.keys(metrics.endpoints).length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
-                      Нет данных о запросах
-                    </div>
+                    <div className="text-center py-8 text-gray-500">Нет данных о запросах</div>
                   ) : (
                     <div className="space-y-3">
                       {Object.entries(metrics.endpoints).map(([endpoint, stats]) => (
                         <div key={endpoint} className="p-3 border rounded-lg">
                           <div className="flex items-center justify-between mb-2">
-                            <code className="text-sm bg-gray-100 px-2 py-1 rounded">{endpoint}</code>
-                            <span className="text-sm text-gray-500">{stats.totalRequests} запросов</span>
+                            <code className="text-sm bg-gray-100 px-2 py-1 rounded">
+                              {endpoint}
+                            </code>
+                            <span className="text-sm text-gray-500">
+                              {stats.totalRequests} запросов
+                            </span>
                           </div>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
@@ -667,7 +728,7 @@ export default function Dashboard() {
                       <div className="grid grid-cols-2 gap-2 text-sm">
                         <div>
                           <span className="text-gray-500">Статус:</span>
-                          <span className="ml-2 font-medium">{metrics?.cache.status || 'N/A'}</span>
+                          <span className="ml-2 font-medium">{metrics?.cache.status || "N/A"}</span>
                         </div>
                         <div>
                           <span className="text-gray-500">Ключей:</span>
@@ -675,29 +736,40 @@ export default function Dashboard() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="p-3 border rounded-lg">
                       <h4 className="font-medium mb-2">Тренд производительности</h4>
                       <div className="flex items-center gap-2">
-                        <Badge 
+                        <Badge
                           variant={
-                            metrics?.trends.trend === 'improving' ? 'default' :
-                            metrics?.trends.trend === 'stable' ? 'secondary' : 'destructive'
+                            metrics?.trends.trend === "improving"
+                              ? "default"
+                              : metrics?.trends.trend === "stable"
+                                ? "secondary"
+                                : "destructive"
                           }
                         >
-                          {metrics?.trends.trend === 'improving' ? 'Улучшение' :
-                           metrics?.trends.trend === 'stable' ? 'Стабильно' : 'Ухудшение'}
+                          {metrics?.trends.trend === "improving"
+                            ? "Улучшение"
+                            : metrics?.trends.trend === "stable"
+                              ? "Стабильно"
+                              : "Ухудшение"}
                         </Badge>
-                        {metrics?.trends.improvement !== undefined && metrics.trends.improvement !== 0 && (
-                          <span className="text-sm text-gray-500">
-                            {metrics.trends.improvement > 0 ? '+' : ''}{metrics.trends.improvement}%
-                          </span>
-                        )}
+                        {metrics?.trends.improvement !== undefined &&
+                          metrics.trends.improvement !== 0 && (
+                            <span className="text-sm text-gray-500">
+                              {metrics.trends.improvement > 0 ? "+" : ""}
+                              {metrics.trends.improvement}%
+                            </span>
+                          )}
                       </div>
                     </div>
 
                     <div className="text-xs text-gray-500 pt-2 border-t">
-                      Последнее обновление: {metrics?.timestamp ? new Date(metrics.timestamp).toLocaleTimeString() : 'N/A'}
+                      Последнее обновление:{" "}
+                      {metrics?.timestamp
+                        ? new Date(metrics.timestamp).toLocaleTimeString()
+                        : "N/A"}
                     </div>
                   </div>
                 </CardContent>

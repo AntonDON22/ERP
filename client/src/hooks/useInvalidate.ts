@@ -9,54 +9,55 @@ export function useInvalidate() {
 
   return {
     // Товары
-    products: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
-    product: (id: number) => queryClient.invalidateQueries({ queryKey: ['product', id] }),
-    
+    products: () => queryClient.invalidateQueries({ queryKey: ["products"] }),
+    product: (id: number) => queryClient.invalidateQueries({ queryKey: ["product", id] }),
+
     // Поставщики
-    suppliers: () => queryClient.invalidateQueries({ queryKey: ['suppliers'] }),
-    supplier: (id: number) => queryClient.invalidateQueries({ queryKey: ['supplier', id] }),
-    
+    suppliers: () => queryClient.invalidateQueries({ queryKey: ["suppliers"] }),
+    supplier: (id: number) => queryClient.invalidateQueries({ queryKey: ["supplier", id] }),
+
     // Контрагенты
-    contractors: () => queryClient.invalidateQueries({ queryKey: ['contractors'] }),
-    contractor: (id: number) => queryClient.invalidateQueries({ queryKey: ['contractor', id] }),
-    
+    contractors: () => queryClient.invalidateQueries({ queryKey: ["contractors"] }),
+    contractor: (id: number) => queryClient.invalidateQueries({ queryKey: ["contractor", id] }),
+
     // Склады
-    warehouses: () => queryClient.invalidateQueries({ queryKey: ['warehouses'] }),
-    warehouse: (id: number) => queryClient.invalidateQueries({ queryKey: ['warehouse', id] }),
-    
+    warehouses: () => queryClient.invalidateQueries({ queryKey: ["warehouses"] }),
+    warehouse: (id: number) => queryClient.invalidateQueries({ queryKey: ["warehouse", id] }),
+
     // Документы
-    documents: () => queryClient.invalidateQueries({ queryKey: ['documents'] }),
-    document: (id: number) => queryClient.invalidateQueries({ queryKey: ['document', id] }),
-    
+    documents: () => queryClient.invalidateQueries({ queryKey: ["documents"] }),
+    document: (id: number) => queryClient.invalidateQueries({ queryKey: ["document", id] }),
+
     // Заказы
-    orders: () => queryClient.invalidateQueries({ queryKey: ['orders'] }),
-    order: (id: number) => queryClient.invalidateQueries({ queryKey: ['order', id] }),
-    
+    orders: () => queryClient.invalidateQueries({ queryKey: ["orders"] }),
+    order: (id: number) => queryClient.invalidateQueries({ queryKey: ["order", id] }),
+
     // Инвентарь и остатки
-    inventory: () => queryClient.invalidateQueries({ queryKey: ['inventory'] }),
-    inventoryAvailability: () => queryClient.invalidateQueries({ queryKey: ['inventory', 'availability'] }),
-    
+    inventory: () => queryClient.invalidateQueries({ queryKey: ["inventory"] }),
+    inventoryAvailability: () =>
+      queryClient.invalidateQueries({ queryKey: ["inventory", "availability"] }),
+
     // Комплексная инвалидация для связанных данных
     inventoryRelated: () => {
       // Инвалидируем все связанные с инвентарем данные
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory', 'availability'] });
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "availability"] });
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
     },
-    
+
     documentRelated: () => {
       // Инвалидируем документы и связанные данные
-      queryClient.invalidateQueries({ queryKey: ['documents'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory', 'availability'] });
+      queryClient.invalidateQueries({ queryKey: ["documents"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "availability"] });
     },
-    
+
     orderRelated: () => {
       // Инвалидируем заказы и связанные данные
-      queryClient.invalidateQueries({ queryKey: ['orders'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory', 'availability'] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      queryClient.invalidateQueries({ queryKey: ["inventory", "availability"] });
     },
-    
+
     // Полная инвалидация всех данных
     all: () => queryClient.invalidateQueries(),
   };

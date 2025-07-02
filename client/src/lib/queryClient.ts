@@ -10,7 +10,7 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   url: string,
   method: string = "GET",
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<Response> {
   const res = await fetch(url, {
     method,
@@ -27,16 +27,14 @@ export async function apiRequest(
 export async function apiRequestJson<T>(
   url: string,
   method: string = "GET",
-  data?: unknown | undefined,
+  data?: unknown | undefined
 ): Promise<T> {
   const res = await apiRequest(url, method, data);
   return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
+export const getQueryFn: <T>(options: { on401: UnauthorizedBehavior }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const res = await fetch(queryKey[0] as string, {

@@ -45,8 +45,6 @@ function PageSkeleton() {
   );
 }
 
-
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>

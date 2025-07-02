@@ -1,9 +1,25 @@
 import { useState, useRef, useCallback, useMemo, useEffect, memo } from "react";
-import { Search, Download, Upload, Trash2, ArrowUpDown, Copy, Check, Plus, Settings } from "lucide-react";
+import {
+  Search,
+  Download,
+  Upload,
+  Trash2,
+  ArrowUpDown,
+  Copy,
+  Check,
+  Plus,
+  Settings,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 import { ResponsiveTableWrapper } from "@/components/ui/responsive-table-wrapper";
@@ -13,17 +29,17 @@ import { useDebounce } from "../hooks/useDebounce";
 // Функция для склонения в родительный падеж
 function getGenitiveForm(entityNamePlural: string): string {
   const lowerCase = entityNamePlural.toLowerCase();
-  
+
   // Словарь склонений
   const genitiveMap: Record<string, string> = {
-    'товары': 'товаров',
-    'поставщики': 'поставщиков', 
-    'контрагенты': 'контрагентов',
-    'склады': 'складов',
-    'документы': 'документов',
-    'заказы': 'заказов'
+    товары: "товаров",
+    поставщики: "поставщиков",
+    контрагенты: "контрагентов",
+    склады: "складов",
+    документы: "документов",
+    заказы: "заказов",
   };
-  
+
   return genitiveMap[lowerCase] || lowerCase;
 }
 
@@ -73,24 +89,24 @@ export interface DataTableProps<T = any> {
 }
 
 // Компонент для копируемых ячеек
-const CopyableCell = ({ 
-  value, 
-  type, 
+const CopyableCell = ({
+  value,
+  type,
   multiline = false,
   copiedStates,
-  onCopy 
-}: { 
-  value: string | null | undefined; 
-  type: string; 
+  onCopy,
+}: {
+  value: string | null | undefined;
+  type: string;
   multiline?: boolean;
   copiedStates: Record<string, boolean>;
   onCopy: (text: string, type: string) => void;
 }) => {
   if (!value) return <span className="text-gray-400">-</span>;
-  
+
   const key = `${type}-${value}`;
   const isCopied = copiedStates[key];
-  
+
   return (
     <div className="flex items-start gap-2 group">
       <span className={multiline ? "flex-1 break-words" : "truncate"}>{value}</span>
@@ -124,7 +140,7 @@ function DataTable<T = any>({
   onCreate,
   onRowClick,
   hideSelectionColumn = false,
-  warehouseFilter
+  warehouseFilter,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<any>("name");
@@ -160,12 +176,13 @@ function DataTable<T = any>({
     // Очищаем все старые настройки ширины для сброса к минимальным значениям
     // Этот код можно удалить после первого запуска на всех клиентах
     const now = Date.now();
-    const resetKey = 'dataTable-reset-to-min-width';
+    const resetKey = "dataTable-reset-to-min-width";
     const lastReset = localStorage.getItem(resetKey);
-    if (!lastReset || now - parseInt(lastReset) > 24 * 60 * 60 * 1000) { // 24 часа
+    if (!lastReset || now - parseInt(lastReset) > 24 * 60 * 60 * 1000) {
+      // 24 часа
       // Очищаем только настройки ширины столбцов, сохраняем видимость
-      Object.keys(localStorage).forEach(key => {
-        if (key.includes('dataTable-') && key.includes('-columnWidths')) {
+      Object.keys(localStorage).forEach((key) => {
+        if (key.includes("dataTable-") && key.includes("-columnWidths")) {
           localStorage.removeItem(key);
         }
       });
@@ -205,26 +222,29 @@ function DataTable<T = any>({
   }, []);
 
   // Функция для обработки изменения размера
-  const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (!isResizing || !tableRef.current) return;
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (!isResizing || !tableRef.current) return;
 
-    const table = tableRef.current;
-    const columnHeader = table.querySelector(`th[data-column="${isResizing}"]`) as HTMLElement;
-    
-    if (!columnHeader) return;
+      const table = tableRef.current;
+      const columnHeader = table.querySelector(`th[data-column="${isResizing}"]`) as HTMLElement;
 
-    const currentColumn = columns.find(col => String(col.key) === isResizing);
-    const minWidth = currentColumn?.minWidth || 150;
-    
-    const mouseX = event.clientX;
-    const headerRect = columnHeader.getBoundingClientRect();
-    const newWidth = Math.max(minWidth, mouseX - headerRect.left);
+      if (!columnHeader) return;
 
-    setColumnWidths(prev => ({
-      ...prev,
-      [isResizing]: newWidth
-    }));
-  }, [isResizing, columns]);
+      const currentColumn = columns.find((col) => String(col.key) === isResizing);
+      const minWidth = currentColumn?.minWidth || 150;
+
+      const mouseX = event.clientX;
+      const headerRect = columnHeader.getBoundingClientRect();
+      const newWidth = Math.max(minWidth, mouseX - headerRect.left);
+
+      setColumnWidths((prev) => ({
+        ...prev,
+        [isResizing]: newWidth,
+      }));
+    },
+    [isResizing, columns]
+  );
 
   // Функция для завершения изменения размера
   const stopResize = useCallback(() => {
@@ -234,23 +254,23 @@ function DataTable<T = any>({
   // Обработчики событий мыши
   useEffect(() => {
     if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', stopResize);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", stopResize);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
     }
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', stopResize);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", stopResize);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
     };
   }, [isResizing, handleMouseMove, stopResize]);
 
   // Функция для переключения видимости столбца
   const toggleColumnVisibility = useCallback((columnKey: string) => {
-    setHiddenColumns(prev => {
+    setHiddenColumns((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(columnKey)) {
         newSet.delete(columnKey);
@@ -260,35 +280,38 @@ function DataTable<T = any>({
       return newSet;
     });
     // Принудительно перерендерим таблицу
-    setForceRender(prev => prev + 1);
+    setForceRender((prev) => prev + 1);
   }, []);
 
   // Фильтруем видимые столбцы
   const visibleColumns = useMemo(() => {
-    return columns.filter(column => !hiddenColumns.has(String(column.key)));
+    return columns.filter((column) => !hiddenColumns.has(String(column.key)));
   }, [columns, hiddenColumns]);
 
   // Функция копирования в буфер обмена
-  const copyToClipboard = useCallback(async (text: string, type: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      const key = `${type}-${text}`;
-      setCopiedStates(prev => ({ ...prev, [key]: true }));
-      setTimeout(() => {
-        setCopiedStates(prev => ({ ...prev, [key]: false }));
-      }, 2000);
-      toast({
-        title: "Скопировано",
-        description: `${type} скопирован в буфер обмена`,
-      });
-    } catch (err) {
-      toast({
-        title: "Ошибка",
-        description: "Не удалось скопировать в буфер обмена",
-        variant: "destructive",
-      });
-    }
-  }, [toast]);
+  const copyToClipboard = useCallback(
+    async (text: string, type: string) => {
+      try {
+        await navigator.clipboard.writeText(text);
+        const key = `${type}-${text}`;
+        setCopiedStates((prev) => ({ ...prev, [key]: true }));
+        setTimeout(() => {
+          setCopiedStates((prev) => ({ ...prev, [key]: false }));
+        }, 2000);
+        toast({
+          title: "Скопировано",
+          description: `${type} скопирован в буфер обмена`,
+        });
+      } catch (err) {
+        toast({
+          title: "Ошибка",
+          description: "Не удалось скопировать в буфер обмена",
+          variant: "destructive",
+        });
+      }
+    },
+    [toast]
+  );
 
   // Фильтрация и сортировка данных
   const filteredAndSortedData = useMemo(() => {
@@ -297,8 +320,8 @@ function DataTable<T = any>({
     // Применяем поиск
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase();
-      filtered = data.filter((item: any) => 
-        searchFields.some(field => {
+      filtered = data.filter((item: any) =>
+        searchFields.some((field) => {
           const value = item[field];
           return value && String(value).toLowerCase().includes(query);
         })
@@ -309,11 +332,11 @@ function DataTable<T = any>({
     return [...filtered].sort((a: any, b: any) => {
       const aValue = a[sortField];
       const bValue = b[sortField];
-      
+
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
-      
-      const comparison = String(aValue).localeCompare(String(bValue), 'ru', { numeric: true });
+
+      const comparison = String(aValue).localeCompare(String(bValue), "ru", { numeric: true });
       return sortDirection === "asc" ? comparison : -comparison;
     });
   }, [data, debouncedSearchQuery, searchFields, sortField, sortDirection]);
@@ -324,16 +347,19 @@ function DataTable<T = any>({
   }, [entityNamePlural, filteredAndSortedData.length]);
 
   // Функции для работы с выбором
-  const handleSelectAll = useCallback((checked: boolean) => {
-    if (checked) {
-      setSelectedItems(new Set(filteredAndSortedData.map((item: any) => item.id)));
-    } else {
-      setSelectedItems(new Set());
-    }
-  }, [filteredAndSortedData]);
+  const handleSelectAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setSelectedItems(new Set(filteredAndSortedData.map((item: any) => item.id)));
+      } else {
+        setSelectedItems(new Set());
+      }
+    },
+    [filteredAndSortedData]
+  );
 
   const handleSelectItem = useCallback((id: number, checked: boolean) => {
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       const newSet = new Set(prev);
       if (checked) {
         newSet.add(id);
@@ -345,14 +371,17 @@ function DataTable<T = any>({
   }, []);
 
   // Функция сортировки
-  const handleSort = useCallback((field: keyof T) => {
-    if (sortField === field) {
-      setSortDirection(prev => prev === "asc" ? "desc" : "asc");
-    } else {
-      setSortField(field);
-      setSortDirection("asc");
-    }
-  }, [sortField]);
+  const handleSort = useCallback(
+    (field: keyof T) => {
+      if (sortField === field) {
+        setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+      } else {
+        setSortField(field);
+        setSortDirection("asc");
+      }
+    },
+    [sortField]
+  );
 
   // Функция удаления
   const handleDelete = useCallback(async () => {
@@ -377,18 +406,19 @@ function DataTable<T = any>({
   // Функция экспорта в Excel
   const handleExport = useCallback(() => {
     if (!excelConfig) return;
-    
+
     const exportData = filteredAndSortedData.map((item) => {
       const exportItem: Record<string, any> = {};
-      
+
       // Добавляем ID как первую колонку
-      exportItem['ID'] = (item as any).id;
-      
+      exportItem["ID"] = (item as any).id;
+
       // Добавляем остальные колонки
-      columns.forEach(column => {
+      columns.forEach((column) => {
         const value = (item as any)[column.key];
         const formattedValue = column.format ? column.format(value) : value;
-        exportItem[excelConfig.headers[String(column.key)] || String(column.label)] = formattedValue || "";
+        exportItem[excelConfig.headers[String(column.key)] || String(column.label)] =
+          formattedValue || "";
       });
       return exportItem;
     });
@@ -405,35 +435,38 @@ function DataTable<T = any>({
   }, [filteredAndSortedData, columns, excelConfig, toast]);
 
   // Функция импорта из Excel
-  const handleImport = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file || !onImport) return;
+  const handleImport = useCallback(
+    async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file || !onImport) return;
 
-    try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      try {
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-      await onImport(jsonData);
+        await onImport(jsonData);
 
-      toast({
-        title: "Импорт завершен",
-        description: `Импортировано ${jsonData.length} записей`,
-      });
-    } catch (error) {
-      toast({
-        title: "Ошибка импорта",
-        description: "Не удалось импортировать данные из файла",
-        variant: "destructive",
-      });
-    }
+        toast({
+          title: "Импорт завершен",
+          description: `Импортировано ${jsonData.length} записей`,
+        });
+      } catch (error) {
+        toast({
+          title: "Ошибка импорта",
+          description: "Не удалось импортировать данные из файла",
+          variant: "destructive",
+        });
+      }
 
-    // Очищаем input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-  }, [onImport, toast]);
+      // Очищаем input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    },
+    [onImport, toast]
+  );
 
   if (isLoading) {
     return (
@@ -443,8 +476,10 @@ function DataTable<T = any>({
     );
   }
 
-  const isAllSelected = filteredAndSortedData.length > 0 && selectedItems.size === filteredAndSortedData.length;
-  const isIndeterminate = selectedItems.size > 0 && selectedItems.size < filteredAndSortedData.length;
+  const isAllSelected =
+    filteredAndSortedData.length > 0 && selectedItems.size === filteredAndSortedData.length;
+  const isIndeterminate =
+    selectedItems.size > 0 && selectedItems.size < filteredAndSortedData.length;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -452,273 +487,278 @@ function DataTable<T = any>({
         {/* Заголовок и статистика */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{entityNamePlural.charAt(0).toUpperCase() + entityNamePlural.slice(1)}</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {statisticsText}
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {entityNamePlural.charAt(0).toUpperCase() + entityNamePlural.slice(1)}
+            </h1>
+            <p className="text-sm text-gray-600 mt-1">{statisticsText}</p>
           </div>
         </div>
 
-      {/* Панель управления */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <Input
-              placeholder={`Поиск ${entityNamePlural.toLowerCase()}...`}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        {/* Панель управления */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder={`Поиск ${entityNamePlural.toLowerCase()}...`}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
           </div>
-        </div>
 
-        {warehouseFilter && (
-          <div className="w-full sm:w-48">
-            <Select
-              value={warehouseFilter.selectedWarehouseId?.toString() || "all"}
-              onValueChange={(value) => {
-                warehouseFilter.onWarehouseChange(value === "all" ? undefined : parseInt(value));
-              }}
-            >
-              <SelectTrigger className="h-10">
-                <SelectValue placeholder="Все склады" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Все склады</SelectItem>
-                {warehouseFilter.warehouses.map((warehouse) => (
-                  <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
-                    {warehouse.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {onCreate && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={onCreate}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Создать
-            </Button>
+          {warehouseFilter && (
+            <div className="w-full sm:w-48">
+              <Select
+                value={warehouseFilter.selectedWarehouseId?.toString() || "all"}
+                onValueChange={(value) => {
+                  warehouseFilter.onWarehouseChange(value === "all" ? undefined : parseInt(value));
+                }}
+              >
+                <SelectTrigger className="h-10">
+                  <SelectValue placeholder="Все склады" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Все склады</SelectItem>
+                  {warehouseFilter.warehouses.map((warehouse) => (
+                    <SelectItem key={warehouse.id} value={warehouse.id.toString()}>
+                      {warehouse.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           )}
 
-          {selectedItems.size > 0 && onDelete && !hideSelectionColumn && (
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleDelete}
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              {deleteLabel} ({selectedItems.size})
-            </Button>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {onCreate && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={onCreate}
+                className="flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Создать
+              </Button>
+            )}
 
-          {excelConfig && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleExport}
-              className="flex items-center gap-2"
-            >
-              <Download className="w-4 h-4" />
-              Excel
-            </Button>
-          )}
+            {selectedItems.size > 0 && onDelete && !hideSelectionColumn && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {deleteLabel} ({selectedItems.size})
+              </Button>
+            )}
 
-          {onImport && (
-            <>
+            {excelConfig && (
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleExport}
                 className="flex items-center gap-2"
               >
-                <Upload className="w-4 h-4" />
-                {importLabel}
+                <Download className="w-4 h-4" />
+                Excel
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleImport}
-                className="hidden"
-              />
-            </>
-          )}
-        </div>
-      </div>
+            )}
 
-      {/* Таблица */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-        {/* Заголовок с настройками столбцов */}
-        <div className="flex justify-end p-3 border-b border-gray-200">
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Settings className="w-4 h-4" />
-                Столбцы
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64" align="end">
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm">Настройка столбцов</h4>
-                <div className="space-y-2">
-                  {columns.map((column) => {
-                    const columnKey = String(column.key);
-                    const isVisible = !hiddenColumns.has(columnKey);
-                    
-                    return (
-                      <div key={columnKey} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`column-${columnKey}`}
-                          checked={isVisible}
-                          onCheckedChange={() => toggleColumnVisibility(columnKey)}
-                        />
-                        <label
-                          htmlFor={`column-${columnKey}`}
-                          className="text-sm font-normal cursor-pointer flex-1"
-                        >
-                          {column.label}
-                        </label>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
-        
-        <ResponsiveTableWrapper className="border-0 shadow-none bg-transparent">
-          <table key={forceRender} ref={tableRef} className="w-full table-fixed">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                {!hideSelectionColumn && (
-                  <th className="w-12 px-2 sm:px-4 py-3 text-left">
-                    <Checkbox
-                      checked={isAllSelected}
-                      onCheckedChange={handleSelectAll}
-                    />
-                  </th>
-                )}
-                {visibleColumns.map((column, index) => {
-                  const columnKey = String(column.key);
-                  const defaultWidth = column.minWidth || 150;
-                  const width = columnWidths[columnKey] || defaultWidth;
-                  
-                  return (
-                    <th
-                      key={columnKey}
-                      data-column={columnKey}
-                      className={`px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${column.className || ''}`}
-                      style={{ width: `${width}px` }}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          {column.sortable !== false ? (
-                            <button
-                              onClick={() => handleSort(column.key as keyof T)}
-                              className="flex items-center gap-1 hover:text-gray-700 transition-colors"
-                            >
-                              <span className="truncate">{column.label}</span>
-                              <ArrowUpDown className="w-3 h-3 flex-shrink-0" />
-                            </button>
-                          ) : (
-                            <span className="truncate">{column.label}</span>
-                          )}
-                        </div>
-                        
-                        {/* Разделитель для изменения размера */}
-                        <div
-                          className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-300 bg-transparent transition-colors"
-                          onMouseDown={(e) => startResize(columnKey, e)}
-                          style={{ 
-                            backgroundColor: isResizing === columnKey ? '#3B82F6' : 'transparent'
-                          }}
-                        />
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredAndSortedData.map((item: any) => (
-                <tr
-                  key={item.id}
-                  className={`hover:bg-gray-50 transition-colors ${
-                    selectedItems.has(item.id) ? "bg-blue-50" : ""
-                  } ${onRowClick ? "cursor-pointer" : ""}`}
-                  onClick={(e) => {
-                    // Не обрабатываем клик если это чекбокс
-                    if ((e.target as HTMLElement).closest('input[type="checkbox"]')) {
-                      return;
-                    }
-                    onRowClick?.(item);
-                  }}
+            {onImport && (
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-2"
                 >
+                  <Upload className="w-4 h-4" />
+                  {importLabel}
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={handleImport}
+                  className="hidden"
+                />
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Таблица */}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Заголовок с настройками столбцов */}
+          <div className="flex justify-end p-3 border-b border-gray-200">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                  <Settings className="w-4 h-4" />
+                  Столбцы
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64" align="end">
+                <div className="space-y-3">
+                  <h4 className="font-medium text-sm">Настройка столбцов</h4>
+                  <div className="space-y-2">
+                    {columns.map((column) => {
+                      const columnKey = String(column.key);
+                      const isVisible = !hiddenColumns.has(columnKey);
+
+                      return (
+                        <div key={columnKey} className="flex items-center space-x-2">
+                          <Checkbox
+                            id={`column-${columnKey}`}
+                            checked={isVisible}
+                            onCheckedChange={() => toggleColumnVisibility(columnKey)}
+                          />
+                          <label
+                            htmlFor={`column-${columnKey}`}
+                            className="text-sm font-normal cursor-pointer flex-1"
+                          >
+                            {column.label}
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <ResponsiveTableWrapper className="border-0 shadow-none bg-transparent">
+            <table key={forceRender} ref={tableRef} className="w-full table-fixed">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
                   {!hideSelectionColumn && (
-                    <td className="px-2 sm:px-4 py-3">
-                      <Checkbox
-                        checked={selectedItems.has(item.id)}
-                        onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
-                      />
-                    </td>
+                    <th className="w-12 px-2 sm:px-4 py-3 text-left">
+                      <Checkbox checked={isAllSelected} onCheckedChange={handleSelectAll} />
+                    </th>
                   )}
-                  {visibleColumns.map((column) => {
-                    const value = (item as any)[column.key];
-                    const formattedValue = column.format ? column.format(value) : value;
+                  {visibleColumns.map((column, index) => {
                     const columnKey = String(column.key);
                     const defaultWidth = column.minWidth || 150;
                     const width = columnWidths[columnKey] || defaultWidth;
-                    
+
                     return (
-                      <td
+                      <th
                         key={columnKey}
-                        className={`px-2 sm:px-4 py-3 text-sm ${column.className || ''}`}
+                        data-column={columnKey}
+                        className={`px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${column.className || ""}`}
                         style={{ width: `${width}px` }}
                       >
-                        <div className="overflow-hidden">
-                          {column.copyable ? (
-                            <CopyableCell
-                              value={formattedValue ? String(formattedValue) : null}
-                              type={column.label}
-                              multiline={column.multiline}
-                              copiedStates={copiedStates}
-                              onCopy={copyToClipboard}
-                            />
-                          ) : (
-                            <span className={column.multiline ? "break-words" : "truncate block"}>
-                              {formattedValue ? String(formattedValue) : <span className="text-gray-400">-</span>}
-                            </span>
-                          )}
+                        <div className="flex items-center justify-between">
+                          <div className="flex-1">
+                            {column.sortable !== false ? (
+                              <button
+                                onClick={() => handleSort(column.key as keyof T)}
+                                className="flex items-center gap-1 hover:text-gray-700 transition-colors"
+                              >
+                                <span className="truncate">{column.label}</span>
+                                <ArrowUpDown className="w-3 h-3 flex-shrink-0" />
+                              </button>
+                            ) : (
+                              <span className="truncate">{column.label}</span>
+                            )}
+                          </div>
+
+                          {/* Разделитель для изменения размера */}
+                          <div
+                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-300 bg-transparent transition-colors"
+                            onMouseDown={(e) => startResize(columnKey, e)}
+                            style={{
+                              backgroundColor: isResizing === columnKey ? "#3B82F6" : "transparent",
+                            }}
+                          />
                         </div>
-                      </td>
+                      </th>
                     );
                   })}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </ResponsiveTableWrapper>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredAndSortedData.map((item: any) => (
+                  <tr
+                    key={item.id}
+                    className={`hover:bg-gray-50 transition-colors ${
+                      selectedItems.has(item.id) ? "bg-blue-50" : ""
+                    } ${onRowClick ? "cursor-pointer" : ""}`}
+                    onClick={(e) => {
+                      // Не обрабатываем клик если это чекбокс
+                      if ((e.target as HTMLElement).closest('input[type="checkbox"]')) {
+                        return;
+                      }
+                      onRowClick?.(item);
+                    }}
+                  >
+                    {!hideSelectionColumn && (
+                      <td className="px-2 sm:px-4 py-3">
+                        <Checkbox
+                          checked={selectedItems.has(item.id)}
+                          onCheckedChange={(checked) =>
+                            handleSelectItem(item.id, checked as boolean)
+                          }
+                        />
+                      </td>
+                    )}
+                    {visibleColumns.map((column) => {
+                      const value = (item as any)[column.key];
+                      const formattedValue = column.format ? column.format(value) : value;
+                      const columnKey = String(column.key);
+                      const defaultWidth = column.minWidth || 150;
+                      const width = columnWidths[columnKey] || defaultWidth;
 
-        {filteredAndSortedData.length === 0 && (
-          <div className="text-center py-12">
-            <p className="text-gray-500">
-              {debouncedSearchQuery ? `Нет результатов для "${debouncedSearchQuery}"` : `Нет ${entityNamePlural.toLowerCase()}`}
-            </p>
-          </div>
-        )}
+                      return (
+                        <td
+                          key={columnKey}
+                          className={`px-2 sm:px-4 py-3 text-sm ${column.className || ""}`}
+                          style={{ width: `${width}px` }}
+                        >
+                          <div className="overflow-hidden">
+                            {column.copyable ? (
+                              <CopyableCell
+                                value={formattedValue ? String(formattedValue) : null}
+                                type={column.label}
+                                multiline={column.multiline}
+                                copiedStates={copiedStates}
+                                onCopy={copyToClipboard}
+                              />
+                            ) : (
+                              <span className={column.multiline ? "break-words" : "truncate block"}>
+                                {formattedValue ? (
+                                  String(formattedValue)
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </ResponsiveTableWrapper>
+
+          {filteredAndSortedData.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-gray-500">
+                {debouncedSearchQuery
+                  ? `Нет результатов для "${debouncedSearchQuery}"`
+                  : `Нет ${entityNamePlural.toLowerCase()}`}
+              </p>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
     </div>
   );
 }

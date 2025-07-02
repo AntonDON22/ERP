@@ -2,32 +2,31 @@ import { db } from "../db";
 import { sql } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
-import { normalizeInventoryArray, type NormalizedInventoryItem } from '@shared/apiNormalizer';
+import { normalizeInventoryArray, type NormalizedInventoryItem } from "@shared/apiNormalizer";
 
 export class MaterializedViewService {
-  
   /**
    * Инициализация материализованных представлений
    */
   async initializeMaterializedViews(): Promise<void> {
     console.log("🔄 Инициализация материализованных представлений...");
-    
+
     try {
       const sqlPath = path.join(__dirname, "../db/materialized-views.sql");
       const sqlScript = await fs.readFile(sqlPath, "utf-8");
-      
+
       // Выполняем SQL скрипт по частям
       const statements = sqlScript
         .split(";")
-        .map(s => s.trim())
-        .filter(s => s.length > 0 && !s.startsWith("--"));
-      
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0 && !s.startsWith("--"));
+
       for (const statement of statements) {
         if (statement.trim()) {
           await db.execute(sql.raw(statement + ";"));
         }
       }
-      
+
       console.log("✅ Материализованные представления созданы успешно");
     } catch (error) {
       console.error("❌ Ошибка при создании материализованных представлений:", error);
@@ -40,7 +39,7 @@ export class MaterializedViewService {
    */
   async refreshAllViews(): Promise<void> {
     console.log("🔄 Обновление всех материализованных представлений...");
-    
+
     try {
       await db.execute(sql`SELECT refresh_materialized_views()`);
       console.log("✅ Все материализованные представления обновлены");
@@ -57,7 +56,7 @@ export class MaterializedViewService {
   async getInventorySummary(): Promise<NormalizedInventoryItem[]> {
     console.log("[MATERIALIZED] Starting getInventorySummary query...");
     const startTime = Date.now();
-    
+
     try {
       const result = await db.execute(sql`
         SELECT 
@@ -68,17 +67,19 @@ export class MaterializedViewService {
         FROM inventory_summary
         ORDER BY name
       `);
-      
+
       const duration = Date.now() - startTime;
-      console.log(`[MATERIALIZED] getInventorySummary completed in ${duration}ms, returned ${result.rows.length} items`);
-      
+      console.log(
+        `[MATERIALIZED] getInventorySummary completed in ${duration}ms, returned ${result.rows.length} items`
+      );
+
       // Применяем централизованную нормализацию данных
       const rawData = result.rows.map((row: any) => ({
         id: row.id as number,
         name: row.name as string,
-        total_quantity: row.total_quantity as string
+        total_quantity: row.total_quantity as string,
       }));
-      
+
       return normalizeInventoryArray(rawData);
     } catch (error) {
       console.error("[MATERIALIZED] Error in getInventorySummary:", error);
@@ -89,23 +90,23 @@ export class MaterializedViewService {
   /**
    * Получение остатков по складам из материализованного представления
    */
-  async getInventoryByWarehouse(warehouseId?: number): Promise<Array<{
-    product_id: number;
-    product_name: string;
-    warehouse_id: number;
-    warehouse_name: string;
-    quantity: string;
-    movement_count: number;
-    last_movement_date: Date | null;
-  }>> {
+  async getInventoryByWarehouse(warehouseId?: number): Promise<
+    Array<{
+      product_id: number;
+      product_name: string;
+      warehouse_id: number;
+      warehouse_name: string;
+      quantity: string;
+      movement_count: number;
+      last_movement_date: Date | null;
+    }>
+  > {
     console.log("[MATERIALIZED] Starting getInventoryByWarehouse query...");
     const startTime = Date.now();
-    
+
     try {
-      const whereClause = warehouseId 
-        ? sql`WHERE warehouse_id = ${warehouseId}`
-        : sql``;
-      
+      const whereClause = warehouseId ? sql`WHERE warehouse_id = ${warehouseId}` : sql``;
+
       const result = await db.execute(sql`
         SELECT 
           product_id,
@@ -119,10 +120,12 @@ export class MaterializedViewService {
         ${whereClause}
         ORDER BY product_name, warehouse_name
       `);
-      
+
       const duration = Date.now() - startTime;
-      console.log(`[MATERIALIZED] getInventoryByWarehouse completed in ${duration}ms, returned ${result.rows.length} items`);
-      
+      console.log(
+        `[MATERIALIZED] getInventoryByWarehouse completed in ${duration}ms, returned ${result.rows.length} items`
+      );
+
       return result.rows as any;
     } catch (error) {
       console.error("[MATERIALIZED] Error in getInventoryByWarehouse:", error);
@@ -137,7 +140,7 @@ export class MaterializedViewService {
   async getInventoryAvailability(): Promise<NormalizedInventoryItem[]> {
     console.log("[MATERIALIZED] Starting getInventoryAvailability query...");
     const startTime = Date.now();
-    
+
     try {
       const result = await db.execute(sql`
         SELECT 
@@ -149,19 +152,21 @@ export class MaterializedViewService {
         FROM inventory_availability
         ORDER BY name
       `);
-      
+
       const duration = Date.now() - startTime;
-      console.log(`[MATERIALIZED] getInventoryAvailability completed in ${duration}ms, returned ${result.rows.length} items`);
-      
+      console.log(
+        `[MATERIALIZED] getInventoryAvailability completed in ${duration}ms, returned ${result.rows.length} items`
+      );
+
       // Применяем централизованную нормализацию данных
       const rawData = result.rows.map((row: any) => ({
         id: row.id as number,
         name: row.name as string,
         total_quantity: row.total_quantity as string,
         reserved_quantity: row.reserved_quantity as string,
-        available_quantity: row.available_quantity as string
+        available_quantity: row.available_quantity as string,
       }));
-      
+
       return normalizeInventoryArray(rawData);
     } catch (error) {
       console.error("[MATERIALIZED] Error in getInventoryAvailability:", error);
@@ -172,12 +177,14 @@ export class MaterializedViewService {
   /**
    * Проверка статуса материализованных представлений
    */
-  async getViewsStatus(): Promise<Array<{
-    view_name: string;
-    size_bytes: number;
-    last_refresh: Date | null;
-    is_populated: boolean;
-  }>> {
+  async getViewsStatus(): Promise<
+    Array<{
+      view_name: string;
+      size_bytes: number;
+      last_refresh: Date | null;
+      is_populated: boolean;
+    }>
+  > {
     try {
       const result = await db.execute(sql`
         SELECT 
@@ -187,7 +194,7 @@ export class MaterializedViewService {
         FROM pg_matviews 
         WHERE matviewname IN ('inventory_summary', 'inventory_by_warehouse', 'inventory_availability')
       `);
-      
+
       return result as any;
     } catch (error) {
       console.error("Error getting views status:", error);
@@ -200,7 +207,7 @@ export class MaterializedViewService {
    */
   async refreshSpecificView(viewName: string): Promise<void> {
     console.log(`🔄 Обновление представления ${viewName}...`);
-    
+
     try {
       await db.execute(sql.raw(`REFRESH MATERIALIZED VIEW CONCURRENTLY ${viewName}`));
       console.log(`✅ Представление ${viewName} обновлено`);

@@ -3,7 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import DataTable, { type ColumnConfig } from "@/components/DataTable";
 import { useInventory, useInventoryAvailability } from "@/hooks/useTypedQuery";
 import { useWarehouses } from "@/hooks/useWarehouses";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -29,21 +35,21 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
     label: "Остаток",
     minWidth: 100,
     sortable: true,
-    format: (value: number) => value?.toString() || '0',
+    format: (value: number) => value?.toString() || "0",
   },
   {
     key: "reserved",
     label: "Резерв",
     minWidth: 100,
     sortable: true,
-    format: (value: number) => value?.toString() || '0',
+    format: (value: number) => value?.toString() || "0",
   },
   {
     key: "available",
     label: "Доступно",
     minWidth: 120,
     sortable: true,
-    format: (value: number) => value?.toString() || '0',
+    format: (value: number) => value?.toString() || "0",
   },
 ];
 

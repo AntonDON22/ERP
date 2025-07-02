@@ -10,13 +10,13 @@ interface CardWrapperProps {
   headerClassName?: string;
 }
 
-export function CardWrapper({ 
+export function CardWrapper({
   title,
   description,
   children,
   className,
   contentClassName,
-  headerClassName
+  headerClassName,
 }: CardWrapperProps) {
   return (
     <Card className={cn("w-full", className)}>
@@ -26,9 +26,7 @@ export function CardWrapper({
           {description && <CardDescription>{description}</CardDescription>}
         </CardHeader>
       )}
-      <CardContent className={cn("p-6", contentClassName)}>
-        {children}
-      </CardContent>
+      <CardContent className={cn("p-6", contentClassName)}>{children}</CardContent>
     </Card>
   );
 }

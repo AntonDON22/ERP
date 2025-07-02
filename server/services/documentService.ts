@@ -1,5 +1,11 @@
 import { storage } from "../storage";
-import { insertDocumentSchema, insertDocumentItemSchema, type InsertDocument, type DocumentRecord, type CreateDocumentItem } from "../../shared/schema";
+import {
+  insertDocumentSchema,
+  insertDocumentItemSchema,
+  type InsertDocument,
+  type DocumentRecord,
+  type CreateDocumentItem,
+} from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { getMoscowDateForDocument } from "../../shared/timeUtils";
 import { apiLogger } from "../../shared/logger";
@@ -18,9 +24,13 @@ export class DocumentService {
     return await storage.createDocument(validatedData);
   }
 
-  async update(id: number, data: Partial<InsertDocument>, items?: CreateDocumentItem[]): Promise<DocumentRecord | undefined> {
+  async update(
+    id: number,
+    data: Partial<InsertDocument>,
+    items?: CreateDocumentItem[]
+  ): Promise<DocumentRecord | undefined> {
     const validatedData = insertDocumentSchema.partial().parse(data);
-    
+
     if (items && items.length > 0) {
       // Если есть позиции товаров, используем транзакционное обновление
       return await transactionService.updateDocumentWithInventory(id, validatedData, items);
@@ -39,12 +49,14 @@ export class DocumentService {
     return await this.delete(id);
   }
 
-  async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
+  async deleteMultiple(
+    ids: number[]
+  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
       throw new Error("Укажите массив ID документов для удаления");
     }
 
-    const validIds = ids.filter(id => Number.isInteger(id) && id > 0);
+    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
     if (validIds.length !== ids.length) {
       throw new Error("Некорректные ID документов");
     }
@@ -58,40 +70,46 @@ export class DocumentService {
         const success = await transactionService.deleteDocumentWithInventory(id);
         if (success) {
           deletedCount++;
-          results.push({ id, status: 'deleted' });
+          results.push({ id, status: "deleted" });
         } else {
-          results.push({ id, status: 'not_found' });
+          results.push({ id, status: "not_found" });
         }
       } catch (error) {
-        apiLogger.error(`Error deleting document ${id}`, { documentId: id, error: error instanceof Error ? error.message : String(error) });
-        results.push({ id, status: 'error' });
+        apiLogger.error(`Error deleting document ${id}`, {
+          documentId: id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        results.push({ id, status: "error" });
       }
     }
 
     return { deletedCount, results };
   }
 
-  async createReceipt(documentData: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
+  async createReceipt(
+    documentData: InsertDocument,
+    items: CreateDocumentItem[]
+  ): Promise<DocumentRecord> {
     // Валидация документа
     const validatedDocument = insertDocumentSchema.parse(documentData);
-    
+
     // Автогенерация названия с правильным типом
     if (!validatedDocument.name || validatedDocument.name.trim().length === 0) {
       validatedDocument.name = this.generateDocumentName(validatedDocument.type);
     }
-    
+
     // Валидация позиций
-    const validatedItems = items.map(item => insertDocumentItemSchema.parse(item));
-    
+    const validatedItems = items.map((item) => insertDocumentItemSchema.parse(item));
+
     // Используем новый транзакционный метод для полной целостности данных
     return await transactionService.createDocumentWithInventory(validatedDocument, validatedItems);
   }
 
   private getDocumentTypeName(type: string): string {
     const typeNames = {
-      'income': 'Оприходование',
-      'outcome': 'Списание',
-      'return': 'Возврат'
+      income: "Оприходование",
+      outcome: "Списание",
+      return: "Возврат",
     };
     return typeNames[type as keyof typeof typeNames] || type;
   }
@@ -99,10 +117,10 @@ export class DocumentService {
   private generateDocumentName(type: string): string {
     const dateStr = getMoscowDateForDocument();
     const typeName = this.getDocumentTypeName(type);
-    
+
     // Простая генерация номера (в реальной системе нужно учитывать concurrent access)
     const number = Math.floor(Math.random() * 1000) + 1;
-    
+
     return `${typeName} ${dateStr}-${number}`;
   }
 }

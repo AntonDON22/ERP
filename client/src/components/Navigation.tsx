@@ -7,7 +7,7 @@ export default function Navigation() {
   const [location] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  
+
   const isHomeActive = location === "/";
   const isProductsActive = location === "/products";
   const isSuppliersActive = location === "/suppliers";
@@ -17,7 +17,10 @@ export default function Navigation() {
   const isInventoryActive = location === "/inventory";
   const isOrdersActive = location === "/orders";
 
-  const isSettingsActive = location.startsWith("/suppliers") || location.startsWith("/contractors") || location.startsWith("/warehouses");
+  const isSettingsActive =
+    location.startsWith("/suppliers") ||
+    location.startsWith("/contractors") ||
+    location.startsWith("/warehouses");
 
   const mainNavItems = [
     { href: "/", label: "Главная", isActive: isHomeActive },
@@ -39,32 +42,28 @@ export default function Navigation() {
         <div className="flex justify-between h-14 sm:h-16">
           <div className="flex items-center min-w-0">
             <div className="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
-              <img 
-                src={logoPath} 
-                alt="iGrape Group Logo" 
-                className="h-6 w-6 sm:h-8 sm:w-8"
-              />
+              <img src={logoPath} alt="iGrape Group Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
               <h1 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate">
                 iGrape Group
               </h1>
             </div>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:ml-4 lg:ml-8 md:flex md:space-x-4 lg:space-x-8">
               {mainNavItems.map((item) => (
-                <Link 
+                <Link
                   key={item.href}
                   href={item.href}
                   className={`py-2 px-1 text-xs md:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-                    item.isActive 
-                      ? "border-blue-600 text-blue-600" 
+                    item.isActive
+                      ? "border-blue-600 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
                   {item.label}
                 </Link>
               ))}
-              
+
               {/* Settings Dropdown */}
               <div className="relative">
                 <button
@@ -82,7 +81,7 @@ export default function Navigation() {
                     <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
                   )}
                 </button>
-                
+
                 {isSettingsOpen && (
                   <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[160px] md:min-w-[180px]">
                     {settingsItems.map((item) => (
@@ -104,12 +103,12 @@ export default function Navigation() {
               </div>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <button className="bg-gray-50 p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100">
               <User className="w-5 h-5" />
             </button>
-            
+
             {/* Mobile menu button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -144,7 +143,7 @@ export default function Navigation() {
                 {item.label}
               </Link>
             ))}
-            
+
             {/* Settings section */}
             <div className="pt-2">
               <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">

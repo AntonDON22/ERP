@@ -8,20 +8,16 @@ interface PrimaryButtonProps extends ButtonProps {
   loadingText?: string;
 }
 
-export function PrimaryButton({ 
-  children, 
-  loading = false, 
+export function PrimaryButton({
+  children,
+  loading = false,
   loadingText = "Загрузка...",
   className,
   disabled,
-  ...props 
+  ...props
 }: PrimaryButtonProps) {
   return (
-    <Button
-      className={cn("min-w-[100px]", className)}
-      disabled={disabled || loading}
-      {...props}
-    >
+    <Button className={cn("min-w-[100px]", className)} disabled={disabled || loading} {...props}>
       {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       {loading ? loadingText : children}
     </Button>

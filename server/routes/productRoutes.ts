@@ -16,7 +16,10 @@ const deleteProductsSchema = z.object({
   productIds: z.array(z.number()).min(1, "Укажите хотя бы один товар для удаления"),
 });
 const getProductSchema = z.object({
-  id: z.string().transform(val => parseInt(val)).refine(val => !isNaN(val), "ID должен быть числом"),
+  id: z
+    .string()
+    .transform((val) => parseInt(val))
+    .refine((val) => !isNaN(val), "ID должен быть числом"),
 });
 
 // GET /api/products (временно без пагинации)
@@ -25,7 +28,9 @@ router.get("/", async (req, res) => {
     const products = await productService.getAll();
     res.json(products);
   } catch (error) {
-    apiLogger.error("Failed to get products", { error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to get products", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка получения товаров" });
   }
 });
@@ -34,19 +39,22 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = getProductSchema.parse(req.params);
-    
+
     const product = await productService.getById(id);
     if (!product) {
       return res.status(404).json({ error: "Товар не найден" });
     }
-    
+
     res.json(product);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const validationError = fromZodError(error);
       return res.status(400).json({ error: validationError.message });
     }
-    apiLogger.error("Failed to get product", { productId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to get product", {
+      productId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка получения товара" });
   }
 });
@@ -62,7 +70,10 @@ router.post("/", async (req, res) => {
       const validationError = fromZodError(error);
       return res.status(400).json({ error: validationError.message });
     }
-    apiLogger.error("Failed to create product", { body: req.body, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to create product", {
+      body: req.body,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка создания товара" });
   }
 });
@@ -72,19 +83,23 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = getProductSchema.parse(req.params);
     const validatedData = updateProductSchema.parse(req.body);
-    
+
     const product = await productService.update(id, validatedData);
     if (!product) {
       return res.status(404).json({ error: "Товар не найден" });
     }
-    
+
     res.json(product);
   } catch (error) {
     if (error instanceof z.ZodError) {
       const validationError = fromZodError(error);
       return res.status(400).json({ error: validationError.message });
     }
-    apiLogger.error("Failed to update product", { productId: req.params.id, body: req.body, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to update product", {
+      productId: req.params.id,
+      body: req.body,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка обновления товара" });
   }
 });
@@ -96,15 +111,18 @@ router.delete("/:id", async (req, res) => {
     if (isNaN(id)) {
       return res.status(400).json({ error: "Некорректный ID товара" });
     }
-    
+
     const deleted = await productService.delete(id);
     if (!deleted) {
       return res.status(404).json({ error: "Товар не найден" });
     }
-    
+
     res.json({ success: true });
   } catch (error) {
-    apiLogger.error("Failed to delete product", { productId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to delete product", {
+      productId: req.params.id,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка удаления товара" });
   }
 });
@@ -120,7 +138,10 @@ router.post("/delete-multiple", async (req, res) => {
       const validationError = fromZodError(error);
       return res.status(400).json({ error: validationError.message });
     }
-    apiLogger.error("Failed to delete multiple products", { body: req.body, error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to delete multiple products", {
+      body: req.body,
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка удаления товаров" });
   }
 });
@@ -132,11 +153,13 @@ router.post("/import", async (req, res) => {
     if (!Array.isArray(products)) {
       return res.status(400).json({ error: "Ожидается массив товаров" });
     }
-    
+
     const result = await productService.import(products);
     res.json(result);
   } catch (error) {
-    apiLogger.error("Failed to import products", { error: error instanceof Error ? error.message : String(error) });
+    apiLogger.error("Failed to import products", {
+      error: error instanceof Error ? error.message : String(error),
+    });
     res.status(500).json({ error: "Ошибка импорта товаров" });
   }
 });

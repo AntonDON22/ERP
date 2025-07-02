@@ -14,21 +14,21 @@ interface ClientError {
 
 async function logClientError(error: ClientError) {
   try {
-    await fetch('/api/client-errors', {
-      method: 'POST',
+    await fetch("/api/client-errors", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify(error),
     });
   } catch (e) {
     // Если не можем отправить на сервер, пишем в консоль
-    console.error('Failed to log error to server:', e);
+    console.error("Failed to log error to server:", e);
   }
 }
 
 // Глобальный обработчик JavaScript ошибок
-window.addEventListener('error', (event) => {
+window.addEventListener("error", (event) => {
   logClientError({
     message: event.message,
     stack: event.error?.stack,
@@ -40,7 +40,7 @@ window.addEventListener('error', (event) => {
 });
 
 // Обработчик неперехваченных Promise ошибок
-window.addEventListener('unhandledrejection', (event) => {
+window.addEventListener("unhandledrejection", (event) => {
   logClientError({
     message: `Unhandled Promise Rejection: ${event.reason}`,
     stack: event.reason?.stack,

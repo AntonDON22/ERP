@@ -7,12 +7,14 @@ export class WarehouseStorage {
   async getWarehouses(): Promise<Warehouse[]> {
     dbLogger.debug("Starting getWarehouses query...");
     const startTime = Date.now();
-    
+
     const result = await db.select().from(warehouses);
-    
+
     const duration = Date.now() - startTime;
-    dbLogger.debug(`getWarehouses completed in ${duration}ms, returned ${result.length} warehouses`);
-    
+    dbLogger.debug(
+      `getWarehouses completed in ${duration}ms, returned ${result.length} warehouses`
+    );
+
     return result;
   }
 
@@ -22,14 +24,14 @@ export class WarehouseStorage {
   }
 
   async createWarehouse(insertWarehouse: InsertWarehouse): Promise<Warehouse> {
-    const [warehouse] = await db
-      .insert(warehouses)
-      .values(insertWarehouse)
-      .returning();
+    const [warehouse] = await db.insert(warehouses).values(insertWarehouse).returning();
     return warehouse;
   }
 
-  async updateWarehouse(id: number, updateData: Partial<InsertWarehouse>): Promise<Warehouse | undefined> {
+  async updateWarehouse(
+    id: number,
+    updateData: Partial<InsertWarehouse>
+  ): Promise<Warehouse | undefined> {
     const [warehouse] = await db
       .update(warehouses)
       .set(updateData)
@@ -39,9 +41,7 @@ export class WarehouseStorage {
   }
 
   async deleteWarehouse(id: number): Promise<boolean> {
-    const result = await db
-      .delete(warehouses)
-      .where(eq(warehouses.id, id));
+    const result = await db.delete(warehouses).where(eq(warehouses.id, id));
     return (result.rowCount ?? 0) > 0;
   }
 }

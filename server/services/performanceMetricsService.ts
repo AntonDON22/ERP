@@ -1,12 +1,12 @@
-import { cacheService } from './cacheService';
-import { logger } from '@shared/logger';
+import { cacheService } from "./cacheService";
+import { logger } from "@shared/logger";
 
 interface PerformanceMetrics {
   cacheHitRate: number;
   averageResponseTime: number;
   databaseQueryCount: number;
   totalRequests: number;
-  systemHealth: 'healthy' | 'warning' | 'critical';
+  systemHealth: "healthy" | "warning" | "critical";
 }
 
 interface MetricRecord {
@@ -20,7 +20,7 @@ interface MetricRecord {
 export class PerformanceMetricsService {
   private static metrics: MetricRecord[] = [];
   private static readonly MAX_RECORDS = 1000; // Последние 1000 запросов
-  private static readonly CACHE_KEY = 'performance:metrics';
+  private static readonly CACHE_KEY = "performance:metrics";
 
   // Записать метрику запроса
   static recordRequest(endpoint: string, responseTime: number, cacheHit = false, dbQueries = 1) {
@@ -29,7 +29,7 @@ export class PerformanceMetricsService {
       responseTime,
       endpoint,
       cacheHit,
-      dbQueries
+      dbQueries,
     };
 
     this.metrics.push(record);
@@ -39,7 +39,7 @@ export class PerformanceMetricsService {
       this.metrics = this.metrics.slice(-this.MAX_RECORDS);
     }
 
-    logger.debug('Performance metric recorded', record);
+    logger.debug("Performance metric recorded", record);
   }
 
   // Получить текущие метрики производительности
@@ -50,25 +50,25 @@ export class PerformanceMetricsService {
         averageResponseTime: 0,
         databaseQueryCount: 0,
         totalRequests: 0,
-        systemHealth: 'healthy'
+        systemHealth: "healthy",
       };
     }
 
     const totalRequests = this.metrics.length;
-    const cacheHits = this.metrics.filter(m => m.cacheHit).length;
+    const cacheHits = this.metrics.filter((m) => m.cacheHit).length;
     const cacheHitRate = (cacheHits / totalRequests) * 100;
-    
+
     const totalResponseTime = this.metrics.reduce((sum, m) => sum + m.responseTime, 0);
     const averageResponseTime = totalResponseTime / totalRequests;
-    
+
     const totalDbQueries = this.metrics.reduce((sum, m) => sum + m.dbQueries, 0);
 
     // Определение здоровья системы
-    let systemHealth: 'healthy' | 'warning' | 'critical' = 'healthy';
+    let systemHealth: "healthy" | "warning" | "critical" = "healthy";
     if (averageResponseTime > 1000) {
-      systemHealth = 'critical';
+      systemHealth = "critical";
     } else if (averageResponseTime > 500) {
-      systemHealth = 'warning';
+      systemHealth = "warning";
     }
 
     return {
@@ -76,25 +76,28 @@ export class PerformanceMetricsService {
       averageResponseTime: Math.round(averageResponseTime),
       databaseQueryCount: totalDbQueries,
       totalRequests,
-      systemHealth
+      systemHealth,
     };
   }
 
   // Получить подробную статистику по endpoint'ам
   static getEndpointStats() {
-    const endpointMap = new Map<string, {
-      totalRequests: number;
-      avgResponseTime: number;
-      cacheHitRate: number;
-      totalDbQueries: number;
-    }>();
+    const endpointMap = new Map<
+      string,
+      {
+        totalRequests: number;
+        avgResponseTime: number;
+        cacheHitRate: number;
+        totalDbQueries: number;
+      }
+    >();
 
-    this.metrics.forEach(metric => {
+    this.metrics.forEach((metric) => {
       const existing = endpointMap.get(metric.endpoint) || {
         totalRequests: 0,
         avgResponseTime: 0,
         cacheHitRate: 0,
-        totalDbQueries: 0
+        totalDbQueries: 0,
       };
 
       existing.totalRequests++;
@@ -113,7 +116,7 @@ export class PerformanceMetricsService {
       result[endpoint] = {
         ...stats,
         avgResponseTime: Math.round(stats.avgResponseTime / stats.totalRequests),
-        cacheHitRate: Math.round((stats.cacheHitRate / stats.totalRequests) * 100)
+        cacheHitRate: Math.round((stats.cacheHitRate / stats.totalRequests) * 100),
       };
     });
 
@@ -126,38 +129,38 @@ export class PerformanceMetricsService {
       // Базовые метрики кеша
       return {
         hit_rate: this.getMetrics().cacheHitRate,
-        memory_usage: 'Redis/Memory',
+        memory_usage: "Redis/Memory",
         total_keys: this.metrics.length,
-        status: 'active'
+        status: "active",
       };
     } catch (error) {
-      logger.warn('Failed to get cache metrics', { error });
+      logger.warn("Failed to get cache metrics", { error });
       return {
         hit_rate: 0,
-        memory_usage: 'N/A',
+        memory_usage: "N/A",
         total_keys: 0,
-        status: 'fallback_memory'
+        status: "fallback_memory",
       };
     }
   }
 
   // Очистить старые метрики (старше 24 часов)
   static cleanupOldMetrics() {
-    const cutoff = Date.now() - (24 * 60 * 60 * 1000); // 24 часа
-    this.metrics = this.metrics.filter(m => m.timestamp > cutoff);
-    
-    logger.info('Old performance metrics cleaned up', { 
-      recordsRemoved: this.MAX_RECORDS - this.metrics.length 
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000; // 24 часа
+    this.metrics = this.metrics.filter((m) => m.timestamp > cutoff);
+
+    logger.info("Old performance metrics cleaned up", {
+      recordsRemoved: this.MAX_RECORDS - this.metrics.length,
     });
   }
 
   // Получить тренды производительности за последний час
   static getPerformanceTrends() {
-    const hourAgo = Date.now() - (60 * 60 * 1000);
-    const recentMetrics = this.metrics.filter(m => m.timestamp > hourAgo);
+    const hourAgo = Date.now() - 60 * 60 * 1000;
+    const recentMetrics = this.metrics.filter((m) => m.timestamp > hourAgo);
 
     if (recentMetrics.length === 0) {
-      return { trend: 'stable', improvement: 0 };
+      return { trend: "stable", improvement: 0 };
     }
 
     // Разделяем на две половины для сравнения
@@ -166,20 +169,21 @@ export class PerformanceMetricsService {
     const secondHalf = recentMetrics.slice(midpoint);
 
     const firstHalfAvg = firstHalf.reduce((sum, m) => sum + m.responseTime, 0) / firstHalf.length;
-    const secondHalfAvg = secondHalf.reduce((sum, m) => sum + m.responseTime, 0) / secondHalf.length;
+    const secondHalfAvg =
+      secondHalf.reduce((sum, m) => sum + m.responseTime, 0) / secondHalf.length;
 
     const improvement = ((firstHalfAvg - secondHalfAvg) / firstHalfAvg) * 100;
 
-    let trend: 'improving' | 'stable' | 'degrading' = 'stable';
+    let trend: "improving" | "stable" | "degrading" = "stable";
     if (improvement > 10) {
-      trend = 'improving';
+      trend = "improving";
     } else if (improvement < -10) {
-      trend = 'degrading';
+      trend = "degrading";
     }
 
     return {
       trend,
-      improvement: Math.round(improvement * 100) / 100
+      improvement: Math.round(improvement * 100) / 100,
     };
   }
 }

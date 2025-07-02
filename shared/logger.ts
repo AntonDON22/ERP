@@ -1,4 +1,4 @@
-import { formatMoscowDateTime } from './timeUtils';
+import { formatMoscowDateTime } from "./timeUtils";
 
 // Импортируем типы для базы данных
 let db: any = null;
@@ -8,13 +8,13 @@ let logs: any = null;
 const initDB = async () => {
   if (!db) {
     try {
-      const dbModule = await import('../server/db');
-      const schemaModule = await import('./schema');
+      const dbModule = await import("../server/db");
+      const schemaModule = await import("./schema");
       db = dbModule.db;
       logs = schemaModule.logs;
     } catch (error) {
       // В случае ошибки просто логируем в консоль
-      console.warn('Failed to initialize database for logging:', error);
+      console.warn("Failed to initialize database for logging:", error);
     }
   }
 };
@@ -23,7 +23,7 @@ export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
   WARN = 2,
-  ERROR = 3
+  ERROR = 3,
 }
 
 export interface LogEntry {
@@ -39,9 +39,9 @@ class Logger {
   private minLevel: LogLevel;
   private serviceName: string;
 
-  constructor(serviceName: string = 'app', minLevel: LogLevel = LogLevel.INFO) {
+  constructor(serviceName: string = "app", minLevel: LogLevel = LogLevel.INFO) {
     this.serviceName = serviceName;
-    this.minLevel = process.env.NODE_ENV === 'development' ? LogLevel.DEBUG : minLevel;
+    this.minLevel = process.env.NODE_ENV === "development" ? LogLevel.DEBUG : minLevel;
   }
 
   private log(level: LogLevel, message: string, meta?: Record<string, any>, duration?: number) {
@@ -53,15 +53,15 @@ class Logger {
       service: this.serviceName,
       message,
       meta,
-      duration
+      duration,
     };
 
-    const levelNames = ['DEBUG', 'INFO', 'WARN', 'ERROR'];
-    const levelColors = ['\x1b[36m', '\x1b[32m', '\x1b[33m', '\x1b[31m']; // cyan, green, yellow, red
-    const resetColor = '\x1b[0m';
+    const levelNames = ["DEBUG", "INFO", "WARN", "ERROR"];
+    const levelColors = ["\x1b[36m", "\x1b[32m", "\x1b[33m", "\x1b[31m"]; // cyan, green, yellow, red
+    const resetColor = "\x1b[0m";
 
     let logMessage = `${levelColors[level]}[${levelNames[level]}]${resetColor} ${entry.timestamp} [${this.serviceName}] ${message}`;
-    
+
     if (duration !== undefined) {
       logMessage += ` (${duration}ms)`;
     }
@@ -74,20 +74,25 @@ class Logger {
     console.log(logMessage);
 
     // Пытаемся записать в базу данных (асинхронно, без блокировки)
-    this.writeToDatabase(level, message, meta, duration).catch(error => {
+    this.writeToDatabase(level, message, meta, duration).catch((error) => {
       // Если не удалось записать в БД - не падаем, просто предупреждаем
-      console.warn('Failed to write log to database:', error.message);
+      console.warn("Failed to write log to database:", error.message);
     });
   }
 
-  private async writeToDatabase(level: LogLevel, message: string, meta?: Record<string, any>, duration?: number) {
+  private async writeToDatabase(
+    level: LogLevel,
+    message: string,
+    meta?: Record<string, any>,
+    duration?: number
+  ) {
     await initDB();
-    
+
     if (!db || !logs) {
       return; // База данных недоступна
     }
 
-    const levelNames = ['DEBUG', 'INFO', 'WARN', 'ERROR'];
+    const levelNames = ["DEBUG", "INFO", "WARN", "ERROR"];
     const details = meta || duration ? JSON.stringify({ meta, duration }) : null;
 
     try {
@@ -95,7 +100,7 @@ class Logger {
         level: levelNames[level],
         message,
         module: this.serviceName,
-        details
+        details,
       });
     } catch (error) {
       // Тихо игнорируем ошибки записи в БД
@@ -128,7 +133,7 @@ class Logger {
   startOperation(operation: string, meta?: Record<string, any>): () => void {
     const startTime = Date.now();
     this.debug(`Starting: ${operation}`, meta);
-    
+
     return () => {
       const duration = Date.now() - startTime;
       this.performance(operation, duration, meta);
@@ -137,11 +142,11 @@ class Logger {
 }
 
 // Создаем экземпляры логгеров для разных сервисов
-export const logger = new Logger('app');
-export const dbLogger = new Logger('database');
-export const apiLogger = new Logger('api');
-export const inventoryLogger = new Logger('inventory');
-export const materializedLogger = new Logger('materialized-views');
+export const logger = new Logger("app");
+export const dbLogger = new Logger("database");
+export const apiLogger = new Logger("api");
+export const inventoryLogger = new Logger("inventory");
+export const materializedLogger = new Logger("materialized-views");
 
 // Функция для создания нового логгера для конкретного сервиса
 export function createLogger(serviceName: string, minLevel?: LogLevel): Logger {

@@ -6,7 +6,13 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, useUpdateDocument } from "@/hooks/useTypedQuery";
@@ -53,7 +59,7 @@ const documentItemSchema = z.object({
 // Схема для формы документа
 const documentSchema = z.object({
   warehouseId: z.number().min(1, "Выберите склад"),
-  status: z.enum(['draft', 'posted']).default('draft'),
+  status: z.enum(["draft", "posted"]).default("draft"),
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
@@ -73,7 +79,7 @@ export default function Document({ config, documentData }: DocumentProps) {
 
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
-  
+
   // Состояние для типа документа
   const [documentType, setDocumentType] = useState(documentData?.type || config.type);
 
@@ -86,8 +92,8 @@ export default function Document({ config, documentData }: DocumentProps) {
     resolver: zodResolver(documentSchema),
     defaultValues: {
       warehouseId: documentData?.warehouseId ?? 0,
-      status: (documentData?.status as "draft" | "posted") ?? 'draft',
-      items: documentData?.items?.map(item => ({
+      status: (documentData?.status as "draft" | "posted") ?? "draft",
+      items: documentData?.items?.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
         price: item.price,
@@ -105,8 +111,8 @@ export default function Document({ config, documentData }: DocumentProps) {
     if (documentData) {
       form.reset({
         warehouseId: documentData.warehouseId ?? 0,
-        status: (documentData.status as "draft" | "posted") ?? 'draft',
-        items: documentData.items?.map(item => ({
+        status: (documentData.status as "draft" | "posted") ?? "draft",
+        items: documentData.items?.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
@@ -119,28 +125,34 @@ export default function Document({ config, documentData }: DocumentProps) {
   const handleSave = async (data: FormDocument) => {
     const currentSubmissionId = ++submissionCounter.current;
     // Structured logging for submission tracking
-    if (process.env.NODE_ENV === 'development') {
-      console.debug('[Document]', 'Starting submission', { submissionId: currentSubmissionId });
+    if (process.env.NODE_ENV === "development") {
+      console.debug("[Document]", "Starting submission", { submissionId: currentSubmissionId });
     }
 
     // Тройная защита от дублирования
     if (isSubmitting) {
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('[Document]', 'Blocked duplicate submission - isSubmitting', { submissionId: currentSubmissionId });
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[Document]", "Blocked duplicate submission - isSubmitting", {
+          submissionId: currentSubmissionId,
+        });
       }
       return;
     }
 
     if (mutation.isPending) {
-      if (process.env.NODE_ENV === 'development') {
-        console.debug('[Document]', 'Blocked duplicate submission - mutation pending', { submissionId: currentSubmissionId });
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[Document]", "Blocked duplicate submission - mutation pending", {
+          submissionId: currentSubmissionId,
+        });
       }
       return;
     }
 
     // Проверка последовательности ID
     if (currentSubmissionId !== submissionCounter.current) {
-      console.log(`❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`);
+      console.log(
+        `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
+      );
       return;
     }
 
@@ -151,12 +163,12 @@ export default function Document({ config, documentData }: DocumentProps) {
       const documentToSave = {
         type: documentType,
         status: data.status,
-        name: `${documentType} ${new Date().toLocaleDateString('ru-RU').split('.').slice(0, 2).join('.')}-${Date.now() % 1000}`,
+        name: `${documentType} ${new Date().toLocaleDateString("ru-RU").split(".").slice(0, 2).join(".")}-${Date.now() % 1000}`,
         warehouseId: data.warehouseId,
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
           quantity: item.quantity.toString(),
-          price: documentType === 'income' ? item.price.toString() : undefined,
+          price: documentType === "income" ? item.price.toString() : undefined,
         })),
       };
 
@@ -166,7 +178,7 @@ export default function Document({ config, documentData }: DocumentProps) {
         await updateMutation.mutateAsync({
           id: documentData.id,
           data: {
-            type: documentType as 'Оприходование' | 'Списание',
+            type: documentType as "Оприходование" | "Списание",
             status: data.status,
             warehouseId: data.warehouseId,
             items: data.items.map((item: FormDocumentItem) => ({
@@ -174,7 +186,7 @@ export default function Document({ config, documentData }: DocumentProps) {
               quantity: item.quantity,
               price: item.price,
             })),
-          }
+          },
         });
       } else {
         // Создание нового документа
@@ -187,10 +199,10 @@ export default function Document({ config, documentData }: DocumentProps) {
       setLocation(config.backUrl);
     } catch (error) {
       console.error(`❌ Submission #${currentSubmissionId} failed:`, error);
-      toast({ 
-        title: "Ошибка", 
+      toast({
+        title: "Ошибка",
         description: "Не удалось сохранить документ",
-        variant: "destructive" 
+        variant: "destructive",
       });
     } finally {
       setIsSubmitting(false);
@@ -218,8 +230,6 @@ export default function Document({ config, documentData }: DocumentProps) {
     }
   };
 
-
-
   return (
     <div className="container mx-auto p-6 max-w-4xl">
       <Card>
@@ -227,15 +237,12 @@ export default function Document({ config, documentData }: DocumentProps) {
           <div className="flex justify-between items-center">
             <CardTitle>Документ</CardTitle>
             <div className="flex space-x-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setLocation(config.backUrl)}
-              >
+              <Button variant="outline" onClick={() => setLocation(config.backUrl)}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Назад
               </Button>
 
-              <Button 
+              <Button
                 form="document-form"
                 type="submit"
                 disabled={isSubmitting || mutation.isPending}
@@ -249,10 +256,7 @@ export default function Document({ config, documentData }: DocumentProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <Label htmlFor="documentType">Тип документа</Label>
-              <Select
-                value={documentType}
-                onValueChange={setDocumentType}
-              >
+              <Select value={documentType} onValueChange={setDocumentType}>
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите тип" />
                 </SelectTrigger>
@@ -266,8 +270,8 @@ export default function Document({ config, documentData }: DocumentProps) {
             <div>
               <Label>Склад</Label>
               <Select
-                value={form.watch('warehouseId')?.toString() || ""}
-                onValueChange={(value) => form.setValue('warehouseId', parseInt(value))}
+                value={form.watch("warehouseId")?.toString() || ""}
+                onValueChange={(value) => form.setValue("warehouseId", parseInt(value))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите склад" />
@@ -289,8 +293,8 @@ export default function Document({ config, documentData }: DocumentProps) {
             <div>
               <Label>Статус</Label>
               <Select
-                value={form.watch('status') || 'draft'}
-                onValueChange={(value: 'draft' | 'posted') => form.setValue('status', value)}
+                value={form.watch("status") || "draft"}
+                onValueChange={(value: "draft" | "posted") => form.setValue("status", value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите статус" />
@@ -301,9 +305,7 @@ export default function Document({ config, documentData }: DocumentProps) {
                 </SelectContent>
               </Select>
               {form.formState.errors.status && (
-                <p className="text-sm text-red-500 mt-1">
-                  {form.formState.errors.status.message}
-                </p>
+                <p className="text-sm text-red-500 mt-1">{form.formState.errors.status.message}</p>
               )}
             </div>
           </div>
@@ -311,7 +313,6 @@ export default function Document({ config, documentData }: DocumentProps) {
       </Card>
 
       <form id="document-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
-
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">
@@ -325,7 +326,10 @@ export default function Document({ config, documentData }: DocumentProps) {
           <CardContent>
             <div className="space-y-4">
               {fields.map((field: any, index: number) => (
-                <div key={field.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg">
+                <div
+                  key={field.id}
+                  className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg"
+                >
                   <div className="md:col-span-3">
                     <Label>Товар</Label>
                     <Select

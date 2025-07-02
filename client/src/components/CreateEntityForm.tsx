@@ -6,11 +6,18 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 
 // Типы полей для формы
-export type FieldType = 'text' | 'textarea' | 'email' | 'url';
+export type FieldType = "text" | "textarea" | "email" | "url";
 
 export interface FormField {
   name: string;
@@ -33,25 +40,25 @@ export interface CreateEntityFormProps {
 // Создание динамической схемы валидации на основе полей
 const createValidationSchema = (fields: FormField[]) => {
   const schemaFields: Record<string, z.ZodTypeAny> = {};
-  
-  fields.forEach(field => {
+
+  fields.forEach((field) => {
     let validator: z.ZodTypeAny = z.string();
-    
+
     if (field.required !== false) {
       validator = validator.min(1, `${field.label} обязательно для заполнения`);
     }
-    
-    if (field.type === 'email') {
+
+    if (field.type === "email") {
       validator = validator.email("Введите корректный email");
     }
-    
-    if (field.type === 'url') {
+
+    if (field.type === "url") {
       validator = validator.url("Введите корректный URL").or(z.literal(""));
     }
-    
+
     schemaFields[field.name] = validator;
   });
-  
+
   return z.object(schemaFields);
 };
 
@@ -66,15 +73,18 @@ export default function CreateEntityForm({
 }: CreateEntityFormProps) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  
+
   const schema = createValidationSchema(fields);
-  
+
   const form = useForm({
     resolver: zodResolver(schema),
-    defaultValues: fields.reduce((acc, field) => {
-      acc[field.name] = "";
-      return acc;
-    }, {} as Record<string, string>),
+    defaultValues: fields.reduce(
+      (acc, field) => {
+        acc[field.name] = "";
+        return acc;
+      },
+      {} as Record<string, string>
+    ),
   });
 
   const handleSubmit = async (data: any) => {
@@ -104,14 +114,11 @@ export default function CreateEntityForm({
           <FormItem>
             <FormLabel>{field.label}</FormLabel>
             <FormControl>
-              {field.type === 'textarea' ? (
-                <Textarea
-                  placeholder={field.placeholder}
-                  {...formField}
-                />
+              {field.type === "textarea" ? (
+                <Textarea placeholder={field.placeholder} {...formField} />
               ) : (
                 <Input
-                  type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'}
+                  type={field.type === "email" ? "email" : field.type === "url" ? "url" : "text"}
                   placeholder={field.placeholder}
                   {...formField}
                 />
@@ -134,19 +141,13 @@ export default function CreateEntityForm({
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 gap-4">
-                {fields.map(renderField)}
-              </div>
-              
+              <div className="grid grid-cols-1 gap-4">{fields.map(renderField)}</div>
+
               <div className="flex gap-4">
                 <Button type="submit" disabled={isLoading}>
                   {isLoading ? "Создание..." : submitLabel}
                 </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => navigate(cancelPath)}
-                >
+                <Button type="button" variant="outline" onClick={() => navigate(cancelPath)}>
                   Отменить
                 </Button>
               </div>

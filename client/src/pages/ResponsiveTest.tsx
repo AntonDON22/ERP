@@ -2,17 +2,42 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ResponsiveTableWrapper } from "@/components/ui/responsive-table-wrapper";
 import { Search, Settings, Download, Upload, Trash2, Plus } from "lucide-react";
 
 const testData = [
-  { id: 1, name: "Очень длинное название товара для тестирования переноса", sku: "SKU-001", price: 1299.99, category: "Электроника" },
-  { id: 2, name: "Короткое название", sku: "SKU-002", price: 599.50, category: "Одежда" },
-  { id: 3, name: "Средней длины название товара", sku: "SKU-003", price: 2499.00, category: "Мебель" },
+  {
+    id: 1,
+    name: "Очень длинное название товара для тестирования переноса",
+    sku: "SKU-001",
+    price: 1299.99,
+    category: "Электроника",
+  },
+  { id: 2, name: "Короткое название", sku: "SKU-002", price: 599.5, category: "Одежда" },
+  {
+    id: 3,
+    name: "Средней длины название товара",
+    sku: "SKU-003",
+    price: 2499.0,
+    category: "Мебель",
+  },
 ];
 
 export default function ResponsiveTest() {
@@ -37,9 +62,7 @@ export default function ResponsiveTest() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Формы и поля ввода</CardTitle>
-              <CardDescription>
-                Проверка адаптивности форм на малых экранах
-              </CardDescription>
+              <CardDescription>Проверка адаптивности форм на малых экранах</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -65,10 +88,12 @@ export default function ResponsiveTest() {
                   <Input type="number" placeholder="0.00" />
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row gap-2 pt-4">
                 <Button className="w-full sm:w-auto">Сохранить</Button>
-                <Button variant="outline" className="w-full sm:w-auto">Отменить</Button>
+                <Button variant="outline" className="w-full sm:w-auto">
+                  Отменить
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -77,19 +102,14 @@ export default function ResponsiveTest() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Панель управления</CardTitle>
-              <CardDescription>
-                Панель с поиском, фильтрами и кнопками действий
-              </CardDescription>
+              <CardDescription>Панель с поиском, фильтрами и кнопками действий</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <Input
-                      placeholder="Поиск товаров..."
-                      className="pl-10"
-                    />
+                    <Input placeholder="Поиск товаров..." className="pl-10" />
                   </div>
                 </div>
 
@@ -140,16 +160,28 @@ export default function ResponsiveTest() {
                       <th className="w-12 px-2 sm:px-4 py-3 text-left">
                         <Checkbox />
                       </th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '300px' }}>
+                      <th
+                        className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        style={{ width: "300px" }}
+                      >
                         Название
                       </th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>
+                      <th
+                        className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        style={{ width: "120px" }}
+                      >
                         Артикул
                       </th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '120px' }}>
+                      <th
+                        className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        style={{ width: "120px" }}
+                      >
                         Цена
                       </th>
-                      <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" style={{ width: '150px' }}>
+                      <th
+                        className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                        style={{ width: "150px" }}
+                      >
                         Категория
                       </th>
                     </tr>
@@ -178,7 +210,10 @@ export default function ResponsiveTest() {
                           <span className="truncate block">{item.sku}</span>
                         </td>
                         <td className="px-2 sm:px-4 py-3 text-sm">
-                          {item.price.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
+                          {item.price.toLocaleString("ru-RU", {
+                            style: "currency",
+                            currency: "RUB",
+                          })}
                         </td>
                         <td className="px-2 sm:px-4 py-3 text-sm">
                           <span className="truncate block">{item.category}</span>
@@ -195,9 +230,7 @@ export default function ResponsiveTest() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Модальные окна и поповеры</CardTitle>
-              <CardDescription>
-                Тестирование адаптивности модальных компонентов
-              </CardDescription>
+              <CardDescription>Тестирование адаптивности модальных компонентов</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col sm:flex-row gap-4">
@@ -226,9 +259,7 @@ export default function ResponsiveTest() {
                       <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                         Отменить
                       </Button>
-                      <Button onClick={() => setIsDialogOpen(false)}>
-                        Сохранить
-                      </Button>
+                      <Button onClick={() => setIsDialogOpen(false)}>Сохранить</Button>
                     </div>
                   </DialogContent>
                 </Dialog>
@@ -274,9 +305,7 @@ export default function ResponsiveTest() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg sm:text-xl">Адаптивные карточки</CardTitle>
-              <CardDescription>
-                Сетка карточек с адаптивными breakpoints
-              </CardDescription>
+              <CardDescription>Сетка карточек с адаптивными breakpoints</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -289,11 +318,12 @@ export default function ResponsiveTest() {
                     </CardHeader>
                     <CardContent className="pt-0">
                       <div className="space-y-2">
-                        <p className="text-xs sm:text-sm text-gray-600">
-                          Артикул: {item.sku}
-                        </p>
+                        <p className="text-xs sm:text-sm text-gray-600">Артикул: {item.sku}</p>
                         <p className="text-sm sm:text-base font-semibold">
-                          {item.price.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB' })}
+                          {item.price.toLocaleString("ru-RU", {
+                            style: "currency",
+                            currency: "RUB",
+                          })}
                         </p>
                         <div className="flex gap-2 pt-2">
                           <Button size="sm" className="flex-1 text-xs sm:text-sm">
@@ -325,14 +355,17 @@ export default function ResponsiveTest() {
                 </p>
                 <ul className="list-disc list-inside space-y-1 ml-4">
                   <li>Откройте DevTools (F12) и переключитесь в режим устройства</li>
-                  <li>Протестируйте ширины: 320px (iPhone SE), 375px (iPhone), 768px (iPad), 1024px+ (Desktop)</li>
+                  <li>
+                    Протестируйте ширины: 320px (iPhone SE), 375px (iPhone), 768px (iPad), 1024px+
+                    (Desktop)
+                  </li>
                   <li>Проверьте горизонтальную прокрутку в таблицах</li>
                   <li>Убедитесь, что модальные окна корректно отображаются</li>
                   <li>Проверьте адаптивность кнопок и форм</li>
                 </ul>
                 <p className="pt-2">
-                  <strong>Ожидаемое поведение:</strong> Нет горизонтальной прокрутки основной страницы, 
-                  все элементы помещаются в viewport, таблицы имеют внутреннюю прокрутку.
+                  <strong>Ожидаемое поведение:</strong> Нет горизонтальной прокрутки основной
+                  страницы, все элементы помещаются в viewport, таблицы имеют внутреннюю прокрутку.
                 </p>
               </div>
             </CardContent>

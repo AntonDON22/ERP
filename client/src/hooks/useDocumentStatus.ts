@@ -3,7 +3,7 @@ import { apiRequest } from "@/lib/queryClient";
 
 export function usePostDocument() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (documentId: number) => {
       const response = await fetch(`/api/documents/${documentId}/post`, {
@@ -27,7 +27,7 @@ export function usePostDocument() {
 
 export function useUnpostDocument() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (documentId: number) => {
       const response = await fetch(`/api/documents/${documentId}/unpost`, {
@@ -51,7 +51,7 @@ export function useUnpostDocument() {
 
 export function useToggleDocumentStatus() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (documentId: number) => {
       const response = await fetch(`/api/documents/${documentId}/toggle-status`, {

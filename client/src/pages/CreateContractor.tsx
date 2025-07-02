@@ -7,15 +7,15 @@ const contractorFields: FormField[] = [
     label: "Название",
     type: "text",
     required: true,
-    placeholder: "Введите название контрагента"
+    placeholder: "Введите название контрагента",
   },
   {
     name: "website",
     label: "Вебсайт",
     type: "url",
     required: false,
-    placeholder: "https://example.com"
-  }
+    placeholder: "https://example.com",
+  },
 ];
 
 export default function CreateContractor() {

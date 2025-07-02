@@ -3,14 +3,14 @@
  * Обеспечивает безопасную постраничную загрузку с защитой от SQL инъекций
  */
 
-import { logger } from '../../shared/logger';
+import { logger } from "../../shared/logger";
 
 interface PaginationParams {
   page?: number;
   limit?: number;
   offset?: number;
   sort?: string;
-  order?: 'asc' | 'desc';
+  order?: "asc" | "desc";
 }
 
 interface PaginationResult<T> {
@@ -29,11 +29,19 @@ export class PaginationService {
   private readonly DEFAULT_LIMIT = 50;
   private readonly MAX_LIMIT = 1000;
   private readonly DEFAULT_PAGE = 1;
-  
+
   // Безопасные поля для сортировки (защита от SQL инъекций)
   private readonly SAFE_SORT_FIELDS = new Set([
-    'id', 'name', 'sku', 'price', 'createdAt', 'updatedAt',
-    'quantity', 'type', 'status', 'date'
+    "id",
+    "name",
+    "sku",
+    "price",
+    "createdAt",
+    "updatedAt",
+    "quantity",
+    "type",
+    "status",
+    "date",
   ]);
 
   /**
@@ -46,16 +54,16 @@ export class PaginationService {
       this.MAX_LIMIT
     );
     const offset = (page - 1) * limit;
-    
+
     // Валидация и санитизация сортировки
-    let sort = 'id';
-    let order: 'asc' | 'desc' = 'desc';
-    
+    let sort = "id";
+    let order: "asc" | "desc" = "desc";
+
     if (params.sort && this.SAFE_SORT_FIELDS.has(params.sort)) {
       sort = params.sort;
     }
-    
-    if (params.order === 'asc' || params.order === 'desc') {
+
+    if (params.order === "asc" || params.order === "desc") {
       order = params.order;
     }
 
@@ -66,12 +74,12 @@ export class PaginationService {
    * Создает результат пагинации
    */
   createResult<T>(
-    data: T[], 
-    total: number, 
+    data: T[],
+    total: number,
     params: Required<PaginationParams>
   ): PaginationResult<T> {
     const totalPages = Math.ceil(total / params.limit);
-    
+
     return {
       data,
       meta: {
@@ -80,8 +88,8 @@ export class PaginationService {
         total,
         totalPages,
         hasNext: params.page < totalPages,
-        hasPrev: params.page > 1
-      }
+        hasPrev: params.page > 1,
+      },
     };
   }
 
@@ -89,7 +97,7 @@ export class PaginationService {
    * Логирует использование пагинации для мониторинга
    */
   logUsage(endpoint: string, params: Required<PaginationParams>, total: number): void {
-    logger.debug('Пагинация применена', {
+    logger.debug("Пагинация применена", {
       endpoint,
       page: params.page,
       limit: params.limit,
@@ -97,7 +105,7 @@ export class PaginationService {
       sort: params.sort,
       order: params.order,
       total,
-      loadedRecords: Math.min(params.limit, total - params.offset)
+      loadedRecords: Math.min(params.limit, total - params.offset),
     });
   }
 
@@ -107,7 +115,7 @@ export class PaginationService {
   getSqlLimitOffset(params: Required<PaginationParams>): { limit: number; offset: number } {
     return {
       limit: params.limit,
-      offset: params.offset
+      offset: params.offset,
     };
   }
 
@@ -117,9 +125,9 @@ export class PaginationService {
   getSqlOrderBy(params: Required<PaginationParams>): string {
     // Дополнительная защита - белый список полей
     if (!this.SAFE_SORT_FIELDS.has(params.sort)) {
-      params.sort = 'id';
+      params.sort = "id";
     }
-    
+
     return `ORDER BY ${params.sort} ${params.order.toUpperCase()}`;
   }
 
@@ -128,20 +136,20 @@ export class PaginationService {
    */
   validateEfficiency(params: Required<PaginationParams>, total: number): void {
     const maxReasonableOffset = 10000; // Предел для эффективной пагинации
-    
+
     if (params.offset > maxReasonableOffset) {
-      logger.warn('Неэффективная пагинация - большой offset', {
+      logger.warn("Неэффективная пагинация - большой offset", {
         page: params.page,
         offset: params.offset,
         total,
-        recommendation: 'Рассмотрите использование cursor-based пагинации'
+        recommendation: "Рассмотрите использование cursor-based пагинации",
       });
     }
-    
+
     if (params.limit > 500) {
-      logger.warn('Большой лимит пагинации может снизить производительность', {
+      logger.warn("Большой лимит пагинации может снизить производительность", {
         limit: params.limit,
-        recommendation: 'Рекомендуется лимит до 500 записей'
+        recommendation: "Рекомендуется лимит до 500 записей",
       });
     }
   }

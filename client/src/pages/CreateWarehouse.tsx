@@ -7,15 +7,15 @@ const warehouseFields: FormField[] = [
     label: "Название",
     type: "text",
     required: true,
-    placeholder: "Введите название склада"
+    placeholder: "Введите название склада",
   },
   {
     name: "address",
     label: "Адрес",
     type: "textarea",
     required: false,
-    placeholder: "Введите адрес склада"
-  }
+    placeholder: "Введите адрес склада",
+  },
 ];
 
 export default function CreateWarehouse() {

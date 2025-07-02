@@ -4,7 +4,14 @@ import { SupplierStorage } from "./supplierStorage";
 import { ContractorStorage } from "./contractorStorage";
 import { WarehouseStorage } from "./warehouseStorage";
 import { type IStorage } from "../storage";
-import { DocumentRecord, InsertDocument, CreateDocumentItem, Log, Order, InsertOrder } from "@shared/schema";
+import {
+  DocumentRecord,
+  InsertDocument,
+  CreateDocumentItem,
+  Log,
+  Order,
+  InsertOrder,
+} from "@shared/schema";
 import { dbLogger } from "@shared/logger";
 
 /**
@@ -120,7 +127,9 @@ export class ModularStorage implements Partial<IStorage> {
   }
 
   // Заглушки для методов которые еще не перенесены
-  async getInventory(warehouseId?: number): Promise<Array<{id: number; name: string; quantity: number}>> {
+  async getInventory(
+    warehouseId?: number
+  ): Promise<Array<{ id: number; name: string; quantity: number }>> {
     dbLogger.warn("getInventory: method not yet migrated to modular architecture");
     throw new Error("Method getInventory not implemented in modular storage");
   }

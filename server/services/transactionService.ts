@@ -1,5 +1,12 @@
 import { db } from "../db";
-import { documents, documentItems, inventory, reserves, orders, orderItems as orderItemsTable } from "../../shared/schema";
+import {
+  documents,
+  documentItems,
+  inventory,
+  reserves,
+  orders,
+  orderItems as orderItemsTable,
+} from "../../shared/schema";
 import { eq, sql } from "drizzle-orm";
 import type { InsertDocument, CreateDocumentItem } from "../../shared/schema";
 import { getMoscowTime } from "../../shared/timeUtils";
@@ -8,38 +15,34 @@ import { apiLogger } from "../../shared/logger";
 
 export class TransactionService {
   // Транзакционное создание документа с пересчетом остатков
-  async createDocumentWithInventory(
-    document: InsertDocument, 
-    items: CreateDocumentItem[]
-  ) {
+  async createDocumentWithInventory(document: InsertDocument, items: CreateDocumentItem[]) {
     return await db.transaction(async (tx) => {
       console.log("🔄 Начинаем транзакцию создания документа");
 
       // 1. Создаем документ
-      const [createdDocument] = await tx
-        .insert(documents)
-        .values(document)
-        .returning();
+      const [createdDocument] = await tx.insert(documents).values(document).returning();
 
       // 2. Генерируем автоматическое название
-      const today = new Date().toLocaleDateString('ru-RU', { 
-        day: '2-digit', 
-        month: '2-digit' 
+      const today = new Date().toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
       });
-      
+
       const todayStart = new Date();
       todayStart.setHours(0, 0, 0, 0);
       const todayEnd = new Date();
       todayEnd.setHours(23, 59, 59, 999);
-      
+
       const todayDocuments = await tx
         .select()
         .from(documents)
-        .where(sql`${documents.type} = ${createdDocument.type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`);
-      
+        .where(
+          sql`${documents.type} = ${createdDocument.type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`
+        );
+
       const dayNumber = todayDocuments.length;
       const name = `${createdDocument.type} ${today}-${dayNumber}`;
-      
+
       const [updatedDocument] = await tx
         .update(documents)
         .set({ name })
@@ -48,14 +51,12 @@ export class TransactionService {
 
       // 3. Создаем позиции документа
       for (const item of items) {
-        await tx
-          .insert(documentItems)
-          .values({
-            productId: item.productId,
-            quantity: item.quantity.toString(),
-            price: item.price ?? "0",
-            documentId: createdDocument.id,
-          });
+        await tx.insert(documentItems).values({
+          productId: item.productId,
+          quantity: item.quantity.toString(),
+          price: item.price ?? "0",
+          documentId: createdDocument.id,
+        });
 
         // 4. Обрабатываем движения инвентаря транзакционно
         await this.processInventoryMovement(tx, {
@@ -63,17 +64,19 @@ export class TransactionService {
           quantity: item.quantity.toString(),
           price: item.price ?? "0",
           documentId: createdDocument.id,
-          movementType: updatedDocument.type === 'income' ? 'IN' : 'OUT',
-          warehouseId: updatedDocument.warehouseId || undefined
+          movementType: updatedDocument.type === "income" ? "IN" : "OUT",
+          warehouseId: updatedDocument.warehouseId || undefined,
         });
       }
 
       console.log("✅ Транзакция создания документа завершена");
-      
+
       // Инвалидация кеша остатков после создания документа
       await cacheService.invalidatePattern("inventory:*");
-      apiLogger.info("Inventory cache invalidated after document creation", { documentId: updatedDocument.id });
-      
+      apiLogger.info("Inventory cache invalidated after document creation", {
+        documentId: updatedDocument.id,
+      });
+
       return updatedDocument;
     });
   }
@@ -98,14 +101,10 @@ export class TransactionService {
       }
 
       // 2. Удаляем старые движения по складу для этого документа
-      await tx
-        .delete(inventory)
-        .where(eq(inventory.documentId, documentId));
+      await tx.delete(inventory).where(eq(inventory.documentId, documentId));
 
       // 3. Удаляем старые позиции документа
-      await tx
-        .delete(documentItems)
-        .where(eq(documentItems.documentId, documentId));
+      await tx.delete(documentItems).where(eq(documentItems.documentId, documentId));
 
       // 4. Обновляем документ
       const [document] = await tx
@@ -117,14 +116,12 @@ export class TransactionService {
       // 5. Если есть новые позиции, создаем их
       if (newItems && newItems.length > 0) {
         for (const item of newItems) {
-          await tx
-            .insert(documentItems)
-            .values({
-              productId: item.productId,
-              quantity: item.quantity.toString(),
-              price: item.price ?? "0",
-              documentId: documentId,
-            });
+          await tx.insert(documentItems).values({
+            productId: item.productId,
+            quantity: item.quantity.toString(),
+            price: item.price ?? "0",
+            documentId: documentId,
+          });
 
           // 6. Создаем новые движения по складу
           await this.processInventoryMovement(tx, {
@@ -132,18 +129,18 @@ export class TransactionService {
             quantity: item.quantity.toString(),
             price: item.price ?? "0",
             documentId: documentId,
-            movementType: document.type === 'income' ? 'IN' : 'OUT',
-            warehouseId: document.warehouseId || undefined
+            movementType: document.type === "income" ? "IN" : "OUT",
+            warehouseId: document.warehouseId || undefined,
           });
         }
       }
 
       console.log("✅ Транзакция обновления документа завершена");
-      
+
       // Инвалидация кеша остатков после обновления документа
       await cacheService.invalidatePattern("inventory:*");
       apiLogger.info("Inventory cache invalidated after document update", { documentId });
-      
+
       return document;
     });
   }
@@ -159,141 +156,137 @@ export class TransactionService {
         .where(eq(inventory.documentId, documentId));
       console.log(`🗑️ Удалено ${inventoryResult.rowCount ?? 0} записей inventory`);
 
-      // 2. Удаляем связанные записи из document_items  
+      // 2. Удаляем связанные записи из document_items
       const itemsResult = await tx
         .delete(documentItems)
         .where(eq(documentItems.documentId, documentId));
       console.log(`🗑️ Удалено ${itemsResult.rowCount ?? 0} позиций документа`);
 
       // 3. Удаляем сам документ
-      const documentResult = await tx
-        .delete(documents)
-        .where(eq(documents.id, documentId));
-      
+      const documentResult = await tx.delete(documents).where(eq(documents.id, documentId));
+
       const success = (documentResult.rowCount ?? 0) > 0;
       console.log("✅ Транзакция удаления документа завершена");
-      
+
       // Инвалидация кеша остатков после успешного удаления
       if (success) {
         await cacheService.invalidatePattern("inventory:*");
         apiLogger.info("Inventory cache invalidated after document deletion", { documentId });
       }
-      
+
       return success;
     });
   }
 
   // Транзакционная обработка заказов с резервами
-  async processOrderWithReserves(
-    orderData: any,
-    items: any[],
-    isReserved: boolean
-  ) {
+  async processOrderWithReserves(orderData: any, items: any[], isReserved: boolean) {
     return await db.transaction(async (tx) => {
       console.log("🔄 Начинаем транзакцию создания заказа с резервами");
 
       // 1. Создаем заказ
-      const [createdOrder] = await tx
-        .insert(orders)
-        .values(orderData)
-        .returning();
+      const [createdOrder] = await tx.insert(orders).values(orderData).returning();
 
       let totalAmount = 0;
 
       // 2. Создаем позиции заказа
       for (const item of items) {
-        await tx
-          .insert(orderItemsTable)
-          .values({
-            ...item,
-            orderId: createdOrder.id,
-          });
+        await tx.insert(orderItemsTable).values({
+          ...item,
+          orderId: createdOrder.id,
+        });
 
         totalAmount += parseFloat(item.quantity) * parseFloat(item.price);
 
         // 3. Если заказ резервируется, создаем резервы
         if (isReserved) {
-          await tx
-            .insert(reserves)
-            .values({
-              orderId: createdOrder.id,
-              productId: item.productId,
-              quantity: item.quantity,
-              warehouseId: orderData.warehouseId,
-            });
+          await tx.insert(reserves).values({
+            orderId: createdOrder.id,
+            productId: item.productId,
+            quantity: item.quantity,
+            warehouseId: orderData.warehouseId,
+          });
           console.log(`📦 Создан резерв для заказа ${createdOrder.id}, товар ${item.productId}`);
         }
       }
 
       // 4. Обновляем заказ с итоговой суммой и названием
-      const today = new Date().toLocaleDateString('ru-RU', { 
-        day: '2-digit', 
-        month: '2-digit' 
+      const today = new Date().toLocaleDateString("ru-RU", {
+        day: "2-digit",
+        month: "2-digit",
       });
-      
+
       const todayOrders = await tx
         .select()
         .from(orders)
         .where(sql`DATE(${orders.createdAt}) = CURRENT_DATE`);
-      
+
       const dayNumber = todayOrders.length;
       const name = `Заказ ${today}-${dayNumber}`;
 
       const [updatedOrder] = await tx
         .update(orders)
-        .set({ 
+        .set({
           name,
           totalAmount: totalAmount.toFixed(2),
-          isReserved: isReserved
+          isReserved: isReserved,
         })
         .where(eq(orders.id, createdOrder.id))
         .returning();
 
       console.log("✅ Транзакция создания заказа завершена");
-      
+
       // Инвалидация кеша остатков если создавались резервы
       if (isReserved) {
         await cacheService.invalidatePattern("inventory:*");
-        apiLogger.info("Inventory cache invalidated after order creation with reserves", { orderId: updatedOrder.id });
+        apiLogger.info("Inventory cache invalidated after order creation with reserves", {
+          orderId: updatedOrder.id,
+        });
       }
-      
+
       return updatedOrder;
     });
   }
 
   // Универсальная обработка движений инвентаря (внутри транзакции)
-  private async processInventoryMovement(tx: any, movement: {
-    productId: number;
-    quantity: string;
-    price: string;
-    documentId: number;
-    movementType: 'IN' | 'OUT';
-    warehouseId?: number;
-  }) {
-    if (movement.movementType === 'IN') {
+  private async processInventoryMovement(
+    tx: any,
+    movement: {
+      productId: number;
+      quantity: string;
+      price: string;
+      documentId: number;
+      movementType: "IN" | "OUT";
+      warehouseId?: number;
+    }
+  ) {
+    if (movement.movementType === "IN") {
       // Приход - просто добавляем запись
-      await tx
-        .insert(inventory)
-        .values({
-          productId: movement.productId,
-          quantity: movement.quantity,
-          price: movement.price,
-          movementType: 'IN',
-          documentId: movement.documentId,
-          createdAt: getMoscowTime().toISOString(),
-        });
+      await tx.insert(inventory).values({
+        productId: movement.productId,
+        quantity: movement.quantity,
+        price: movement.price,
+        movementType: "IN",
+        documentId: movement.documentId,
+        createdAt: getMoscowTime().toISOString(),
+      });
     } else {
       // Расход - используем FIFO логику
-      await this.processWriteoffFIFO(tx, movement.productId, Number(movement.quantity), movement.price, movement.documentId);
+      await this.processWriteoffFIFO(
+        tx,
+        movement.productId,
+        Number(movement.quantity),
+        movement.price,
+        movement.documentId
+      );
     }
   }
 
   // FIFO логика списания (адаптированная для работы внутри транзакции)
   private async processWriteoffFIFO(
-    tx: any, 
-    productId: number, 
-    quantityToWriteoff: number, 
-    writeoffPrice: string, 
+    tx: any,
+    productId: number,
+    quantityToWriteoff: number,
+    writeoffPrice: string,
     documentId: number
   ) {
     console.log(`🔄 FIFO-списание для товара ${productId}, количество: ${quantityToWriteoff}`);
@@ -302,7 +295,9 @@ export class TransactionService {
     const stockMovements = await tx
       .select()
       .from(inventory)
-      .where(sql`${inventory.productId} = ${productId} AND CAST(${inventory.quantity} AS DECIMAL) > 0`)
+      .where(
+        sql`${inventory.productId} = ${productId} AND CAST(${inventory.quantity} AS DECIMAL) > 0`
+      )
       .orderBy(sql`${inventory.createdAt} ASC`);
 
     console.log(`📋 Найдено ${stockMovements.length} приходных движений для товара ${productId}`);
@@ -322,7 +317,7 @@ export class TransactionService {
           productId: productId,
           quantity: `-${quantityToTakeFromThisBatch}`,
           price: stockItem.price,
-          movementType: 'OUT' as const,
+          movementType: "OUT" as const,
           documentId: documentId,
           createdAt: getMoscowTime().toISOString(),
         });
@@ -340,17 +335,15 @@ export class TransactionService {
     // Если остались несписанные товары - создаем запись о списании в минус
     if (remainingToWriteoff > 0) {
       console.log(`⚠️ Списание в минус: ${remainingToWriteoff} единиц`);
-      
-      await tx
-        .insert(inventory)
-        .values({
-          productId: productId,
-          quantity: `-${remainingToWriteoff}`,
-          price: writeoffPrice,
-          movementType: 'OUT',
-          documentId: documentId,
-          createdAt: getMoscowTime().toISOString(),
-        });
+
+      await tx.insert(inventory).values({
+        productId: productId,
+        quantity: `-${remainingToWriteoff}`,
+        price: writeoffPrice,
+        movementType: "OUT",
+        documentId: documentId,
+        createdAt: getMoscowTime().toISOString(),
+      });
     }
 
     console.log("✅ FIFO-списание завершено");
@@ -366,8 +359,11 @@ export class TransactionService {
   async createReservesForOrder(orderId: number, warehouseId: number): Promise<void> {
     try {
       // Получаем все позиции заказа
-      const orderItemsList = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, orderId));
-      
+      const orderItemsList = await db
+        .select()
+        .from(orderItemsTable)
+        .where(eq(orderItemsTable.orderId, orderId));
+
       if (orderItemsList.length === 0) {
         apiLogger.warn("No order items found for creating reserves", { orderId });
         return;
@@ -383,10 +379,18 @@ export class TransactionService {
           createdAt: getMoscowTime(),
         });
       }
-      
-      apiLogger.info("Reserves created for all order items", { orderId, warehouseId, itemsCount: orderItemsList.length });
+
+      apiLogger.info("Reserves created for all order items", {
+        orderId,
+        warehouseId,
+        itemsCount: orderItemsList.length,
+      });
     } catch (error) {
-      apiLogger.error("Failed to create reserves for order", { orderId, warehouseId, error: error instanceof Error ? error.message : String(error) });
+      apiLogger.error("Failed to create reserves for order", {
+        orderId,
+        warehouseId,
+        error: error instanceof Error ? error.message : String(error),
+      });
       throw error;
     }
   }
@@ -400,7 +404,11 @@ export class TransactionService {
       quantity: item.quantity,
       createdAt: getMoscowTime(),
     });
-    apiLogger.info("Reserve created for order item", { orderId, productId: item.productId, quantity: item.quantity });
+    apiLogger.info("Reserve created for order item", {
+      orderId,
+      productId: item.productId,
+      quantity: item.quantity,
+    });
   }
 }
 

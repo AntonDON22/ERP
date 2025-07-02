@@ -343,63 +343,101 @@ export class DatabaseStorage implements IStorage {
     const endOperation = dbLogger.startOperation('getInventory', { warehouseId });
     
     try {
+      console.log('[DB] Starting getInventory query...');
       let result;
       
-      if (warehouseId) {
-        // Если указан склад, фильтруем по складу через documents и учитываем только проведенные документы
-        result = await db
-          .select({
-            id: products.id,
-            name: products.name,
-            quantity: sql<number>`
-              COALESCE(
-                SUM(
-                  CASE 
-                    WHEN (documents.warehouse_id = ${warehouseId} OR documents.warehouse_id IS NULL) 
-                         AND documents.status = 'posted'
-                    THEN CAST(inventory.quantity AS DECIMAL)
-                    ELSE 0 
-                  END
-                ), 0
-              )
-            `.as('quantity')
-          })
-          .from(products)
-          .leftJoin(inventory, eq(products.id, inventory.productId))
-          .leftJoin(documents, eq(inventory.documentId, documents.id))
-          .groupBy(products.id, products.name);
-      } else {
-        // Без фильтра по складу - показываем все остатки только из проведенных документов
-        result = await db
-          .select({
-            id: products.id,
-            name: products.name,
-            quantity: sql<number>`
-              COALESCE(
-                SUM(
-                  CASE 
-                    WHEN documents.status = 'posted' 
-                    THEN CAST(inventory.quantity AS DECIMAL)
-                    ELSE 0 
-                  END
-                ), 0
-              )
-            `.as('quantity')
-          })
-          .from(products)
-          .leftJoin(inventory, eq(products.id, inventory.productId))
-          .leftJoin(documents, eq(inventory.documentId, documents.id))
-          .groupBy(products.id, products.name);
+      // Попытка использовать материализованное представление для лучшей производительности
+      try {
+        if (warehouseId) {
+          // Для конкретного склада используем материализованное представление с фильтром
+          result = await db.execute(sql`
+            SELECT 
+              p.id::int as id,
+              p.name as name,
+              COALESCE(iv.total_quantity, 0)::decimal as quantity
+            FROM products p
+            LEFT JOIN inventory_summary iv ON p.id = iv.product_id 
+              AND (iv.warehouse_id = ${warehouseId} OR iv.warehouse_id IS NULL)
+            ORDER BY p.id
+          `);
+        } else {
+          // Без фильтра по складу - используем оптимизированное представление
+          result = await db.execute(sql`
+            SELECT 
+              p.id::int as id,
+              p.name as name,
+              COALESCE(SUM(iv.total_quantity), 0)::decimal as quantity
+            FROM products p
+            LEFT JOIN inventory_summary iv ON p.id = iv.product_id
+            GROUP BY p.id, p.name
+            ORDER BY p.id
+          `);
+        }
+        dbLogger.info('Материализованное представление использовано для getInventory', { 
+          warehouseId, 
+          rowCount: result.rows?.length || 0 
+        });
+      } catch (materializedError) {
+        dbLogger.warn('Материализованное представление недоступно, fallback к стандартному запросу', { 
+          error: getErrorMessage(materializedError) 
+        });
+        
+        // Fallback к стандартному запросу
+        if (warehouseId) {
+          result = await db
+            .select({
+              id: products.id,
+              name: products.name,
+              quantity: sql<number>`
+                COALESCE(
+                  SUM(
+                    CASE 
+                      WHEN (documents.warehouse_id = ${warehouseId} OR documents.warehouse_id IS NULL) 
+                           AND documents.status = 'posted'
+                      THEN CAST(inventory.quantity AS DECIMAL)
+                      ELSE 0 
+                    END
+                  ), 0
+                )
+              `.as('quantity')
+            })
+            .from(products)
+            .leftJoin(inventory, eq(products.id, inventory.productId))
+            .leftJoin(documents, eq(inventory.documentId, documents.id))
+            .groupBy(products.id, products.name);
+        } else {
+          result = await db
+            .select({
+              id: products.id,
+              name: products.name,
+              quantity: sql<number>`
+                COALESCE(
+                  SUM(
+                    CASE 
+                      WHEN documents.status = 'posted' 
+                      THEN CAST(inventory.quantity AS DECIMAL)
+                      ELSE 0 
+                    END
+                  ), 0
+                )
+              `.as('quantity')
+            })
+            .from(products)
+            .leftJoin(inventory, eq(products.id, inventory.productId))
+            .leftJoin(documents, eq(inventory.documentId, documents.id))
+            .groupBy(products.id, products.name);
+        }
       }
       
-      // Преобразуем результат, чтобы количество было числом
-      const mappedResult = result.map(item => ({
-        id: item.id,
-        name: item.name,
+      // Преобразуем результат в унифицированный формат
+      const resultData = Array.isArray(result) ? result : ((result as any).rows || []);
+      const mappedResult = resultData.map((item: any) => ({
+        id: Number(item.id),
+        name: String(item.name),
         quantity: Number(item.quantity) || 0
       }));
       
-      endOperation();
+      console.log(`[DB] getInventory completed in ${endOperation()}ms, returned ${mappedResult.length} items`);
       return mappedResult;
     } catch (error) {
       dbLogger.error('Error in getInventory', { error: getErrorMessage(error), warehouseId });

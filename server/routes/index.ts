@@ -16,6 +16,7 @@ import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
 import { readFileSync } from "fs";
 import { parseChangelogFromReplit } from "../../shared/changelogParser";
+import { cacheWarmupService } from "../services/cacheWarmupService";
 
 const router = Router();
 
@@ -259,6 +260,61 @@ router.get("/metrics", async (req, res) => {
   } catch (error) {
     apiLogger.error("Failed to get performance metrics", { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка получения метрик производительности" });
+  }
+});
+
+// Принудительный разогрев кеша (для критических ситуаций)
+router.post("/cache/warmup", async (req, res) => {
+  try {
+    apiLogger.info("Manual cache warmup initiated", { ip: req.ip, userAgent: req.get('User-Agent') });
+    await cacheWarmupService.forceWarmupAll();
+    
+    // Проверяем статус разогрева
+    const status = await cacheWarmupService.getWarmupStatus();
+    const successCount = status.filter(s => s.isCached).length;
+    
+    res.json({ 
+      success: true,
+      message: "Принудительный разогрев кеша завершен",
+      stats: {
+        total: status.length,
+        cached: successCount,
+        success_rate: `${Math.round((successCount / status.length) * 100)}%`
+      },
+      details: status
+    });
+  } catch (error) {
+    apiLogger.error("Manual cache warmup failed", { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    res.status(500).json({ 
+      error: "Ошибка принудительного разогрева кеша" 
+    });
+  }
+});
+
+// Статус разогрева кеша
+router.get("/cache/status", async (req, res) => {
+  try {
+    const status = await cacheWarmupService.getWarmupStatus();
+    const configs = cacheWarmupService.getWarmupConfigs();
+    
+    res.json({
+      configs,
+      status,
+      summary: {
+        total: status.length,
+        cached: status.filter(s => s.isCached).length,
+        cache_hit_rate: `${Math.round((status.filter(s => s.isCached).length / status.length) * 100)}%`
+      }
+    });
+  } catch (error) {
+    apiLogger.error("Failed to get cache status", { 
+      error: error instanceof Error ? error.message : String(error) 
+    });
+    res.status(500).json({ 
+      error: "Ошибка получения статуса кеша" 
+    });
   }
 });
 

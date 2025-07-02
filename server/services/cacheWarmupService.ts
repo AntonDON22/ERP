@@ -49,7 +49,21 @@ export class CacheWarmupService {
     {
       key: 'inventory:/inventory/availability:all',
       ttl: 60, // 1 минута для доступности
-      loader: () => storage.getInventory(),
+      loader: async () => {
+        // Используем специальный метод для получения доступности
+        try {
+          // Эмулируем вызов метода availability через материализованное представление
+          const availability = await storage.getInventory();
+          return availability.map(item => ({
+            id: item.id,
+            name: item.name,
+            quantity: item.quantity || 0
+          }));
+        } catch (error) {
+          logger.warn('Fallback к обычному getInventory для доступности', { error: error instanceof Error ? error.message : String(error) });
+          return storage.getInventory();
+        }
+      },
       description: 'Доступность товаров'
     }
   ];
@@ -57,14 +71,15 @@ export class CacheWarmupService {
   /**
    * Запускает разогрев кеша для всех конфигураций
    */
-  async warmupCache(): Promise<void> {
+  async warmupCache(forceWarmup: boolean = false): Promise<void> {
     const startTime = Date.now();
     logger.info('Запуск разогрева кеша при старте сервера', {
-      configs: this.warmupConfigs.length
+      configs: this.warmupConfigs.length,
+      forced: forceWarmup
     });
 
     const results = await Promise.allSettled(
-      this.warmupConfigs.map(config => this.warmupSingleCache(config))
+      this.warmupConfigs.map(config => this.warmupSingleCache(config, forceWarmup))
     );
 
     const successful = results.filter(r => r.status === 'fulfilled').length;
@@ -75,7 +90,8 @@ export class CacheWarmupService {
       successful,
       failed,
       total: this.warmupConfigs.length,
-      duration: `${duration}ms`
+      duration: `${duration}ms`,
+      forced: forceWarmup
     });
 
     // Логируем ошибки
@@ -92,20 +108,30 @@ export class CacheWarmupService {
   }
 
   /**
+   * Принудительно обновляет весь кеш (для холодного старта)
+   */
+  async forceWarmupAll(): Promise<void> {
+    logger.info('Принудительный разогрев всего кеша');
+    await this.warmupCache(true);
+  }
+
+  /**
    * Разогревает один кеш
    */
-  private async warmupSingleCache(config: WarmupConfig): Promise<void> {
+  private async warmupSingleCache(config: WarmupConfig, forceWarmup: boolean = false): Promise<void> {
     const startTime = Date.now();
     
     try {
-      // Проверяем, нет ли уже данных в кеше
-      const existingData = await cacheService.get(config.key);
-      if (existingData) {
-        logger.debug('Кеш уже содержит данные, пропускаем разогрев', {
-          key: config.key,
-          description: config.description
-        });
-        return;
+      // Проверяем, нет ли уже данных в кеше (только если не принудительный разогрев)
+      if (!forceWarmup) {
+        const existingData = await cacheService.get(config.key);
+        if (existingData) {
+          logger.debug('Кеш уже содержит данные, пропускаем разогрев', {
+            key: config.key,
+            description: config.description
+          });
+          return;
+        }
       }
 
       // Загружаем данные
@@ -120,7 +146,8 @@ export class CacheWarmupService {
         description: config.description,
         ttl: `${config.ttl}s`,
         dataSize: JSON.stringify(data).length,
-        duration: `${duration}ms`
+        duration: `${duration}ms`,
+        forced: forceWarmup
       });
 
     } catch (error) {

@@ -13,13 +13,23 @@ class CacheService {
   private memoryCache = new Map<string, CacheEntry>();
 
   constructor() {
-    this.client = createClient({
-      // В development используем Redis на localhost, в production - из ENV
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    
+    // Настройки для Upstash и облачного Redis с TLS
+    const redisConfig: any = {
+      url: redisUrl,
       socket: {
-        connectTimeout: 5000
+        connectTimeout: 10000,
+        lazyConnect: true,
+        // Для rediss:// (TLS) добавляем настройки SSL
+        ...(redisUrl.startsWith('rediss://') && {
+          tls: true,
+          rejectUnauthorized: false  // Для работы с Upstash
+        })
       }
-    });
+    };
+
+    this.client = createClient(redisConfig);
 
     this.client.on('error', (err) => {
       logger.warn('Redis connection failed, using memory cache', { error: err.message });

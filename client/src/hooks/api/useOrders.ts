@@ -57,7 +57,7 @@ export function useDeleteOrders() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ids: number[]) => apiRequest("/api/orders/batch-delete", "DELETE", { ids }),
+    mutationFn: (ids: number[]) => apiRequest("/api/orders/delete-multiple", "POST", { orderIds: ids }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });

@@ -184,13 +184,14 @@ export default function Document({ config, documentData }: DocumentProps) {
         await updateMutation.mutateAsync({
           id: documentData.id,
           data: {
-            type: documentType as "Оприходование" | "Списание",
-            status: data.status,
-            warehouseId: data.warehouseId,
+            document: {
+              type: documentType as "income" | "outcome" | "return",
+              status: data.status,
+              warehouseId: data.warehouseId,
+            },
             items: data.items.map((item: FormDocumentItem) => ({
               productId: item.productId,
               quantity: item.quantity,
-              price: item.price,
             })),
           },
         });

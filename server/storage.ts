@@ -850,7 +850,7 @@ export class DatabaseStorage implements IStorage {
         // Автоматически устанавливаем время изменения
         const updatePayload = {
           ...updateData,
-          updatedAt: new Date(),
+          updatedAt: getMoscowTime(),
         };
 
         const [updatedDocument] = await tx
@@ -888,6 +888,7 @@ export class DatabaseStorage implements IStorage {
                   price: item.price,
                   movementType: "IN",
                   documentId: id,
+                  createdAt: getMoscowTime(),
                 });
               } else if (updatedDocument.type === "outcome") {
                 await this.processWriteoffFIFO(

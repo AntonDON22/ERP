@@ -32,7 +32,20 @@ const createDocumentSchema = z.object({
     )
     .min(1, "Добавьте хотя бы один товар"),
 });
-const updateDocumentSchema = insertDocumentSchema.partial();
+const updateDocumentSchema = z.object({
+  document: insertDocumentSchema.partial(),
+  items: z
+    .array(
+      z.object({
+        productId: z.number().min(1, "Выберите товар"),
+        quantity: z.union([
+          z.string().min(1, "Количество обязательно"),
+          z.number().min(0, "Количество не может быть отрицательным"),
+        ]),
+      })
+    )
+    .optional(),
+});
 const deleteDocumentsSchema = z.object({
   documentIds: z.array(z.number()).min(1, "Укажите хотя бы один документ для удаления"),
 });
@@ -130,8 +143,14 @@ router.put("/:id", async (req, res) => {
   try {
     const { id } = getDocumentSchema.parse(req.params);
     const validatedData = updateDocumentSchema.parse(req.body);
+    
 
-    const document = await documentService.update(id, validatedData);
+
+    const document = await documentService.update(
+      id,
+      validatedData.document,
+      validatedData.items
+    );
     if (!document) {
       return res.status(404).json({ error: "Документ не найден" });
     }
@@ -146,6 +165,10 @@ router.put("/:id", async (req, res) => {
       const validationError = fromZodError(error);
       return res.status(400).json({ error: validationError.message });
     }
+    
+    console.error('💥 Route error details:', error);
+    console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack');
+    
     apiLogger.error("Failed to update document", {
       documentId: req.params.id,
       body: req.body,

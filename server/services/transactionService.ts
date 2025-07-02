@@ -106,10 +106,16 @@ export class TransactionService {
       // 3. Удаляем старые позиции документа
       await tx.delete(documentItems).where(eq(documentItems.documentId, documentId));
 
-      // 4. Обновляем документ
+      // 4. Обновляем документ с автоматическим временем обновления
+      const documentUpdateData = {
+        ...updatedDocument,
+        updatedAt: getMoscowTime(),
+      };
+      console.log('🔧 TransactionService - documentUpdateData:', documentUpdateData);
+      
       const [document] = await tx
         .update(documents)
-        .set(updatedDocument)
+        .set(documentUpdateData)
         .where(eq(documents.id, documentId))
         .returning();
 
@@ -119,7 +125,7 @@ export class TransactionService {
           await tx.insert(documentItems).values({
             productId: item.productId,
             quantity: item.quantity.toString(),
-            price: item.price ?? "0",
+            price: "0", // Цена по умолчанию для позиций без цены
             documentId: documentId,
           });
 
@@ -127,7 +133,7 @@ export class TransactionService {
           await this.processInventoryMovement(tx, {
             productId: item.productId,
             quantity: item.quantity.toString(),
-            price: item.price ?? "0",
+            price: "0", // Цена по умолчанию для движений без цены
             documentId: documentId,
             movementType: document.type === "income" ? "IN" : "OUT",
             warehouseId: document.warehouseId || undefined,
@@ -267,7 +273,7 @@ export class TransactionService {
         price: movement.price,
         movementType: "IN",
         documentId: movement.documentId,
-        createdAt: getMoscowTime().toISOString(),
+        createdAt: getMoscowTime(),
       });
     } else {
       // Расход - используем FIFO логику
@@ -319,7 +325,7 @@ export class TransactionService {
           price: stockItem.price,
           movementType: "OUT" as const,
           documentId: documentId,
-          createdAt: getMoscowTime().toISOString(),
+          createdAt: getMoscowTime(),
         });
 
         remainingToWriteoff -= quantityToTakeFromThisBatch;
@@ -342,7 +348,7 @@ export class TransactionService {
         price: writeoffPrice,
         movementType: "OUT",
         documentId: documentId,
-        createdAt: getMoscowTime().toISOString(),
+        createdAt: getMoscowTime(),
       });
     }
 

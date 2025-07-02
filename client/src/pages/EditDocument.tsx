@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import Document, { DocumentTypeConfig } from "@/components/Document";
-import { useCreateReceiptDocument, useDocument } from "@/hooks/api";
+import { useUpdateDocument, useDocument } from "@/hooks/api";
 
 const editConfig: DocumentTypeConfig = {
   title: "Документ",
@@ -9,7 +9,7 @@ const editConfig: DocumentTypeConfig = {
   submitLabel: "Сохранить",
   successMessage: "Документ успешно сохранен",
   backUrl: "/documents",
-  mutationHook: useCreateReceiptDocument,
+  mutationHook: useUpdateDocument,
 };
 
 export default function EditDocument() {

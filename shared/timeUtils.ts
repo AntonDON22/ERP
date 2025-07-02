@@ -4,8 +4,8 @@ export const MOSCOW_TIMEZONE_OFFSET = 3; // часы от UTC
 
 export function getMoscowTime(date?: Date): Date {
   const now = date || new Date();
-  // Используем правильную timezone conversion через Intl
-  const moscowTime = new Date(now.toLocaleString("en-US", { timeZone: "Europe/Moscow" }));
+  // Простая конверсия - добавляем 3 часа к UTC времени
+  const moscowTime = new Date(now.getTime() + MOSCOW_TIMEZONE_OFFSET * 60 * 60 * 1000);
   return moscowTime;
 }
 

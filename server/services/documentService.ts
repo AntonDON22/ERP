@@ -27,13 +27,20 @@ export class DocumentService {
   async update(
     id: number,
     data: Partial<InsertDocument>,
-    items?: CreateDocumentItem[]
+    items?: Array<{ productId: number; quantity: string | number }>
   ): Promise<DocumentRecord | undefined> {
     const validatedData = insertDocumentSchema.partial().parse(data);
+    console.log('🔍 DocumentService.update validatedData:', validatedData);
 
     if (items && items.length > 0) {
-      // Если есть позиции товаров, используем транзакционное обновление
-      return await transactionService.updateDocumentWithInventory(id, validatedData, items);
+      // Преобразуем items в правильный формат CreateDocumentItem
+      const processedItems: CreateDocumentItem[] = items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity.toString(), // Приводим к string
+      }));
+
+      // Используем транзакционное обновление
+      return await transactionService.updateDocumentWithInventory(id, validatedData, processedItems);
     } else {
       // Простое обновление документа без позиций
       return await storage.updateDocument(id, validatedData);

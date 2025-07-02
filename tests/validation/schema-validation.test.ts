@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { z } from 'zod';
-import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId } from '../../shared/zFields';
+import { zPrice, zQuantity, zQuantityInteger, zWeight, zId } from '../../shared/zFields';
 
 /**
  * Комплексные тесты валидации схем
@@ -40,30 +40,14 @@ describe('Schema Validation Tests', () => {
       expect(() => zQuantityInteger.parse("")).toThrow();
     });
     
-    it('should validate string variants correctly', () => {
-      // Тест zPriceString
-      expect(zPriceString.parse("10.5")).toBe("10.5");
-      expect(zPriceString.parse("0")).toBe("0");
-      expect(zPriceString.parse("")).toBe(""); // Пустые строки разрешены
-      expect(() => zPriceString.parse("-1")).toThrow();
-      
-      // Тест zQuantityString (строго положительные)
-      expect(zQuantityString.parse("5.5")).toBe("5.5");
-      expect(() => zQuantityString.parse("0")).toThrow(); // Ноль не разрешен для zQuantity
-      expect(zQuantityString.parse("")).toBe(""); // Пустые строки разрешены
-      expect(() => zQuantityString.parse("-1")).toThrow();
-      
-      // Тест zWeightString
-      expect(zWeightString.parse("10.5")).toBe("10.5");
-      expect(zWeightString.parse("0")).toBe("0");
-      expect(zWeightString.parse("")).toBe(""); // Пустые строки разрешены
-      expect(() => zWeightString.parse("-1")).toThrow();
-      
-      // Тест zDimensionString
-      expect(zDimensionString.parse("100")).toBe("100");
-      expect(zDimensionString.parse("0")).toBe("0");
-      expect(zDimensionString.parse("")).toBe(""); // Пустые строки разрешены
-      expect(() => zDimensionString.parse("-1")).toThrow();
+    it('should validate unified number fields correctly', () => {
+      // Тест zWeight
+      expect(zWeight.parse(10.5)).toBe(10.5);
+      expect(zWeight.parse("10.5")).toBe(10.5);
+      expect(zWeight.parse(0)).toBe(0);
+      expect(zWeight.parse("0")).toBe(0);
+      expect(() => zWeight.parse(-1)).toThrow();
+      expect(() => zWeight.parse("-1")).toThrow();
     });
   });
   
@@ -260,8 +244,7 @@ describe('Schema Validation Tests', () => {
     it('should verify zFields can replace all manual validations', () => {
       // Проверяем, что все типы валидации покрыты zFields
       const zFieldsTypes = [
-        zId, zPrice, zQuantity, zQuantityInteger, 
-        zPriceString, zQuantityString, zWeightString, zDimensionString
+        zId, zPrice, zQuantity, zQuantityInteger
       ];
       
       for (const field of zFieldsTypes) {

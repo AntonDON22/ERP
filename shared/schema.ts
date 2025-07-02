@@ -17,11 +17,7 @@ import {
   zPrice,
   zQuantity,
   zQuantityInteger,
-  zQuantityString,
-  zPriceString,
   zWeight,
-  zWeightString,
-  zDimensionString,
   zId,
   zName,
   zNameOptional,
@@ -111,12 +107,12 @@ export const insertProductSchema = createInsertSchema(products)
         "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
       )
       .trim(),
-    price: zPriceString,
-    purchasePrice: zPriceString.optional(),
-    weight: zWeightString.optional(),
-    height: zDimensionString.optional(),
-    width: zDimensionString.optional(),
-    length: zDimensionString.optional(),
+    price: zPrice,
+    purchasePrice: zPrice.optional(),
+    weight: zWeight.optional(),
+    height: zWeight.optional(), // используем zWeight для консистентности размеров
+    width: zWeight.optional(),
+    length: zWeight.optional(),
   });
 
 // Гибкая схема для импорта Excel
@@ -318,8 +314,8 @@ export const insertDocumentItemSchema = createInsertSchema(documentItems)
   })
   .extend({
     productId: zId,
-    quantity: zQuantityString,
-    price: zPriceString.optional(),
+    quantity: zQuantity,
+    price: zPrice.optional(),
   });
 
 // Type for items when creating receipts (without documentId)
@@ -388,7 +384,7 @@ export const createOrderSchema = z.object({
   status: zOrderStatusOptional, // ✅ Мигрировано на централизованное поле (опционально)
   customerId: zId.optional(),
   warehouseId: zId,
-  totalAmount: zPriceString.optional(),
+  totalAmount: zPrice.optional(),
   notes: zNotes, // ✅ Мигрировано на централизованное поле
   date: zDate, // ✅ Мигрировано на централизованное поле
   isReserved: z.boolean().optional(),
@@ -398,7 +394,7 @@ export const createOrderSchema = z.object({
 export const insertOrderSchema = createOrderSchema.extend({
   name: zName, // ✅ Мигрировано на централизованное поле (обязательно)
   status: zOrderStatus, // ✅ Обязательное поле без дефолта (обрабатывается в сервисе)
-  totalAmount: zPriceString,
+  totalAmount: zPrice,
   isReserved: z.boolean().default(false), // Обязательное поле с дефолтом
 });
 

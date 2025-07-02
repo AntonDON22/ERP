@@ -3,10 +3,7 @@ import {
   zQuantity, 
   zQuantityAllowZero, 
   zQuantityCanBeNegative, 
-  zQuantityInteger,
-  zQuantityString,
-  zQuantityAllowZeroString,
-  zQuantityCanBeNegativeString
+  zQuantityInteger
 } from '../../shared/zFields';
 
 /**
@@ -119,54 +116,54 @@ describe('Quantity Validation Tests', () => {
     describe('zQuantityString (строго положительные)', () => {
       
       it('should accept positive number strings', () => {
-        expect(zQuantityString.parse("1")).toBe("1");
-        expect(zQuantityString.parse("123.45")).toBe("123.45");
-        expect(zQuantityString.parse("")).toBe(""); // Пустые строки разрешены
+        expect(// Старая схема удалена).toBe("1");
+        expect(// Старая схема удалена).toBe("123.45");
+        expect(// Старая схема удалена).toBe(""); // Пустые строки разрешены
       });
       
       it('should reject zero and negative strings', () => {
-        expect(() => zQuantityString.parse("0")).toThrow("Введите корректное количество больше нуля");
-        expect(() => zQuantityString.parse("-1")).toThrow("Введите корректное количество больше нуля");
+        expect(() => // Старая схема удалена).toThrow("Введите корректное количество больше нуля");
+        expect(() => // Старая схема удалена).toThrow("Введите корректное количество больше нуля");
       });
       
       it('should reject invalid strings', () => {
-        expect(() => zQuantityString.parse("abc")).toThrow("Введите корректное количество больше нуля");
+        expect(() => // Старая схема удалена).toThrow("Введите корректное количество больше нуля");
       });
     });
     
     describe('zQuantityAllowZeroString (неотрицательные)', () => {
       
       it('should accept zero and positive strings', () => {
-        expect(zQuantityAllowZeroString.parse("0")).toBe("0");
-        expect(zQuantityAllowZeroString.parse("1")).toBe("1");
-        expect(zQuantityAllowZeroString.parse("123.45")).toBe("123.45");
-        expect(zQuantityAllowZeroString.parse("")).toBe(""); // Пустые строки разрешены
+        expect(// Старая схема удалена).toBe("0");
+        expect(// Старая схема удалена).toBe("1");
+        expect(// Старая схема удалена).toBe("123.45");
+        expect(// Старая схема удалена).toBe(""); // Пустые строки разрешены
       });
       
       it('should reject negative strings', () => {
-        expect(() => zQuantityAllowZeroString.parse("-1")).toThrow("Введите корректное количество (0 или больше)");
+        expect(() => // Старая схема удалена).toThrow("Введите корректное количество (0 или больше)");
       });
     });
     
     describe('zQuantityCanBeNegativeString (любые целые)', () => {
       
       it('should accept any integer strings', () => {
-        expect(zQuantityCanBeNegativeString.parse("0")).toBe("0");
-        expect(zQuantityCanBeNegativeString.parse("1")).toBe("1");
-        expect(zQuantityCanBeNegativeString.parse("-1")).toBe("-1");
-        expect(zQuantityCanBeNegativeString.parse("123")).toBe("123");
-        expect(zQuantityCanBeNegativeString.parse("-123")).toBe("-123");
-        expect(zQuantityCanBeNegativeString.parse("")).toBe(""); // Пустые строки разрешены
+        expect(// Старая схема удалена).toBe("0");
+        expect(// Старая схема удалена).toBe("1");
+        expect(// Старая схема удалена).toBe("-1");
+        expect(// Старая схема удалена).toBe("123");
+        expect(// Старая схема удалена).toBe("-123");
+        expect(// Старая схема удалена).toBe(""); // Пустые строки разрешены
       });
       
       it('should reject decimal strings', () => {
-        expect(() => zQuantityCanBeNegativeString.parse("1.5")).toThrow("Введите корректное целое число");
-        expect(() => zQuantityCanBeNegativeString.parse("-1.5")).toThrow("Введите корректное целое число");
+        expect(() => // Старая схема удалена).toThrow("Введите корректное целое число");
+        expect(() => // Старая схема удалена).toThrow("Введите корректное целое число");
       });
       
       it('should reject out of range strings', () => {
-        expect(() => zQuantityCanBeNegativeString.parse("1000000")).toThrow("Количество вне допустимого диапазона");
-        expect(() => zQuantityCanBeNegativeString.parse("-1000000")).toThrow("Количество вне допустимого диапазона");
+        expect(() => // Старая схема удалена).toThrow("Количество вне допустимого диапазона");
+        expect(() => // Старая схема удалена).toThrow("Количество вне допустимого диапазона");
       });
     });
   });

@@ -215,77 +215,7 @@ export const zIdString = z
     "ID должен быть положительным числом"
   );
 
-/**
- * Схемы для строковых представлений чисел (legacy поддержка)
- *
- * Используются в случаях когда API должен принимать строки
- * но с валидацией что они содержат корректные числа
- */
-export const zPriceString = z
-  .string()
-  .refine(
-    (val) => val === "" || (!isNaN(Number(val)) && Number(val) >= 0),
-    "Введите корректное значение цены"
-  )
-  .refine((val) => val === "" || Number(val) <= 999999999.99, "Цена слишком большая");
-
-export const zQuantityString = z
-  .string()
-  .refine(
-    (val) => val === "" || (!isNaN(Number(val)) && Number(val) > 0),
-    "Введите корректное количество больше нуля"
-  )
-  .refine((val) => val === "" || Number(val) <= 999999, "Количество слишком большое");
-
-export const zQuantityAllowZeroString = z
-  .string()
-  .refine(
-    (val) => val === "" || (!isNaN(Number(val)) && Number(val) >= 0),
-    "Введите корректное количество (0 или больше)"
-  )
-  .refine((val) => val === "" || Number(val) <= 999999, "Количество слишком большое");
-
-export const zQuantityCanBeNegativeString = z
-  .string()
-  .refine(
-    (val) => val === "" || (!isNaN(Number(val)) && Number.isInteger(Number(val))),
-    "Введите корректное целое число"
-  )
-  .refine(
-    (val) => val === "" || (Number(val) >= -999999 && Number(val) <= 999999),
-    "Количество вне допустимого диапазона"
-  );
-
-export const zWeightString = z
-  .string()
-  .refine(
-    (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-    "Введите корректное значение веса"
-  )
-  .refine((val) => !val || Number(val) <= 999999, "Вес слишком большой");
-
-export const zDimensionString = z
-  .string()
-  .refine(
-    (val) => !val || (!isNaN(Number(val)) && Number(val) >= 0),
-    "Введите корректное значение размера"
-  )
-  .refine((val) => !val || Number(val) <= 999999, "Размер слишком большой");
-
-/**
- * Утилитарные функции для ручного преобразования
- */
-export const parsePrice = (value: string | number): number => {
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (isNaN(parsed)) throw new Error("Некорректное значение цены");
-  return parsed;
-};
-
-export const parseQuantity = (value: string | number): number => {
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (isNaN(parsed)) throw new Error("Некорректное значение количества");
-  return parsed;
-};
+// Все старые строковые схемы удалены - используйте централизованные поля выше
 
 /**
  * Типы для использования в TypeScript

@@ -20,6 +20,8 @@ import { cacheWarmupService } from "../services/cacheWarmupService";
 
 const router = Router();
 
+
+
 // Подключение модульных роутеров
 router.use("/products", productRoutes);
 router.use("/suppliers", supplierRoutes);

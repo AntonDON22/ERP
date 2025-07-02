@@ -295,7 +295,7 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
 }).extend({
   productId: zId,
   quantity: zQuantityInteger,
-  price: zPriceString,
+  price: zPrice,  // ✅ Исправлено: используем zPrice вместо zPriceString
 });
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;

@@ -111,9 +111,19 @@ export default function ProductsList() {
     await deleteProductsMutation.mutateAsync(ids);
   };
 
-  const handleImport = async (data: any[]) => {
+  const handleImport = async (data: unknown[]) => {
     // TODO: Implement import logic with new API hooks
-    console.log('Import data:', data);
+    // Structured logging instead of console.log
+    if (process.env.NODE_ENV === 'development') {
+      // Only log in development, structured format
+      const logData = {
+        operation: 'product_import',
+        recordCount: data.length,
+        timestamp: new Date().toISOString()
+      };
+      // Use structured logging when available
+      console.debug('[ProductsList]', 'Import data received', logData);
+    }
   };
 
   if (error) {

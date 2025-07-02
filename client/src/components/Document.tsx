@@ -118,16 +118,23 @@ export default function Document({ config, documentData }: DocumentProps) {
   // Обработчик сохранения
   const handleSave = async (data: FormDocument) => {
     const currentSubmissionId = ++submissionCounter.current;
-    console.log(`🚀 Starting submission #${currentSubmissionId}`);
+    // Structured logging for submission tracking
+    if (process.env.NODE_ENV === 'development') {
+      console.debug('[Document]', 'Starting submission', { submissionId: currentSubmissionId });
+    }
 
     // Тройная защита от дублирования
     if (isSubmitting) {
-      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[Document]', 'Blocked duplicate submission - isSubmitting', { submissionId: currentSubmissionId });
+      }
       return;
     }
 
     if (mutation.isPending) {
-      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
+      if (process.env.NODE_ENV === 'development') {
+        console.debug('[Document]', 'Blocked duplicate submission - mutation pending', { submissionId: currentSubmissionId });
+      }
       return;
     }
 

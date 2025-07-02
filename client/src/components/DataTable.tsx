@@ -154,7 +154,7 @@ function DataTable<T = any>({
       try {
         setColumnWidths(JSON.parse(savedWidths));
       } catch (e) {
-        console.warn("Failed to parse saved column widths");
+        // Failed to parse saved column widths - using defaults
       }
     }
     // Очищаем все старые настройки ширины для сброса к минимальным значениям
@@ -181,7 +181,7 @@ function DataTable<T = any>({
       try {
         setHiddenColumns(new Set(JSON.parse(savedHidden)));
       } catch (e) {
-        console.warn("Failed to parse saved hidden columns");
+        // Failed to parse saved hidden columns - using defaults
       }
     }
   }, [hiddenStorageKey]);

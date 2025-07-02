@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { RefreshCw, Filter, Search, AlertCircle, Clock, User, MessageSquare, Copy, Check } from "lucide-react";
+import { RefreshCw, Filter, Search, AlertCircle, Clock, User, MessageSquare, Copy, Check, ChevronLeft, ChevronRight } from "lucide-react";
 interface LogEntry {
   id: number;
   timestamp: string;
@@ -22,6 +22,8 @@ export default function LogsList() {
     search: ''
   });
   
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(20);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
   // Получаем логи
@@ -113,6 +115,17 @@ export default function LogsList() {
     });
   }, [logs, filters]);
 
+  // Пагинация
+  const totalPages = Math.ceil(filteredLogs.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentLogs = filteredLogs.slice(startIndex, endIndex);
+
+  // Сброс страницы при изменении фильтров
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
   const handleRefresh = () => {
     refetch();
   };
@@ -145,7 +158,7 @@ export default function LogsList() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
       {/* Заголовок */}
       <div className="flex justify-between items-center">
         <div>
@@ -296,49 +309,86 @@ export default function LogsList() {
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-200">
-              {filteredLogs.map((log: LogEntry) => (
-                <div key={log.id} className="p-4 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      {/* Заголовок записи */}
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <Clock className="w-4 h-4" />
-                          {formatTimestamp(log.timestamp)}
-                        </div>
-                        
-                        {getLevelBadge(log.level)}
-                        
-                        <Badge variant="outline" className="flex items-center gap-1">
-                          <User className="w-3 h-3" />
-                          {log.module}
-                        </Badge>
+            <div className="space-y-2 p-4">
+              {currentLogs.map((log: LogEntry) => (
+                <div key={log.id} className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow">
+                  {/* Заголовок записи */}
+                  <div className="flex items-center justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <Clock className="w-4 h-4" />
+                        {formatTimestamp(log.timestamp)}
                       </div>
                       
-                      {/* Сообщение */}
-                      <div className="mb-2">
-                        <CopyableText text={log.message} type="сообщение" />
-                      </div>
+                      {getLevelBadge(log.level)}
                       
-                      {/* Детали */}
-                      {log.details && (
-                        <details className="mt-2">
-                          <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
-                            Показать детали
-                          </summary>
-                          <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono overflow-x-auto">
-                            <pre>{log.details}</pre>
-                          </div>
-                        </details>
-                      )}
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {log.module}
+                      </Badge>
                     </div>
+                    
+                    <Badge variant="secondary" className="text-xs">
+                      #{log.id}
+                    </Badge>
                   </div>
+                  
+                  {/* Сообщение */}
+                  <div className="mb-3">
+                    <CopyableText text={log.message} type="сообщение" />
+                  </div>
+                  
+                  {/* Детали */}
+                  {log.details && (
+                    <details className="mt-2">
+                      <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
+                        Показать детали
+                      </summary>
+                      <div className="mt-2 p-3 bg-gray-50 rounded text-xs font-mono overflow-x-auto max-h-48 overflow-y-auto">
+                        <pre className="whitespace-pre-wrap">{log.details}</pre>
+                      </div>
+                    </details>
+                  )}
                 </div>
               ))}
             </div>
           )}
         </CardContent>
+
+        {/* Пагинация */}
+        {filteredLogs.length > itemsPerPage && (
+          <div className="flex items-center justify-between px-6 py-3 bg-gray-50 border-t">
+            <div className="text-sm text-gray-700">
+              Показано {startIndex + 1}-{Math.min(endIndex, filteredLogs.length)} из {filteredLogs.length} записей
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Назад
+              </Button>
+              
+              <span className="text-sm text-gray-700">
+                Страница {currentPage} из {totalPages}
+              </span>
+              
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+              >
+                Вперед
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );

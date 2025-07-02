@@ -82,6 +82,8 @@ export default function EditOrder() {
   const handleSave = async (data: FormOrder) => {
     const currentSubmissionId = ++submissionCounter.current;
     console.log(`🚀 Starting order update #${currentSubmissionId}`);
+    console.log(`📝 Form errors:`, form.formState.errors);
+    console.log(`📝 Form values:`, data);
 
     // Тройная защита от дублирования
     if (isSubmitting) {

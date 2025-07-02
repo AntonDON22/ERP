@@ -312,3 +312,10 @@
 Preferred communication style: Simple, everyday language.
 Always update Dashboard changelog: Add new entries to the changelog history on the Dashboard page for every system change or update.
 When asked to create "identical" or "same" pages: Copy the exact structure, styling, and layout without adding extra wrappers or modifications. Pay attention to padding, margins, and HTML structure to ensure visual consistency.
+
+**КРИТИЧЕСКОЕ ПРАВИЛО - API маршруты:**
+ВСЕГДА сначала проверять существующие API маршруты через grep/search перед созданием новых. НИКОГДА не создавать новые маршруты без острой необходимости. Сначала искать существующие endpoint'ы в:
+- server/routes/
+- client/src/hooks/
+- использовать bash команды для поиска
+ТОЛЬКО после подтверждения отсутствия нужного маршрута создавать новый.

@@ -303,6 +303,7 @@ export const insertOrderSchema = createOrderSchema.extend({
     .max(255, "Название не должно превышать 255 символов")
     .trim(),
   totalAmount: zPriceString,
+  isReserved: z.boolean().default(false), // Обязательное поле с дефолтом
 });
 
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({

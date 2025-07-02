@@ -249,6 +249,13 @@ export class TransactionService {
         .returning();
 
       console.log("✅ Транзакция создания заказа завершена");
+      
+      // Инвалидация кеша остатков если создавались резервы
+      if (isReserved) {
+        await cacheService.invalidatePattern("inventory:*");
+        apiLogger.info("Inventory cache invalidated after order creation with reserves", { orderId: updatedOrder.id });
+      }
+      
       return updatedOrder;
     });
   }

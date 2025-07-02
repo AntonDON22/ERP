@@ -43,7 +43,15 @@ export class OrderService {
       // Если есть позиции, используем полное транзакционное обновление
       return await this.updateWithItems(id, validatedData, items, isReserved ?? false);
     } else {
-      return storage.updateOrder(id, validatedData);
+      const result = await storage.updateOrder(id, validatedData);
+      
+      // Инвалидация кеша остатков после обновления заказа (может влиять на резервы)
+      if (result) {
+        await cacheService.invalidatePattern("inventory:*");
+        apiLogger.info("Inventory cache invalidated after order update", { orderId: id });
+      }
+      
+      return result;
     }
   }
 

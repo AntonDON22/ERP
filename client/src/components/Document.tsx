@@ -143,11 +143,12 @@ export default function Document({ config, documentData }: DocumentProps) {
       const documentToSave = {
         type: documentType,
         status: data.status,
+        name: `${documentType} ${new Date().toLocaleDateString('ru-RU').split('.').slice(0, 2).join('.')}-${Date.now() % 1000}`,
         warehouseId: data.warehouseId,
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
           quantity: item.quantity.toString(),
-          price: item.price.toString(),
+          price: documentType === 'Оприходование' ? item.price.toString() : undefined,
         })),
       };
 

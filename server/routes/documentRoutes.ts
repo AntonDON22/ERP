@@ -4,6 +4,7 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
 import { insertDocumentSchema, receiptDocumentSchema } from "../../shared/schema";
+import type { CreateDocumentItem } from "../../shared/schema";
 import { storage } from "../storage";
 
 const router = Router();
@@ -19,8 +20,8 @@ const createDocumentSchema = z.object({
   warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(z.object({
     productId: z.number().min(1, "Выберите товар"),
-    quantity: z.string().min(1, "Количество обязательно"),
-    price: z.string().optional(),
+    quantity: z.union([z.string().min(1, "Количество обязательно"), z.number().min(0, "Количество не может быть отрицательным")]),
+    price: z.union([z.string(), z.number()]).optional(),
   })).min(1, "Добавьте хотя бы один товар"),
 });
 const updateDocumentSchema = insertDocumentSchema.partial();
@@ -76,11 +77,11 @@ router.post("/create-receipt", async (req, res) => {
       warehouseId: validatedData.warehouseId
     };
     
-    // Преобразуем строковые значения в числовые для storage
-    const processedItems = validatedData.items.map(item => ({
+    // Преобразуем данные для storage (ожидает строки)
+    const processedItems: CreateDocumentItem[] = validatedData.items.map(item => ({
       productId: item.productId,
-      quantity: parseFloat(item.quantity),
-      price: item.price ? parseFloat(item.price) : undefined
+      quantity: typeof item.quantity === 'string' ? item.quantity : item.quantity.toString(),
+      price: item.price ? (typeof item.price === 'string' ? item.price : item.price.toString()) : undefined
     }));
     
     const document = await storage.createReceiptDocument(documentData, processedItems);

@@ -1,6 +1,7 @@
 import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId } from "./zFields";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -70,29 +71,12 @@ export const insertProductSchema = createInsertSchema(products).omit({
     .max(100, "Артикул не должен превышать 100 символов")
     .regex(/^[A-Za-z0-9_-]+$/, "Артикул может содержать только буквы, цифры, дефисы и подчеркивания")
     .trim(),
-  price: z.string()
-    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Цена должна быть положительным числом")
-    .refine((val) => Number(val) <= 999999999.99, "Цена слишком большая"),
-  purchasePrice: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Закупочная цена должна быть положительным числом")
-    .refine((val) => !val || Number(val) <= 999999999.99, "Закупочная цена слишком большая"),
-  weight: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Вес должен быть положительным числом")
-    .refine((val) => !val || Number(val) <= 999999, "Вес слишком большой"),
-  height: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Высота должна быть положительным числом")
-    .refine((val) => !val || Number(val) <= 999999, "Высота слишком большая"),
-  width: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Ширина должна быть положительным числом")
-    .refine((val) => !val || Number(val) <= 999999, "Ширина слишком большая"),
-  length: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Длина должна быть положительным числом")
-    .refine((val) => !val || Number(val) <= 999999, "Длина слишком большая"),
+  price: zPriceString,
+  purchasePrice: zPriceString.optional(),
+  weight: zWeightString.optional(),
+  height: zDimensionString.optional(),
+  width: zDimensionString.optional(),
+  length: zDimensionString.optional(),
 });
 
 // Гибкая схема для импорта Excel
@@ -254,14 +238,14 @@ export type Inventory = typeof inventory.$inferSelect;
 
 // Схемы валидации для создания документов
 export const documentItemSchema = z.object({
-  productId: z.number().min(1, "Выберите товар"),
-  quantity: z.number().min(0.01, "Количество должно быть больше 0"),
-  price: z.number().min(0, "Цена не может быть отрицательной"),
+  productId: zId,
+  quantity: zQuantity,
+  price: zPrice,
 });
 
 export const receiptDocumentSchema = z.object({
   name: z.string().min(1, "Название документа обязательно"),
-  warehouseId: z.number().min(1, "Выберите склад"),
+  warehouseId: zId,
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
@@ -304,16 +288,9 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
   status: z.enum(['Новый', 'В работе', 'Выполнен', 'Отменен'], {
     errorMap: () => ({ message: "Некорректный статус заказа" })
   }),
-  customerId: z.number()
-    .positive("ID клиента должен быть положительным")
-    .int("ID клиента должен быть целым числом")
-    .optional(),
-  warehouseId: z.number()
-    .positive("ID склада должен быть положительным")
-    .int("ID склада должен быть целым числом"),
-  totalAmount: z.string()
-    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Сумма должна быть положительным числом")
-    .refine((val) => Number(val) <= 999999999.99, "Сумма слишком большая"),
+  customerId: zId.optional(),
+  warehouseId: zId,
+  totalAmount: zPriceString,
   notes: z.string()
     .optional()
     .refine(val => !val || val.length <= 1000, "Примечания не должны превышать 1000 символов")
@@ -328,16 +305,9 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).omit({
   id: true,
   orderId: true,
 }).extend({
-  productId: z.number()
-    .positive("ID продукта должен быть положительным")
-    .int("ID продукта должен быть целым числом"),
-  quantity: z.number()
-    .positive("Количество должно быть положительным")
-    .max(999999, "Количество слишком большое")
-    .int("Количество должно быть целым числом"),
-  price: z.string()
-    .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Цена должна быть положительным числом")
-    .refine((val) => Number(val) <= 999999999.99, "Цена слишком большая"),
+  productId: zId,
+  quantity: zQuantityInteger,
+  price: zPriceString,
 });
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;

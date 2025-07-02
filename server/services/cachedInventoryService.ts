@@ -23,7 +23,11 @@ export class CachedInventoryService {
 
     return cacheService.getOrSet(
       cacheKey,
-      () => storage.getInventory(warehouseId), // Используем готовую логику из storage
+      async () => {
+        const { InventoryService } = await import('./inventoryService');
+        const inventoryService = new InventoryService();
+        return inventoryService.getInventoryAvailability(warehouseId);
+      },
       this.CACHE_TTL
     );
   }

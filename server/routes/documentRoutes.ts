@@ -86,10 +86,13 @@ router.post("/create-receipt", async (req, res) => {
     }));
     
     const document = await storage.createReceiptDocument(documentData, processedItems);
-    res.status(201).json(document);
     
     // Инвалидируем кеш остатков после создания документа
-    await CachedInventoryService.invalidateInventoryCache(validatedData.warehouseId);
+    const { cacheService } = await import("../services/cacheService");
+    await cacheService.invalidatePattern("inventory:*");
+    apiLogger.info("Inventory cache invalidated after document creation", { documentId: document.id });
+    
+    res.status(201).json(document);
     
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -113,12 +116,9 @@ router.put("/:id", async (req, res) => {
     }
     
     // Инвалидируем кеш остатков после обновления документа
-    if (validatedData.warehouseId) {
-      await CachedInventoryService.invalidateInventoryCache(validatedData.warehouseId);
-    } else {
-      // Если склад не указан, инвалидируем весь кеш
-      await CachedInventoryService.invalidateInventoryCache();
-    }
+    const { cacheService } = await import("../services/cacheService");
+    await cacheService.invalidatePattern("inventory:*");
+    apiLogger.info("Inventory cache invalidated after document update", { documentId: id });
     
     res.json(document);
   } catch (error) {

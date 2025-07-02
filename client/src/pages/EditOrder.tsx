@@ -285,7 +285,7 @@ export default function EditOrder() {
         console.log("❌ Form validation failed:", errors);
         toast({
           title: "Ошибка валидации",
-          description: "Проверьте заполнение полей формы",
+          description: "Обязательно выберите контрагента, склад и добавьте товары",
           variant: "destructive",
         });
       })} className="space-y-6">
@@ -320,6 +320,11 @@ export default function EditOrder() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.items?.[index]?.productId && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.items[index]?.productId?.message}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Кол-во</Label>

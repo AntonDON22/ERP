@@ -269,6 +269,11 @@ export default function CreateOrder() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {form.formState.errors.items?.[index]?.productId && (
+                      <p className="text-sm text-red-500 mt-1">
+                        {form.formState.errors.items[index]?.productId?.message}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <Label>Кол-во</Label>

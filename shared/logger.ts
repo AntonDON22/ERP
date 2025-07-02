@@ -1,5 +1,24 @@
 import { formatMoscowDateTime } from './timeUtils';
 
+// Импортируем типы для базы данных
+let db: any = null;
+let logs: any = null;
+
+// Ленивая инициализация для избежания циклических зависимостей
+const initDB = async () => {
+  if (!db) {
+    try {
+      const dbModule = await import('../server/db');
+      const schemaModule = await import('./schema');
+      db = dbModule.db;
+      logs = schemaModule.logs;
+    } catch (error) {
+      // В случае ошибки просто логируем в консоль
+      console.warn('Failed to initialize database for logging:', error);
+    }
+  }
+};
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -51,8 +70,37 @@ class Logger {
       logMessage += ` ${JSON.stringify(meta)}`;
     }
 
-    // В будущем здесь можно добавить отправку в Sentry, LogRocket и т.д.
+    // Логируем в консоль
     console.log(logMessage);
+
+    // Пытаемся записать в базу данных (асинхронно, без блокировки)
+    this.writeToDatabase(level, message, meta, duration).catch(error => {
+      // Если не удалось записать в БД - не падаем, просто предупреждаем
+      console.warn('Failed to write log to database:', error.message);
+    });
+  }
+
+  private async writeToDatabase(level: LogLevel, message: string, meta?: Record<string, any>, duration?: number) {
+    await initDB();
+    
+    if (!db || !logs) {
+      return; // База данных недоступна
+    }
+
+    const levelNames = ['DEBUG', 'INFO', 'WARN', 'ERROR'];
+    const details = meta || duration ? JSON.stringify({ meta, duration }) : null;
+
+    try {
+      await db.insert(logs).values({
+        level: levelNames[level],
+        message,
+        module: this.serviceName,
+        details
+      });
+    } catch (error) {
+      // Тихо игнорируем ошибки записи в БД
+      throw error;
+    }
   }
 
   debug(message: string, meta?: Record<string, any>) {

@@ -7,6 +7,7 @@ export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
+  role: text("role").notNull().default("user"), // admin, manager, user
 });
 
 export const products = pgTable("products", {
@@ -343,3 +344,26 @@ export const reserves = pgTable("reserves", {
   reserveProductIdx: index("reserves_product_idx").on(table.productId),
   reserveWarehouseIdx: index("reserves_warehouse_idx").on(table.warehouseId),
 }));
+
+// Таблица логов системы
+export const logs = pgTable("logs", {
+  id: serial("id").primaryKey(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  level: text("level").notNull(), // DEBUG, INFO, WARN, ERROR
+  message: text("message").notNull(),
+  module: text("module").notNull(), // api, database, inventory, etc.
+  details: text("details"), // JSON string для дополнительных данных
+}, (table) => ({
+  timestampIdx: index("logs_timestamp_idx").on(table.timestamp),
+  levelIdx: index("logs_level_idx").on(table.level),
+  moduleIdx: index("logs_module_idx").on(table.module),
+}));
+
+// Схемы валидации для логов
+export const insertLogSchema = createInsertSchema(logs).omit({
+  id: true,
+  timestamp: true,
+});
+
+export type InsertLog = z.infer<typeof insertLogSchema>;
+export type Log = typeof logs.$inferSelect;

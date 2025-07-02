@@ -3,6 +3,7 @@ import productRoutes from "./productRoutes";
 import supplierRoutes from "./supplierRoutes";
 import documentRoutes from "./documentRoutes";
 import orderRoutes from "./orderRoutes";
+import logRoutes from "./logRoutes";
 import { InventoryService } from "../services/inventoryService";
 import { ContractorService } from "../services/contractorService";
 import { WarehouseService } from "../services/warehouseService";
@@ -19,6 +20,7 @@ router.use("/products", productRoutes);
 router.use("/suppliers", supplierRoutes);
 router.use("/documents", documentRoutes);
 router.use("/orders", orderRoutes);
+router.use("/logs", logRoutes);
 
 // Сервисы для остальных API
 const inventoryService = new InventoryService();

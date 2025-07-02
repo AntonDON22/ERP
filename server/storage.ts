@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, logs, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse, type Log } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
 import { getMoscowTime } from "../shared/timeUtils";
@@ -50,6 +50,17 @@ export interface IStorage {
   
   // Receipt Documents with FIFO
   createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord>;
+  
+  // Logs
+  getLogs(params: {
+    level?: string;
+    module?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Log[]>;
+  getLogModules(): Promise<string[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -89,7 +100,7 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, role: 'user' };
     this.users.set(id, user);
     return user;
   }
@@ -289,6 +300,14 @@ export class MemStorage implements IStorage {
 
   async createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord> {
     throw new Error("Receipt documents not supported in MemStorage");
+  }
+
+  async getLogs(params: any): Promise<Log[]> {
+    return []; // MemStorage doesn't support logs
+  }
+
+  async getLogModules(): Promise<string[]> {
+    return []; // MemStorage doesn't support logs
   }
 }
 
@@ -909,6 +928,74 @@ export class DatabaseStorage implements IStorage {
     }
 
     console.log(`✅ FIFO-списание завершено`);
+  }
+
+  // Методы для работы с логами
+  async getLogs(params: {
+    level?: string;
+    module?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<Log[]> {
+    try {
+      let query = db.select().from(logs).$dynamic();
+      
+      // Применяем фильтры
+      const conditions = [];
+      
+      if (params.level) {
+        conditions.push(eq(logs.level, params.level));
+      }
+      
+      if (params.module) {
+        conditions.push(eq(logs.module, params.module));
+      }
+      
+      if (params.from) {
+        conditions.push(sql`${logs.timestamp} >= ${params.from}`);
+      }
+      
+      if (params.to) {
+        conditions.push(sql`${logs.timestamp} <= ${params.to}`);
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      // Сортировка по дате (новые сверху)
+      query = query.orderBy(sql`${logs.timestamp} DESC`);
+      
+      // Пагинация
+      if (params.limit) {
+        query = query.limit(params.limit);
+      }
+      
+      if (params.offset) {
+        query = query.offset(params.offset);
+      }
+      
+      return await query;
+    } catch (error) {
+      console.error("Error fetching logs:", error);
+      throw error;
+    }
+  }
+
+  async getLogModules(): Promise<string[]> {
+    try {
+      const result = await db
+        .selectDistinct({ module: logs.module })
+        .from(logs)
+        .orderBy(logs.module);
+      
+      return result.map(row => row.module);
+    } catch (error) {
+      console.error("Error fetching log modules:", error);
+      throw error;
+    }
   }
 }
 

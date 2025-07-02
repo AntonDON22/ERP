@@ -20,6 +20,7 @@ import WarehousesList from "@/pages/WarehousesList";
 import CreateSupplier from "@/pages/CreateSupplier";
 import CreateContractor from "@/pages/CreateContractor";
 import CreateWarehouse from "@/pages/CreateWarehouse";
+import LogsList from "@/pages/LogsList";
 
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
               <Route path="/orders" component={OrdersList} />
               <Route path="/orders/create" component={CreateOrder} />
               <Route path="/orders/:id" component={EditOrder} />
+              <Route path="/logs" component={LogsList} />
             </Switch>
           </div>
         </Router>

@@ -68,7 +68,7 @@ export function useCreateReceiptDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: any) => apiRequest("/api/documents/receipt", "POST", data),
+    mutationFn: (data: any) => apiRequest("/api/documents/create-receipt", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });

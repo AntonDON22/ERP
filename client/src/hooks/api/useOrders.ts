@@ -19,7 +19,7 @@ export function useCreateOrder() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: InsertOrder) => apiRequest("/api/orders", "POST", data),
+    mutationFn: (data: InsertOrder) => apiRequest("/api/orders/create", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });

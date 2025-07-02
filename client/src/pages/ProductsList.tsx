@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "@/components/DataTable";
 import { Product } from "@shared/schema";
-import { useProducts, useDeleteProducts, useImportProducts } from "@/hooks/useTypedQuery";
+import { useProducts, useDeleteProducts } from "@/hooks/api";
 import { formatPrice, formatWeight } from "@/lib/utils";
+import { ErrorAlert } from "@/components/ui-kit";
 
 const productsColumns: ColumnConfig<Product>[] = [
   {
@@ -100,9 +101,8 @@ const excelConfig: ExcelExportConfig = {
 };
 
 export default function ProductsList() {
-  const { data: products = [], isLoading } = useProducts();
+  const { data: products = [], isLoading, error } = useProducts();
   const deleteProductsMutation = useDeleteProducts();
-  const importProductsMutation = useImportProducts();
 
   const memoizedColumns = useMemo(() => productsColumns, []);
   const memoizedExcelConfig = useMemo(() => excelConfig, []);
@@ -112,8 +112,13 @@ export default function ProductsList() {
   };
 
   const handleImport = async (data: any[]) => {
-    await importProductsMutation.mutateAsync(data);
+    // TODO: Implement import logic with new API hooks
+    console.log('Import data:', data);
   };
+
+  if (error) {
+    return <ErrorAlert message="Ошибка загрузки товаров" />;
+  }
 
   return (
     <DataTable

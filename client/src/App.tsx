@@ -17,6 +17,9 @@ import OrdersList from "@/pages/OrdersList";
 import CreateOrder from "@/pages/CreateOrder";
 import EditOrder from "@/pages/EditOrder";
 import WarehousesList from "@/pages/WarehousesList";
+import CreateSupplier from "@/pages/CreateSupplier";
+import CreateContractor from "@/pages/CreateContractor";
+import CreateWarehouse from "@/pages/CreateWarehouse";
 
 
 function App() {
@@ -30,8 +33,11 @@ function App() {
               <Route path="/" component={Dashboard} />
               <Route path="/products" component={ProductsList} />
               <Route path="/suppliers" component={SuppliersList} />
+              <Route path="/suppliers/create" component={CreateSupplier} />
               <Route path="/contractors" component={ContractorsList} />
+              <Route path="/contractors/create" component={CreateContractor} />
               <Route path="/warehouses" component={WarehousesList} />
+              <Route path="/warehouses/create" component={CreateWarehouse} />
               <Route path="/documents" component={DocumentsList} />
               <Route path="/documents/create-receipt" component={CreateReceiptDocument} />
               <Route path="/documents/:id" component={EditDocument} />

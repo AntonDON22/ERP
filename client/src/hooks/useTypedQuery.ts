@@ -85,6 +85,18 @@ export const useImportSuppliers = () => {
   });
 };
 
+export const useCreateSupplier = () => {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: async (supplierData: InsertSupplier) => {
+      return apiRequest("/api/suppliers", "POST", supplierData);
+    },
+    onSuccess: () => {
+      invalidate.suppliers();
+    },
+  });
+};
+
 // Типизированные хуки для контрагентов
 export const useContractors = () => {
   return useQuery<Contractor[]>({
@@ -118,6 +130,18 @@ export const useImportContractors = () => {
   return useMutation({
     mutationFn: async (contractorsData: InsertContractor[]) => {
       return apiRequest("/api/contractors/import", "POST", { contractors: contractorsData });
+    },
+    onSuccess: () => {
+      invalidate.contractors();
+    },
+  });
+};
+
+export const useCreateContractor = () => {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: async (contractorData: InsertContractor) => {
+      return apiRequest("/api/contractors", "POST", contractorData);
     },
     onSuccess: () => {
       invalidate.contractors();
@@ -317,6 +341,18 @@ export const useImportWarehouses = () => {
   return useMutation({
     mutationFn: async (data: any[]) => {
       return apiRequest("/api/warehouses/import", "POST", { warehouses: data });
+    },
+    onSuccess: () => {
+      invalidate.warehouses();
+    },
+  });
+};
+
+export const useCreateWarehouse = () => {
+  const invalidate = useInvalidate();
+  return useMutation({
+    mutationFn: async (warehouseData: InsertWarehouse) => {
+      return apiRequest("/api/warehouses", "POST", warehouseData);
     },
     onSuccess: () => {
       invalidate.warehouses();

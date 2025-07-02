@@ -4,6 +4,7 @@ import { Warehouse } from "@shared/schema";
 import { useWarehouses } from "@/hooks/useWarehouses";
 import { useDeleteWarehouses, useImportWarehouses } from "@/hooks/useTypedQuery";
 import { useToast } from "@/hooks/use-toast";
+import { useLocation } from "wouter";
 
 const columns: ColumnConfig<Warehouse>[] = [
   {
@@ -40,6 +41,7 @@ export default function WarehousesList() {
   const deleteWarehouses = useDeleteWarehouses();
   const importWarehouses = useImportWarehouses();
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
 
   const memoizedColumns = useMemo(() => columns, []);
   const memoizedExcelConfig = useMemo(() => excelConfig, []);
@@ -76,6 +78,10 @@ export default function WarehousesList() {
     }
   };
 
+  const handleCreate = () => {
+    setLocation("/warehouses/create");
+  };
+
   return (
     <DataTable
       data={warehouses}
@@ -87,6 +93,7 @@ export default function WarehousesList() {
       excelConfig={memoizedExcelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
+      onCreate={handleCreate}
       deleteLabel="Удалить"
       importLabel="Импорт"
       hideSelectionColumn={false}

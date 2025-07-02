@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "@/components/DataTable";
 import { Supplier } from "@shared/schema";
 import { useSuppliers, useDeleteSuppliers, useImportSuppliers } from "@/hooks/useTypedQuery";
+import { useLocation } from "wouter";
 
 const suppliersColumns: ColumnConfig<Supplier>[] = [
   {
@@ -32,6 +33,7 @@ export default function SuppliersList() {
   const { data: suppliers = [], isLoading } = useSuppliers();
   const deleteSuppliersMutation = useDeleteSuppliers();
   const importSuppliersMutation = useImportSuppliers();
+  const [, setLocation] = useLocation();
 
   const memoizedColumns = useMemo(() => suppliersColumns, []);
   const memoizedExcelConfig = useMemo(() => excelConfig, []);
@@ -42,6 +44,10 @@ export default function SuppliersList() {
 
   const handleImport = async (data: any[]) => {
     await importSuppliersMutation.mutateAsync(data);
+  };
+
+  const handleCreate = () => {
+    setLocation("/suppliers/create");
   };
 
   return (
@@ -55,6 +61,7 @@ export default function SuppliersList() {
       excelConfig={memoizedExcelConfig}
       onDelete={handleDelete}
       onImport={handleImport}
+      onCreate={handleCreate}
     />
   );
 }

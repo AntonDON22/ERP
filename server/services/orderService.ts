@@ -184,6 +184,40 @@ export class OrderService {
     return { deletedCount, results };
   }
 
+  // Приватный метод для обновления позиций заказа
+  private async updateOrderItems(orderId: number, items: CreateOrderItem[]): Promise<void> {
+    try {
+      apiLogger.info("Starting updateOrderItems", { orderId, itemsCount: items.length, items });
+      
+      // 1. Удаляем существующие позиции заказа
+      const deleteResult = await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+      apiLogger.info("Deleted existing order items", { orderId, deletedCount: deleteResult.rowCount });
+      
+      // 2. Создаем новые позиции
+      for (const item of items) {
+        await db.insert(orderItems).values({
+          orderId: orderId,
+          productId: item.productId,
+          quantity: item.quantity.toString(),
+          price: item.price.toString(),
+        });
+        apiLogger.info("Inserted new order item", { orderId, productId: item.productId, quantity: item.quantity });
+      }
+      
+      apiLogger.info("Order items updated successfully", { 
+        orderId, 
+        itemsCount: items.length 
+      });
+    } catch (error) {
+      apiLogger.error("Failed to update order items", {
+        orderId,
+        itemsCount: items.length,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
   // Приватный метод для обновления только статуса резервирования
   private async handleReservationChange(
     orderId: number,
@@ -268,6 +302,10 @@ export class OrderService {
       if (!updatedOrder) {
         return undefined;
       }
+
+      // 2.5. Обновляем позиции заказа
+      await this.updateOrderItems(orderId, items);
+      apiLogger.info("Order items updated", { orderId, itemsCount: items.length });
 
       // 3. Если изменился статус резервирования, обрабатываем резервы
       const currentReserved = currentOrder.isReserved || false;

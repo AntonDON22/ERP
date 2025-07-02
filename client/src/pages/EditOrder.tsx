@@ -47,7 +47,7 @@ export default function EditOrder() {
       customerId: 0,
       warehouseId: 0,
       status: "Новый",
-      items: [{ productId: 0, quantity: 1, price: 0 }],
+      items: [{ productId: 6, quantity: 1, price: 0 }], // Используем ID существующего товара
     },
   });
 
@@ -61,11 +61,11 @@ export default function EditOrder() {
     if (orderData) {
       console.log("🔄 Заполнение формы данными заказа:", orderData);
       
-      setOrderStatus(orderData.status || "Новый");
+      setOrderStatus((orderData.status || "Новый") as "Новый" | "В работе" | "Выполнен" | "Отменен");
       setIsReserved(orderData.isReserved || false);
       form.setValue('customerId', orderData.customerId || 0);
       form.setValue('warehouseId', orderData.warehouseId || 0);
-      form.setValue('status', orderData.status || "Новый");
+      form.setValue('status', (orderData.status || "Новый") as "Новый" | "В работе" | "Выполнен" | "Отменен");
       
       if (orderData.items && orderData.items.length > 0) {
         // Очищаем существующие элементы и добавляем новые
@@ -74,6 +74,9 @@ export default function EditOrder() {
           quantity: item.quantity,
           price: item.price
         })));
+      } else {
+        // Если нет товаров, создаем пустой товар но с правильным productId
+        form.setValue('items', [{ productId: 6, quantity: 1, price: 0 }]); // Используем ID существующего товара
       }
     }
   }, [orderData, form]);
@@ -108,7 +111,7 @@ export default function EditOrder() {
     try {
       const orderToUpdate = {
         status: orderStatus,
-        customerId: data.customerId || null,
+        customerId: data.customerId || undefined,
         warehouseId: data.warehouseId,
         isReserved,
         items: data.items.map((item: FormOrderItem) => ({
@@ -141,7 +144,7 @@ export default function EditOrder() {
   };
 
   const addItem = () => {
-    append({ productId: 0, quantity: 1, price: 0 });
+    append({ productId: 6, quantity: 1, price: 0 }); // Используем ID существующего товара
   };
 
   const removeItem = (index: number) => {
@@ -274,7 +277,14 @@ export default function EditOrder() {
         </CardContent>
       </Card>
 
-      <form id="order-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+      <form id="order-form" onSubmit={form.handleSubmit(handleSave, (errors) => {
+        console.log("❌ Form validation failed:", errors);
+        toast({
+          title: "Ошибка валидации",
+          description: "Проверьте заполнение полей формы",
+          variant: "destructive",
+        });
+      })} className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">

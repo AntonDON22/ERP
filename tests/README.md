@@ -35,6 +35,15 @@
 - **cacheIntegration.test.ts** - Интеграционные тесты кеширования (производительность, инвалидация)
 - **README.md** - Документация интеграционных тестов
 
+### Performance Tests (`tests/performance/`)
+Тесты производительности системы:
+
+- **api-response-time.test.ts** - Измерение времени ответа API endpoints
+- **ui-lighthouse-report.ts** - Lighthouse анализ производительности UI  
+- **table-render-time.test.ts** - Тестирование скорости рендеринга таблиц
+- **README.md** - Документация тестов производительности
+- Автоматическое создание отчетов в `lighthouse-reports/` и `performance-reports/`
+
 ### Adaptive Tests (`tests/adaptive/`)
 Тесты адаптивности интерфейса:
 

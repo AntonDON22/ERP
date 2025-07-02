@@ -9,9 +9,7 @@ export class OrderService {
   }
 
   async getById(id: number): Promise<Order | undefined> {
-    // TODO: Реализовать getOrder в storage  
-    // Пока используем прямой запрос к БД
-    return undefined;
+    return storage.getOrder(id);
   }
 
   async create(orderData: any, items: CreateOrderItem[], isReserved: boolean = false): Promise<Order> {
@@ -44,15 +42,12 @@ export class OrderService {
       // Если есть позиции, используем полное транзакционное обновление
       return await this.updateWithItems(id, validatedData, items, isReserved ?? false);
     } else {
-      // TODO: Реализовать updateOrder в storage
-      // Пока возвращаем undefined
-      return undefined;
+      return storage.updateOrder(id, validatedData);
     }
   }
 
   async delete(id: number): Promise<boolean> {
-    // TODO: Реализовать deleteOrder в storage
-    return false;
+    return storage.deleteOrder(id);
   }
 
   async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
@@ -70,7 +65,7 @@ export class OrderService {
 
     for (const id of validIds) {
       try {
-        const success = false; // TODO: Реализовать deleteOrder в storage
+        const success = await this.delete(id);
         if (success) {
           deletedCount++;
           results.push({ id, status: 'deleted' });

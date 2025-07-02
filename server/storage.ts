@@ -1036,8 +1036,8 @@ export class DatabaseStorage implements IStorage {
 
   async getOrder(id: number): Promise<Order | undefined> {
     try {
-      const [order] = await db.select().from(orders).where(eq(orders.id, id));
-      return order || undefined;
+      const result = await db.select().from(orders).where(eq(orders.id, id));
+      return result[0] || undefined;
     } catch (error) {
       dbLogger.error("Error in getOrder", { error: getErrorMessage(error), id });
       throw error;

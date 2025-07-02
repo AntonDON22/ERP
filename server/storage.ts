@@ -878,7 +878,15 @@ export class DatabaseStorage implements IStorage {
           .where(sql`${documents.type} = ${createdDocument.type} AND ${documents.createdAt} >= ${todayStart.toISOString()} AND ${documents.createdAt} <= ${todayEnd.toISOString()}`);
         
         const dayNumber = todayDocuments.length;
-        const name = `${createdDocument.type} ${today}-${dayNumber}`;
+        
+        // Преобразуем тип документа в русское название
+        const typeNames = {
+          'income': 'Оприходование',
+          'outcome': 'Списание', 
+          'return': 'Возврат'
+        };
+        const typeName = typeNames[createdDocument.type as keyof typeof typeNames] || createdDocument.type;
+        const name = `${typeName} ${today}-${dayNumber}`;
         
         const [updatedDocument] = await tx
           .update(documents)

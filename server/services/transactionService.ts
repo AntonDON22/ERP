@@ -210,6 +210,7 @@ export class TransactionService {
             productId: item.productId,
             quantity: item.quantity,
             warehouseId: orderData.warehouseId,
+            createdAt: getMoscowTime(),
           });
           console.log(`📦 Создан резерв для заказа ${createdOrder.id}, товар ${item.productId}`);
         }

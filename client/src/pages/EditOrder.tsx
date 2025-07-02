@@ -119,7 +119,7 @@ export default function EditOrder() {
 
     try {
       const orderToUpdate = {
-        status: orderStatus,
+        status: orderStatus as "Новый" | "В работе" | "Выполнен" | "Отменен",
         customerId: data.customerId || undefined,
         warehouseId: data.warehouseId,
         isReserved,

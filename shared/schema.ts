@@ -42,13 +42,13 @@ export const products = pgTable("products", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   sku: varchar("sku", { length: 100 }).notNull().unique(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  purchasePrice: decimal("purchase_price", { precision: 10, scale: 2 }),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull(),
+  purchasePrice: numeric("purchase_price", { precision: 10, scale: 2 }),
   barcode: varchar("barcode", { length: 50 }),
-  weight: decimal("weight", { precision: 8, scale: 3 }),
-  length: decimal("length", { precision: 8, scale: 1 }),
-  width: decimal("width", { precision: 8, scale: 1 }),
-  height: decimal("height", { precision: 8, scale: 1 }),
+  weight: numeric("weight", { precision: 8, scale: 3 }),
+  length: numeric("length", { precision: 8, scale: 1 }),
+  width: numeric("width", { precision: 8, scale: 1 }),
+  height: numeric("height", { precision: 8, scale: 1 }),
   // Убрано неиспользуемое поле imageUrl
 });
 
@@ -282,8 +282,8 @@ export const inventory = pgTable(
   {
     id: serial("id").primaryKey(),
     productId: integer("product_id").notNull(),
-    quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // положительное для прихода, отрицательное для расхода
-    price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"), // закупочная цена (только для приходов)
+    quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(), // положительное для прихода, отрицательное для расхода
+    price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"), // закупочная цена (только для приходов)
     movementType: text("movement_type").notNull(), // 'IN' для прихода, 'OUT' для расхода
     documentId: integer("document_id").notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -300,8 +300,8 @@ export const documentItems = pgTable("document_items", {
   id: serial("id").primaryKey(),
   documentId: integer("document_id").notNull(),
   productId: integer("product_id").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
 // КРИТИЧЕСКИ ВАЖНО: Данная схема использует поля из zFields.ts для единообразной валидации.
@@ -356,7 +356,7 @@ export const orders = pgTable(
     status: text("status").notNull().default("Новый"), // Новый, В работе, Выполнен, Отменен
     customerId: integer("customer_id"), // может быть контрагент
     warehouseId: integer("warehouse_id"),
-    totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
+    totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull().default("0"),
     notes: text("notes"),
     isReserved: boolean("is_reserved").notNull().default(false), // резерв товаров
     date: text("date").notNull(),
@@ -374,8 +374,8 @@ export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
   orderId: integer("order_id").notNull(),
   productId: integer("product_id").notNull(),
-  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
+  quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
 // ✅ Схема для создания заказов - использует централизованные поля zFields.ts
@@ -440,7 +440,7 @@ export const reserves = pgTable(
     orderId: integer("order_id").notNull(),
     productId: integer("product_id").notNull(),
     warehouseId: integer("warehouse_id").notNull(),
-    quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
+    quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => ({

@@ -12,6 +12,7 @@ import type { InsertDocument, CreateDocumentItem } from "../../shared/schema";
 import { getMoscowTime } from "../../shared/timeUtils";
 import { cacheService } from "./cacheService";
 import { apiLogger } from "../../shared/logger";
+import { toStringForDB } from "@shared/utils";
 
 export class TransactionService {
   // Транзакционное создание документа с пересчетом остатков
@@ -53,16 +54,16 @@ export class TransactionService {
       for (const item of items) {
         await tx.insert(documentItems).values({
           productId: item.productId,
-          quantity: item.quantity.toString(),
-          price: item.price ?? "0",
+          quantity: toStringForDB(item.quantity),
+          price: item.price ? toStringForDB(item.price) : "0",
           documentId: createdDocument.id,
         });
 
         // 4. Обрабатываем движения инвентаря транзакционно
         await this.processInventoryMovement(tx, {
           productId: item.productId,
-          quantity: item.quantity.toString(),
-          price: item.price ?? "0",
+          quantity: toStringForDB(item.quantity),
+          price: item.price ? toStringForDB(item.price) : "0",
           documentId: createdDocument.id,
           movementType: updatedDocument.type === "income" ? "IN" : "OUT",
           warehouseId: updatedDocument.warehouseId || undefined,

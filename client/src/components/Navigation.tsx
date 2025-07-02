@@ -1,7 +1,6 @@
 import { User, Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useState } from "react";
-import logoPath from "@assets/1_1751287471931.png";
 
 export default function Navigation() {
   const [location] = useLocation();
@@ -45,7 +44,7 @@ export default function Navigation() {
         <div className="flex justify-between h-14 sm:h-16">
           <div className="flex items-center min-w-0">
             <div className="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
-              <img src={logoPath} alt="iGrape Group Logo" className="h-6 w-6 sm:h-8 sm:w-8" />
+              <User className="h-6 w-6 sm:h-8 sm:w-8" />
               <h1 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate">
                 iGrape Group
               </h1>

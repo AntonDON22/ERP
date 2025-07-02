@@ -9,6 +9,7 @@ import {
 import { transactionService } from "./transactionService";
 import { getMoscowDateForDocument } from "../../shared/timeUtils";
 import { apiLogger } from "../../shared/logger";
+import { toNumber } from "@shared/utils";
 
 export class DocumentService {
   async getAll(): Promise<DocumentRecord[]> {
@@ -34,9 +35,9 @@ export class DocumentService {
 
     if (items && items.length > 0) {
       // Преобразуем items в правильный формат CreateDocumentItem
-      const processedItems: CreateDocumentItem[] = items.map(item => ({
+      const processedItems = items.map(item => ({
         productId: item.productId,
-        quantity: item.quantity.toString(), // Приводим к string
+        quantity: toNumber(item.quantity), // Преобразуем в number
       }));
 
       // Используем транзакционное обновление

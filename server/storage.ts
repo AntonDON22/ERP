@@ -35,6 +35,7 @@ import { db } from "./db";
 import { eq, sql, and, asc, or, isNull, inArray } from "drizzle-orm";
 import { getMoscowTime } from "../shared/timeUtils";
 import { dbLogger, inventoryLogger, getErrorMessage } from "@shared/logger";
+import { toNumber, toStringForDB } from "@shared/utils";
 
 export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
@@ -170,12 +171,12 @@ export class MemStorage implements IStorage {
     const product: Product = {
       ...insertProduct,
       id,
-      price: insertProduct.price || "0",
-      purchasePrice: insertProduct.purchasePrice || null,
-      weight: insertProduct.weight || null,
-      length: insertProduct.length || null,
-      width: insertProduct.width || null,
-      height: insertProduct.height || null,
+      price: String(insertProduct.price || 0),
+      purchasePrice: insertProduct.purchasePrice ? String(insertProduct.purchasePrice) : null,
+      weight: insertProduct.weight ? String(insertProduct.weight) : null,
+      length: insertProduct.length ? String(insertProduct.length) : null,
+      width: insertProduct.width ? String(insertProduct.width) : null,
+      height: insertProduct.height ? String(insertProduct.height) : null,
       barcode: insertProduct.barcode || null,
     };
     this.products.set(id, product);
@@ -191,7 +192,7 @@ export class MemStorage implements IStorage {
       return undefined;
     }
 
-    const updatedProduct: Product = {
+    const updatedProduct: any = {
       ...product,
       ...updateData,
       id, // Ensure ID doesn't change
@@ -562,12 +563,12 @@ export class DatabaseStorage implements IStorage {
 
     const cleanedProduct = {
       ...insertProduct,
-      price: cleanNumericValue(insertProduct.price) || "0",
-      purchasePrice: cleanNumericValue(insertProduct.purchasePrice),
-      weight: cleanNumericValue(insertProduct.weight),
-      length: cleanNumericValue(insertProduct.length),
-      width: cleanNumericValue(insertProduct.width),
-      height: cleanNumericValue(insertProduct.height),
+      price: toStringForDB(insertProduct.price) || "0",
+      purchasePrice: insertProduct.purchasePrice ? toStringForDB(insertProduct.purchasePrice) : null,
+      weight: insertProduct.weight ? toStringForDB(insertProduct.weight) : null,
+      length: insertProduct.length ? toStringForDB(insertProduct.length) : null,
+      width: insertProduct.width ? toStringForDB(insertProduct.width) : null,
+      height: insertProduct.height ? toStringForDB(insertProduct.height) : null,
     };
 
     const [product] = await db.insert(products).values(cleanedProduct).returning();
@@ -578,9 +579,30 @@ export class DatabaseStorage implements IStorage {
     id: number,
     updateData: Partial<InsertProduct>
   ): Promise<Product | undefined> {
+    // Преобразуем числовые поля в строки для БД
+    const cleanedUpdateData: any = {
+      ...updateData,
+      ...(updateData.price !== undefined && { price: toStringForDB(updateData.price) }),
+      ...(updateData.purchasePrice !== undefined && { 
+        purchasePrice: updateData.purchasePrice ? toStringForDB(updateData.purchasePrice) : null 
+      }),
+      ...(updateData.weight !== undefined && { 
+        weight: updateData.weight ? toStringForDB(updateData.weight) : null 
+      }),
+      ...(updateData.length !== undefined && { 
+        length: updateData.length ? toStringForDB(updateData.length) : null 
+      }),
+      ...(updateData.width !== undefined && { 
+        width: updateData.width ? toStringForDB(updateData.width) : null 
+      }),
+      ...(updateData.height !== undefined && { 
+        height: updateData.height ? toStringForDB(updateData.height) : null 
+      }),
+    };
+
     const [product] = await db
       .update(products)
-      .set(updateData)
+      .set(cleanedUpdateData)
       .where(eq(products.id, id))
       .returning();
     return product || undefined;
@@ -993,10 +1015,10 @@ export class DatabaseStorage implements IStorage {
         // 2. Создаем позиции документа
         for (const item of items) {
           await tx.insert(documentItems).values({
-            productId: item.productId,
-            quantity: item.quantity.toString(),
-            price: item.price ?? "0",
             documentId: createdDocument.id,
+            productId: item.productId,
+            quantity: toStringForDB(item.quantity),
+            price: toStringForDB(item.price ?? 0),
           });
 
           // 3. Обрабатываем движения инвентаря по FIFO только для проведенных документов
@@ -1004,11 +1026,12 @@ export class DatabaseStorage implements IStorage {
             if (updatedDocument.type === "income") {
               // Приход товара - просто добавляем запись
               await tx.insert(inventory).values({
-                productId: item.productId,
-                quantity: item.quantity,
-                price: item.price,
-                movementType: "IN",
                 documentId: createdDocument.id,
+                productId: item.productId,
+                quantity: toStringForDB(item.quantity),
+                price: toStringForDB(item.price ?? 0),
+                movementType: "IN",
+                createdAt: getMoscowTime()
               });
             } else if (updatedDocument.type === "outcome") {
               // Списание товара - используем FIFO логику
@@ -1016,7 +1039,7 @@ export class DatabaseStorage implements IStorage {
                 tx,
                 item.productId,
                 Number(item.quantity),
-                item.price ?? "0",
+                toStringForDB(item.price ?? 0),
                 createdDocument.id
               );
             }
@@ -1251,6 +1274,7 @@ export class DatabaseStorage implements IStorage {
       // Гарантируем что обязательные поля заполнены
       const orderData = {
         ...insertOrder,
+        totalAmount: toStringForDB(insertOrder.totalAmount),
         date: insertOrder.date || getMoscowTime().toISOString().split("T")[0],
         createdAt: getMoscowTime(),
         updatedAt: getMoscowTime(),
@@ -1266,9 +1290,15 @@ export class DatabaseStorage implements IStorage {
 
   async updateOrder(id: number, updateData: Partial<InsertOrder>): Promise<Order | undefined> {
     try {
+      const cleanedUpdateData: any = {
+        ...updateData,
+        ...(updateData.totalAmount !== undefined && { totalAmount: toStringForDB(updateData.totalAmount) }),
+        updatedAt: getMoscowTime()
+      };
+
       const [order] = await db
         .update(orders)
-        .set({ ...updateData, updatedAt: getMoscowTime() })
+        .set(cleanedUpdateData)
         .where(eq(orders.id, id))
         .returning();
       return order || undefined;

@@ -106,13 +106,13 @@ router.post("/create", async (req, res) => {
       warehouseId: validatedData.warehouseId,
     };
 
-    // Преобразуем данные для storage (ожидает строки)
-    const processedItems: CreateDocumentItem[] = validatedData.items.map((item) => ({
+    // Преобразуем данные для storage (все поля должны быть числами для внутренней логики)
+    const processedItems: any[] = validatedData.items.map((item) => ({
       productId: item.productId,
-      quantity: typeof item.quantity === "string" ? item.quantity : item.quantity.toString(),
+      quantity: typeof item.quantity === "string" ? parseFloat(item.quantity) : item.quantity,
       price: item.price
         ? typeof item.price === "string"
-          ? item.price
+          ? parseFloat(item.price)
           : item.price.toString()
         : undefined,
     }));

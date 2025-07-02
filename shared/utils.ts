@@ -40,6 +40,35 @@ export function parseNumericFields<T extends Record<string, any>>(
 }
 
 /**
+ * 🔧 Преобразование строковых полей цены в числа (специально для БД схемы)
+ * PostgreSQL numeric/decimal поля возвращаются как строки через Drizzle ORM
+ */
+export function toNumber(value: string | number | null | undefined): number {
+  if (typeof value === "number") return value;
+  if (value === null || value === undefined || value === "") return 0;
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? 0 : parsed;
+}
+
+/**
+ * 🔧 Безопасное преобразование строки в число с возможностью null
+ */
+export function toNumberOrNull(value: string | number | null | undefined): number | null {
+  if (typeof value === "number") return value;
+  if (value === null || value === undefined || value === "") return null;
+  const parsed = parseFloat(String(value));
+  return isNaN(parsed) ? null : parsed;
+}
+
+/**
+ * 🔧 Преобразование для записи в БД (number → string для numeric полей)
+ */
+export function toStringForDB(value: number | string | null | undefined): string {
+  if (value === null || value === undefined) return "0";
+  return String(value);
+}
+
+/**
  * 🔄 Адаптер для совместимости типов null/undefined
  */
 export function adaptNullToUndefined<T extends Record<string, any>>(

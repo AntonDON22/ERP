@@ -86,10 +86,14 @@ export default function CreateOrder() {
     console.log(`✅ Processing order submission #${currentSubmissionId}`);
 
     try {
+      const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+      
       const orderToSave = {
-        status: orderStatus,
+        name: `Заказ ${new Date().toLocaleDateString('ru-RU')}`,
+        status: orderStatus as "Новый" | "В работе" | "Выполнен" | "Отменен",
         customerId: data.customerId || 34, // Гарантируем валидный ID контрагента
         warehouseId: data.warehouseId,
+        totalAmount,
         isReserved,
         items: data.items.map((item: FormOrderItem) => ({
           productId: item.productId,

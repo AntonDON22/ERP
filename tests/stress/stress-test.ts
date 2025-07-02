@@ -78,7 +78,7 @@ describe('🔥 Стресс-тест ERP системы', () => {
     const totalProducts = 1000;
     
     for (let batch = 0; batch < totalProducts / batchSize; batch++) {
-      const promises = [];
+      const promises: Promise<any>[] = [];
       
       for (let i = 0; i < batchSize; i++) {
         const productIndex = batch * batchSize + i + 1;
@@ -128,7 +128,7 @@ describe('🔥 Стресс-тест ERP системы', () => {
     const selectedProducts = createdProductIds.slice(0, 100);
     
     for (let batch = 0; batch < documentsToCreate / batchSize; batch++) {
-      const promises = [];
+      const promises: Promise<any>[] = [];
       
       for (let i = 0; i < batchSize; i++) {
         const documentType = Math.random() > 0.7 ? 'writeoff' : 'receipt';
@@ -178,7 +178,7 @@ describe('🔥 Стресс-тест ERP системы', () => {
     const selectedProducts = createdProductIds.slice(0, 50);
     
     for (let batch = 0; batch < ordersToCreate / batchSize; batch++) {
-      const promises = [];
+      const promises: Promise<any>[] = [];
       
       for (let i = 0; i < batchSize; i++) {
         const contractorId = createdContractorIds[Math.floor(Math.random() * createdContractorIds.length)];

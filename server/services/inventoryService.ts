@@ -116,7 +116,7 @@ export class InventoryService {
     
     try {
       const warehouseFilter = warehouseId 
-        ? sql`AND (i.warehouse_id = ${warehouseId} OR i.warehouse_id IS NULL) AND (r.warehouse_id = ${warehouseId} OR r.warehouse_id IS NULL)`
+        ? sql`AND (d.warehouse_id = ${warehouseId} OR d.warehouse_id IS NULL) AND (r.warehouse_id = ${warehouseId} OR r.warehouse_id IS NULL)`
         : sql``;
       
       const result = await db.execute(sql`

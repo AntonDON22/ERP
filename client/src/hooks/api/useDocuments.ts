@@ -7,14 +7,24 @@ export interface CreateDocumentItem {
   quantity: number;
 }
 
+// Расширенный тип документа с позициями
+export interface DocumentWithItems extends DocumentRecord {
+  items: Array<{
+    id: number;
+    productId: number;
+    quantity: number;
+    price: number;
+  }>;
+}
+
 export function useDocuments() {
-  return useQuery<DocumentRecord[]>({
+  return useQuery<DocumentWithItems[]>({
     queryKey: ["/api/documents"],
   });
 }
 
 export function useDocument(id: number) {
-  return useQuery<DocumentRecord>({
+  return useQuery<DocumentWithItems>({
     queryKey: ["/api/documents", id],
     enabled: !!id,
   });

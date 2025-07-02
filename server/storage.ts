@@ -32,7 +32,7 @@ import {
   type OrderItem,
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
+import { eq, sql, and, asc, or, isNull, inArray } from "drizzle-orm";
 import { getMoscowTime } from "../shared/timeUtils";
 import { dbLogger, inventoryLogger, getErrorMessage } from "@shared/logger";
 
@@ -734,10 +734,43 @@ export class DatabaseStorage implements IStorage {
     console.log("[DB] Starting getDocuments query...");
 
     try {
-      const result = await db.select().from(documents);
+      // Получаем все документы
+      const documentsResult = await db.select().from(documents);
+
+      // Получаем все позиции документов для загруженных документов
+      const documentIds = documentsResult.map(doc => doc.id);
+      let allItems: any[] = [];
+      
+      if (documentIds.length > 0) {
+        allItems = await db
+          .select()
+          .from(documentItems)
+          .where(inArray(documentItems.documentId, documentIds));
+      }
+
+      // Группируем позиции по документам
+      const itemsByDocument = allItems.reduce((acc, item) => {
+        if (!acc[item.documentId]) {
+          acc[item.documentId] = [];
+        }
+        acc[item.documentId].push({
+          id: item.id,
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        });
+        return acc;
+      }, {} as Record<number, any[]>);
+
+      // Собираем документы с позициями
+      const result = documentsResult.map(document => ({
+        ...document,
+        items: itemsByDocument[document.id] || [],
+      })) as any[];
+
       const endTime = Date.now();
       console.log(
-        `[DB] getDocuments completed in ${endTime - startTime}ms, returned ${result.length} documents`
+        `[DB] getDocuments completed in ${endTime - startTime}ms, returned ${result.length} documents with items`
       );
       return result;
     } catch (error) {
@@ -1133,7 +1166,41 @@ export class DatabaseStorage implements IStorage {
 
   async getOrders(): Promise<Order[]> {
     try {
-      return await db.select().from(orders).orderBy(orders.createdAt);
+      // Получаем все заказы
+      const ordersResult = await db.select().from(orders).orderBy(orders.createdAt);
+
+      // Получаем все позиции заказов для загруженных заказов
+      const orderIds = ordersResult.map(order => order.id);
+      let allItems: any[] = [];
+      
+      if (orderIds.length > 0) {
+        allItems = await db
+          .select()
+          .from(orderItems)
+          .where(inArray(orderItems.orderId, orderIds));
+      }
+
+      // Группируем позиции по заказам
+      const itemsByOrder = allItems.reduce((acc, item) => {
+        if (!acc[item.orderId]) {
+          acc[item.orderId] = [];
+        }
+        acc[item.orderId].push({
+          id: item.id,
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        });
+        return acc;
+      }, {} as Record<number, any[]>);
+
+      // Собираем заказы с позициями
+      const result = ordersResult.map(order => ({
+        ...order,
+        items: itemsByOrder[order.id] || [],
+      })) as any[];
+
+      return result;
     } catch (error) {
       dbLogger.error("Error in getOrders", { error: getErrorMessage(error) });
       throw error;

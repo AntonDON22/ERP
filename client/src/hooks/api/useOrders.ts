@@ -2,14 +2,24 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { Order, InsertOrder } from "@shared/schema";
 
+// Расширенный тип заказа с позициями
+export interface OrderWithItems extends Order {
+  items: Array<{
+    id: number;
+    productId: number;
+    quantity: number;
+    price: number;
+  }>;
+}
+
 export function useOrders() {
-  return useQuery<Order[]>({
+  return useQuery<OrderWithItems[]>({
     queryKey: ["/api/orders"],
   });
 }
 
 export function useOrder(id: number) {
-  return useQuery<Order>({
+  return useQuery<OrderWithItems>({
     queryKey: ["/api/orders", id],
     enabled: !!id,
   });

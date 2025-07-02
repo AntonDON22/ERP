@@ -111,6 +111,7 @@ export class OrderService {
 
     if (items && items.length > 0) {
       // Если есть позиции, используем полное транзакционное обновление
+      apiLogger.info("Starting updateWithItems", { orderId: id, itemsCount: items.length });
       return await this.updateWithItems(id, validatedData, items, newReserved);
     } else if (reserveChanged) {
       // Если изменился только статус резервирования (без новых позиций)
@@ -307,9 +308,17 @@ export class OrderService {
       await this.updateOrderItems(orderId, items);
       apiLogger.info("Order items updated", { orderId, itemsCount: items.length });
 
-      // 3. Если изменился статус резервирования, обрабатываем резервы
+      // 3. Обрабатываем резервы
       const currentReserved = currentOrder.isReserved || false;
+      apiLogger.info("Reserve processing", { 
+        orderId, 
+        currentReserved, 
+        isReserved, 
+        statusChanged: currentReserved !== isReserved 
+      });
+      
       if (currentReserved !== isReserved) {
+        // Изменился статус резервирования
         if (isReserved && !currentReserved) {
           // Добавляем резервы для позиций
           for (const item of items) {
@@ -325,6 +334,22 @@ export class OrderService {
           await transactionService.removeReservesForOrder(orderId);
           apiLogger.info("Existing reserves removed", { orderId });
         }
+      } else if (isReserved && currentReserved) {
+        // Статус не изменился, но заказ зарезервирован - обновляем резервы
+        apiLogger.info("Updating reserves for reserved order", { orderId, itemsCount: items.length });
+        
+        // Удаляем старые резервы и создаем новые с обновленными количествами
+        await transactionService.removeReservesForOrder(orderId);
+        apiLogger.info("Old reserves removed", { orderId });
+        
+        for (const item of items) {
+          await transactionService.createReserveForItem(
+            orderId,
+            item,
+            updatedOrder.warehouseId || 33
+          );
+        }
+        apiLogger.info("Reserves updated for order items", { orderId, itemsCount: items.length });
       }
 
       // 4. Инвалидация кеша остатков

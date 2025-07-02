@@ -3,6 +3,8 @@ import { documents, documentItems, inventory, reserves, orders, orderItems } fro
 import { eq, sql } from "drizzle-orm";
 import type { InsertDocument, CreateDocumentItem } from "../../shared/schema";
 import { getMoscowTime } from "../../shared/timeUtils";
+import { cacheService } from "./cacheService";
+import { apiLogger } from "../../shared/logger";
 
 export class TransactionService {
   // Транзакционное создание документа с пересчетом остатков
@@ -67,6 +69,11 @@ export class TransactionService {
       }
 
       console.log("✅ Транзакция создания документа завершена");
+      
+      // Инвалидация кеша остатков после создания документа
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Inventory cache invalidated after document creation", { documentId: updatedDocument.id });
+      
       return updatedDocument;
     });
   }
@@ -132,6 +139,11 @@ export class TransactionService {
       }
 
       console.log("✅ Транзакция обновления документа завершена");
+      
+      // Инвалидация кеша остатков после обновления документа
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Inventory cache invalidated after document update", { documentId });
+      
       return document;
     });
   }
@@ -160,6 +172,12 @@ export class TransactionService {
       
       const success = (documentResult.rowCount ?? 0) > 0;
       console.log("✅ Транзакция удаления документа завершена");
+      
+      // Инвалидация кеша остатков после успешного удаления
+      if (success) {
+        await cacheService.invalidatePattern("inventory:*");
+        apiLogger.info("Inventory cache invalidated after document deletion", { documentId });
+      }
       
       return success;
     });

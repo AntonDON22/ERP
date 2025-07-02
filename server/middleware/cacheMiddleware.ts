@@ -28,14 +28,17 @@ export function cacheMiddleware(options: CacheOptions = {}) {
 
     try {
       // Пытаемся получить из кеша
+      logger.debug('Cache lookup attempt', { key: cacheKey, method: req.method, url: req.originalUrl });
       const cachedResponse = await cacheService.get(cacheKey);
       
       if (cachedResponse) {
         cacheHit = true;
         const responseTime = Date.now() - startTime;
         PerformanceMetricsService.recordRequest(req.originalUrl, responseTime, true, 0);
-        logger.debug('Cache hit', { key: cacheKey });
+        logger.debug('Cache hit', { key: cacheKey, dataSize: JSON.stringify(cachedResponse).length });
         return res.json(cachedResponse);
+      } else {
+        logger.debug('Cache miss', { key: cacheKey });
       }
 
       // Если в кеше нет, перехватываем оригинальный response

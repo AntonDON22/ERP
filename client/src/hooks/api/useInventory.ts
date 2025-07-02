@@ -16,8 +16,10 @@ export function useInventory(warehouseId?: number) {
   });
 }
 
-export function useInventoryAvailability() {
+export function useInventoryAvailability(warehouseId?: number) {
+  const queryParams = warehouseId ? `?warehouseId=${warehouseId}` : "";
+
   return useQuery<InventoryItem[]>({
-    queryKey: ["/api/inventory/availability"],
+    queryKey: [`/api/inventory/availability${queryParams}`],
   });
 }

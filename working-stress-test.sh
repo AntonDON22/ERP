@@ -24,9 +24,9 @@ for i in {1..50}; do
         -d "{
             \"name\": \"СтрессТовар-${i}-$(date +%s)\",
             \"sku\": \"STRESS-${i}-$(date +%s)\",
-            \"price\": $((100 + i * 10)),
-            \"purchasePrice\": $((50 + i * 5)),
-            \"weight\": $((10 + i)),
+            \"price\": \"$((100 + i * 10))\",
+            \"purchasePrice\": \"$((50 + i * 5))\",
+            \"weight\": \"$((10 + i))\",
             \"barcode\": \"1234567890${i}\",
             \"dimensions\": \"${i}x${i}x${i}\"
         }")
@@ -105,15 +105,18 @@ for i in {1..30}; do
         PRODUCT_ID=${PRODUCT_IDS[$((RANDOM % ${#PRODUCT_IDS[@]}))]}
         WAREHOUSE_ID=${WAREHOUSE_IDS[$((RANDOM % ${#WAREHOUSE_IDS[@]}))]}
         
-        DOC_RESPONSE=$(curl -s -X POST $BASE_URL/documents/receipt \
+        DOC_RESPONSE=$(curl -s -X POST $BASE_URL/documents/create-receipt \
             -H "Content-Type: application/json" \
             -d "{
-                \"type\": \"receipt\",
-                \"warehouseId\": $WAREHOUSE_ID,
+                \"document\": {
+                    \"type\": \"income\",
+                    \"status\": \"posted\",
+                    \"warehouseId\": $WAREHOUSE_ID
+                },
                 \"items\": [{
                     \"productId\": $PRODUCT_ID,
-                    \"quantity\": $((RANDOM % 100 + 1)),
-                    \"price\": $((RANDOM % 1000 + 100))
+                    \"quantity\": \"$((RANDOM % 100 + 1))\",
+                    \"price\": \"$((RANDOM % 1000 + 100))\"
                 }]
             }")
         
@@ -139,15 +142,23 @@ for i in {1..20}; do
         CONTRACTOR_ID=${CONTRACTOR_IDS[$((RANDOM % ${#CONTRACTOR_IDS[@]}))]}
         IS_RESERVED=$([ $((RANDOM % 2)) -eq 0 ] && echo "true" || echo "false")
         
+        QUANTITY=$((RANDOM % 10 + 1))
+        PRICE=$((RANDOM % 1000 + 200))
+        TOTAL_AMOUNT=$((QUANTITY * PRICE))
+        
         ORDER_RESPONSE=$(curl -s -X POST $BASE_URL/orders \
             -H "Content-Type: application/json" \
             -d "{
+                \"name\": \"Стресс заказ ${i}\",
+                \"status\": \"Новый\",
                 \"customerId\": $CONTRACTOR_ID,
+                \"warehouseId\": ${WAREHOUSE_IDS[0]},
+                \"totalAmount\": \"$TOTAL_AMOUNT\",
                 \"isReserved\": $IS_RESERVED,
                 \"items\": [{
                     \"productId\": $PRODUCT_ID,
-                    \"quantity\": $((RANDOM % 10 + 1)),
-                    \"price\": $((RANDOM % 1000 + 200))
+                    \"quantity\": $QUANTITY,
+                    \"price\": $PRICE
                 }]
             }")
         

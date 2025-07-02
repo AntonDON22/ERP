@@ -3,6 +3,22 @@
 echo "🚀 Запуск системного теста адаптивности ERP..."
 echo ""
 
+# Определяем корень проекта (ищем package.json)
+PROJECT_ROOT=""
+if [ -f "package.json" ]; then
+    PROJECT_ROOT="."
+elif [ -f "../package.json" ]; then
+    PROJECT_ROOT=".."
+elif [ -f "../../package.json" ]; then
+    PROJECT_ROOT="../.."
+else
+    echo "❌ Не удалось найти корень проекта (package.json)"
+    exit 1
+fi
+
+echo "📂 Корень проекта: $PROJECT_ROOT"
+echo ""
+
 # Результаты тестирования
 CRITICAL_ISSUES=0
 WARNING_ISSUES=0
@@ -46,34 +62,34 @@ check_content() {
 
 echo "🔍 Проверка адаптивных компонентов..."
 
-# Проверка существования ключевых файлов
-check_file "client/src/components/DataTable.tsx" "DataTable компонент"
-check_file "client/src/components/Navigation.tsx" "Navigation компонент"
-check_file "client/src/pages/ResponsiveTest.tsx" "Страница тестирования адаптивности"
-check_file ".stylelintrc.json" "Конфигурация Stylelint"
+# Проверка существования ключевых файлов 
+check_file "$PROJECT_ROOT/client/src/components/DataTable.tsx" "DataTable компонент"
+check_file "$PROJECT_ROOT/client/src/components/Navigation.tsx" "Navigation компонент"  
+check_file "$PROJECT_ROOT/client/src/pages/ResponsiveTest.tsx" "Страница тестирования адаптивности"
+check_file "$PROJECT_ROOT/.stylelintrc.json" "Конфигурация Stylelint"
 
 echo ""
 echo "📱 Проверка адаптивных функций..."
 
 # Проверка адаптивности в DataTable и ResponsiveTableWrapper
-if [ -f "client/src/components/ui/responsive-table-wrapper.tsx" ] && grep -q "overflow-x-auto" "client/src/components/ui/responsive-table-wrapper.tsx"; then
+if [ -f "$PROJECT_ROOT/client/src/components/ui/responsive-table-wrapper.tsx" ] && grep -q "overflow-x-auto" "$PROJECT_ROOT/client/src/components/ui/responsive-table-wrapper.tsx"; then
     echo "✅ DataTable: горизонтальная прокрутка: OK (через ResponsiveTableWrapper)"
-elif grep -q "overflow-x-auto" "client/src/components/DataTable.tsx"; then
+elif grep -q "overflow-x-auto" "$PROJECT_ROOT/client/src/components/DataTable.tsx"; then
     echo "✅ DataTable: горизонтальная прокрутка: OK (напрямую)"
 else
     echo "❌ DataTable: горизонтальная прокрутка: НЕ НАЙДЕНО"
     ((CRITICAL_ISSUES++))
 fi
 
-check_content "client/src/components/DataTable.tsx" "sm:" "DataTable: мобильные breakpoints" "warning"
-check_content "client/src/components/DataTable.tsx" "md:" "DataTable: планшетные breakpoints" "warning"
+check_content "$PROJECT_ROOT/client/src/components/DataTable.tsx" "sm:" "DataTable: мобильные breakpoints" "warning"
+check_content "$PROJECT_ROOT/client/src/components/DataTable.tsx" "md:" "DataTable: планшетные breakpoints" "warning"
 
 # Проверка мобильной навигации
-check_content "client/src/components/Navigation.tsx" "md:hidden" "Navigation: мобильное меню" "critical"
-check_content "client/src/components/Navigation.tsx" "hamburger\|menu-button\|☰" "Navigation: кнопка меню" "warning"
+check_content "$PROJECT_ROOT/client/src/components/Navigation.tsx" "md:hidden" "Navigation: мобильное меню" "critical"
+check_content "$PROJECT_ROOT/client/src/components/Navigation.tsx" "hamburger\|menu-button\|☰" "Navigation: кнопка меню" "warning"
 
 # Проверка адаптивности в других компонентах
-check_content "client/src/pages/Dashboard.tsx" "sm:\|md:\|lg:" "Dashboard: адаптивные классы" "warning"
+check_content "$PROJECT_ROOT/client/src/pages/Dashboard.tsx" "sm:\|md:\|lg:" "Dashboard: адаптивные классы" "warning"
 
 echo ""
 echo "🎨 Проверка Stylelint..."
@@ -101,8 +117,8 @@ echo ""
 echo "📊 Проверка размеров экранов..."
 
 # Проверка breakpoints в CSS/Tailwind
-if [ -f "tailwind.config.ts" ]; then
-    if grep -q "screens" "tailwind.config.ts"; then
+if [ -f "$PROJECT_ROOT/tailwind.config.ts" ]; then
+    if grep -q "screens" "$PROJECT_ROOT/tailwind.config.ts"; then
         echo "✅ Tailwind breakpoints: настроены"
     else
         echo "⚠️ Tailwind breakpoints: стандартные"
@@ -114,8 +130,8 @@ else
 fi
 
 # Проверка поддержки мобильных viewport
-if [ -f "client/index.html" ]; then
-    if grep -q "viewport" "client/index.html"; then
+if [ -f "$PROJECT_ROOT/client/index.html" ]; then
+    if grep -q "viewport" "$PROJECT_ROOT/client/index.html"; then
         echo "✅ Viewport meta: настроен"
     else
         echo "❌ Viewport meta: отсутствует"

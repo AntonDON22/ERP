@@ -25,6 +25,15 @@
 Интеграционные тесты:
 
 - **api.test.ts** - Тесты API endpoints
+- **apiValidation.test.ts** - Валидация API ответов
+- **system.test.ts** - Полные системные тесты
+
+### Adaptive Tests (`tests/adaptive/`)
+Тесты адаптивности интерфейса:
+
+- **runSystemTest.sh** - Bash-скрипт для CI/CD проверки адаптивности
+- Проверка горизонтальной прокрутки и мобильной навигации
+- Валидация responsive breakpoints и Stylelint
 
 ## Покрытие тестами
 
@@ -106,6 +115,9 @@ npm run test:unit
 
 # Только интеграционные
 npm run test:integration
+
+# Адаптивные тесты (отдельно)
+npm run test:adaptive
 
 # С покрытием
 npm run test:coverage

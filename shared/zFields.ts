@@ -67,11 +67,11 @@ export const zPrice = createNumberField("Цена")
  * Схема для полей количества (товары, остатки)
  * 
  * Автоматически преобразует строки в числа
- * Проверяет что количество положительное
+ * Проверяет что количество не отрицательное (включая 0)
  * Поддерживает дробные значения с точностью до 3 знаков
  */
 export const zQuantity = createNumberField("Количество")
-  .refine((val) => val > 0, "Количество должно быть больше нуля")
+  .refine((val) => val >= 0, "Количество не может быть отрицательным")
   .refine((val) => val <= 999999, "Количество слишком большое")
   .refine((val) => {
     // Проверяем количество знаков после запятой (максимум 3)
@@ -121,9 +121,9 @@ export const zPercent = createNumberField("Процент")
  * Проверяет что ID положительное целое число
  */
 export const zId = createNumberField("ID")
-  .refine((val) => val > 0, "ID должно быть больше нуля")
-  .refine((val) => Number.isInteger(val), "ID должно быть целым числом")
-  .refine((val) => val <= 2147483647, "ID слишком большое"); // Максимальное значение INTEGER в PostgreSQL
+  .refine((val) => val > 0, "ID должен быть положительным числом")
+  .refine((val) => Number.isInteger(val), "ID должен быть целым числом")
+  .refine((val) => val <= 2147483647, "ID слишком большой"); // Максимальное значение INTEGER в PostgreSQL
 
 /**
  * Схема для веса товаров
@@ -156,12 +156,12 @@ export const zWeightOptional = zWeight.optional();
  * но с валидацией что они содержат корректные числа
  */
 export const zPriceString = z.string()
-  .refine((val) => !isNaN(Number(val)) && Number(val) >= 0, "Введите корректное значение цены")
-  .refine((val) => Number(val) <= 999999999.99, "Цена слишком большая");
+  .refine((val) => val === "" || (!isNaN(Number(val)) && Number(val) >= 0), "Введите корректное значение цены")
+  .refine((val) => val === "" || Number(val) <= 999999999.99, "Цена слишком большая");
 
 export const zQuantityString = z.string()
-  .refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Введите корректное количество")
-  .refine((val) => Number(val) <= 999999, "Количество слишком большое");
+  .refine((val) => val === "" || (!isNaN(Number(val)) && Number(val) >= 0), "Введите корректное количество")
+  .refine((val) => val === "" || Number(val) <= 999999, "Количество слишком большое");
 
 export const zWeightString = z.string()
   .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Введите корректное значение веса")

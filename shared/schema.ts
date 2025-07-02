@@ -163,10 +163,7 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
     errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
   }).default('draft'),
 
-  warehouseId: z.number()
-    .positive("ID склада должен быть положительным числом")
-    .int("ID склада должен быть целым числом")
-    .optional(),
+  warehouseId: zId.optional(),
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -241,6 +238,7 @@ export const documentItemSchema = z.object({
 });
 
 export const receiptDocumentSchema = z.object({
+  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
   name: z.string().min(1, "Название документа обязательно"),
   warehouseId: zId,
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
@@ -275,6 +273,7 @@ export const orderItems = pgTable("order_items", {
 
 // Схема для создания заказов - более гибкая валидация (кастомная)
 export const createOrderSchema = z.object({
+  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
   name: z.string()
     .min(1, "Название заказа обязательно")
     .max(255, "Название не должно превышать 255 символов")
@@ -286,10 +285,12 @@ export const createOrderSchema = z.object({
   customerId: zId.optional(),
   warehouseId: zId,
   totalAmount: zPriceString.optional(),  // Опционально для создания
+  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
   notes: z.string()
     .optional()
     .refine(val => !val || val.length <= 1000, "Примечания не должны превышать 1000 символов")
     .transform(val => val?.trim() || undefined),
+  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
   date: z.string()
     .optional()
     .refine(val => !val || !isNaN(Date.parse(val)), "Некорректная дата"),
@@ -298,6 +299,7 @@ export const createOrderSchema = z.object({
 
 // Схема для полного заказа - строгая валидация  
 export const insertOrderSchema = createOrderSchema.extend({
+  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
   name: z.string()
     .min(1, "Название заказа обязательно")
     .max(255, "Название не должно превышать 255 символов")
@@ -334,6 +336,7 @@ export const orderItemSchema = z.object({
 export const orderSchema = z.object({
   customerId: zId.optional(),
   warehouseId: zId,
+  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
   status: z.string(),
   isReserved: z.boolean().optional(),
   items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),

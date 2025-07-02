@@ -87,6 +87,7 @@ export function validateQuery(schema: ZodSchema) {
 
 /**
  * Схема для валидации ID в параметрах
+ * Внимание: схема валидируется вручную. Рекомендуется мигрировать на zId из shared/zFields.ts для унификации
  */
 export const idParamSchema = z.object({
   id: z.string()
@@ -97,6 +98,7 @@ export const idParamSchema = z.object({
 
 /**
  * Схемы для валидации массивов ID в теле запроса
+ * Внимание: все схемы валидируются вручную. Рекомендуется мигрировать на zId из shared/zFields.ts для унификации
  */
 export const productIdsSchema = z.object({
   productIds: z.array(

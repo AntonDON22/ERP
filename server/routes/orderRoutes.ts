@@ -3,6 +3,8 @@ import { OrderService } from "../services/orderService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
+import { orderSchema } from "../../shared/schema";
+import { cacheService } from "../services/cacheService";
 
 const router = Router();
 const orderService = new OrderService();
@@ -48,8 +50,17 @@ router.post("/create", async (req, res) => {
   try {
     const { items, isReserved, ...orderData } = req.body;
     const order = await orderService.create(orderData, items || [], isReserved || false);
+    
+    // Инвалидируем кеш заказов и остатков
+    await cacheService.invalidatePattern("orders:*");
+    await cacheService.invalidatePattern("inventory:*");
+    
     res.status(201).json(order);
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      const validationError = fromZodError(error);
+      return res.status(400).json({ error: validationError.message });
+    }
     apiLogger.error("Failed to create order", { body: req.body, error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка создания заказа" });
   }
@@ -67,6 +78,10 @@ router.put("/:id", async (req, res) => {
     if (!order) {
       return res.status(404).json({ error: "Заказ не найден" });
     }
+    
+    // Инвалидируем кеш заказов и остатков
+    await cacheService.invalidatePattern("orders:*");
+    await cacheService.invalidatePattern("inventory:*");
     
     res.json(order);
   } catch (error) {
@@ -88,6 +103,10 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "Заказ не найден" });
     }
     
+    // Инвалидируем кеш заказов и остатков
+    await cacheService.invalidatePattern("orders:*");
+    await cacheService.invalidatePattern("inventory:*");
+    
     res.json({ success: true, message: "Заказ успешно удален" });
   } catch (error) {
     apiLogger.error("Failed to delete order", { orderId: req.params.id, error: error instanceof Error ? error.message : String(error) });
@@ -100,6 +119,13 @@ router.post("/delete-multiple", async (req, res) => {
   try {
     const validatedData = deleteOrdersSchema.parse(req.body);
     const result = await orderService.deleteMultiple(validatedData.orderIds);
+    
+    // Инвалидируем кеш заказов и остатков после успешного удаления
+    if (result.deletedCount > 0) {
+      await cacheService.invalidatePattern("orders:*");
+      await cacheService.invalidatePattern("inventory:*");
+    }
+    
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -330,12 +330,23 @@ export const orderItemSchema = z.object({
   price: z.number().min(0, "Цена не может быть отрицательной"),
 });
 
+// Схема для создания позиций заказа - принимает числа от фронтенда и преобразует в строки
+export const createOrderItemSchema = z.object({
+  productId: z.number().min(1, "Товар обязателен"),
+  quantity: z.number().min(1, "Количество должно быть больше 0"),
+  price: z.number().min(0, "Цена не может быть отрицательной"),
+}).transform((data) => ({
+  productId: data.productId,
+  quantity: data.quantity.toString(),
+  price: data.price.toString(),
+}));
+
 export const orderSchema = z.object({
   customerId: z.number().optional(),
   warehouseId: z.number().min(1, "Склад обязателен"),
   status: z.string(),
   isReserved: z.boolean().optional(),
-  items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),
+  items: z.array(createOrderItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
 // Таблица резервов товаров

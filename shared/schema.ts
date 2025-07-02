@@ -1,7 +1,7 @@
 import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId } from "./zFields";
+import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName } from "./zFields";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -238,8 +238,7 @@ export const documentItemSchema = z.object({
 });
 
 export const receiptDocumentSchema = z.object({
-  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
-  name: z.string().min(1, "Название документа обязательно"),
+  name: zName, // ✅ Мигрировано на централизованное поле zName
   warehouseId: zId,
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });

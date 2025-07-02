@@ -47,9 +47,9 @@ describe('Schema Validation Tests', () => {
       expect(zPriceString.parse("")).toBe(""); // Пустые строки разрешены
       expect(() => zPriceString.parse("-1")).toThrow();
       
-      // Тест zQuantityString
+      // Тест zQuantityString (строго положительные)
       expect(zQuantityString.parse("5.5")).toBe("5.5");
-      expect(zQuantityString.parse("0")).toBe("0");
+      expect(() => zQuantityString.parse("0")).toThrow(); // Ноль не разрешен для zQuantity
       expect(zQuantityString.parse("")).toBe(""); // Пустые строки разрешены
       expect(() => zQuantityString.parse("-1")).toThrow();
       
@@ -242,8 +242,8 @@ describe('Schema Validation Tests', () => {
     });
     
     it('should ensure all quantity validations use same rules', () => {
-      const testValues = [0, 1, 123.45, "0", "1", "123.45"];
-      const errorValues = [-1, "", "-1", "abc", null, undefined];
+      const testValues = [1, 123.45, "1", "123.45"]; // Удален ноль - zQuantity требует > 0
+      const errorValues = [0, -1, "", "0", "-1", "abc", null, undefined]; // Добавлен ноль в ошибки
       
       for (const value of testValues) {
         expect(() => zQuantity.parse(value)).not.toThrow();
@@ -287,7 +287,7 @@ describe('Schema Validation Tests', () => {
       try {
         zQuantity.parse(-1);
       } catch (error: any) {
-        expect(error.issues[0].message).toContain('отрицательным');
+        expect(error.issues[0].message).toContain('больше нуля'); // zQuantity теперь требует > 0
       }
     });
   });

@@ -66,18 +66,48 @@ export const zPrice = createNumberField("Цена")
 /**
  * Схема для полей количества (товары, остатки)
  * 
+ * Используется для операций, где количество должно быть положительным
+ * (например, создание заказа, приход товара, ввод пользователем)
  * Автоматически преобразует строки в числа
- * Проверяет что количество не отрицательное (включая 0)
+ * Проверяет что количество больше нуля
  * Поддерживает дробные значения с точностью до 3 знаков
  */
 export const zQuantity = createNumberField("Количество")
-  .refine((val) => val >= 0, "Количество не может быть отрицательным")
+  .refine((val) => val > 0, "Количество должно быть больше нуля")
   .refine((val) => val <= 999999, "Количество слишком большое")
   .refine((val) => {
     // Проверяем количество знаков после запятой (максимум 3)
     const decimalPlaces = (val.toString().split('.')[1] || '').length;
     return decimalPlaces <= 3;
   }, "Количество может содержать максимум 3 знака после запятой");
+
+/**
+ * Схема для полей количества которое может быть нулевым
+ * 
+ * Используется для остатков, резервов, нулевых возвратов, начальных значений,
+ * неактивных строк где ноль - валидное значение
+ * Автоматически преобразует строки в числа
+ * Поддерживает дробные значения с точностью до 3 знаков
+ */
+export const zQuantityAllowZero = createNumberField("Количество")
+  .refine((val) => val >= 0, "Количество не может быть отрицательным")
+  .refine((val) => val <= 999999, "Количество слишком большое")
+  .refine((val) => {
+    const decimalPlaces = (val.toString().split('.')[1] || '').length;
+    return decimalPlaces <= 3;
+  }, "Количество может содержать максимум 3 знака после запятой");
+
+/**
+ * Схема для количества которое может быть отрицательным
+ * 
+ * Используется при списаниях, возвратах, движении товара в минус,
+ * складских корректировках, операциях расхода
+ * Автоматически преобразует строки в числа
+ * Принимает любые целые числа (положительные, отрицательные, ноль)
+ */
+export const zQuantityCanBeNegative = createNumberField("Количество")
+  .refine((val) => Number.isInteger(val), "Количество должно быть целым числом")
+  .refine((val) => val >= -999999 && val <= 999999, "Количество вне допустимого диапазона (-999999 до 999999)");
 
 /**
  * Схема для целых количеств (заказы, штучные товары)
@@ -87,18 +117,7 @@ export const zQuantityInteger = createNumberField("Количество")
   .refine((val) => val <= 999999, "Количество слишком большое")
   .refine((val) => Number.isInteger(val), "Количество должно быть целым числом");
 
-/**
- * Схема для полей количества которое может быть нулевым
- * 
- * Используется для остатков, резервов где ноль - валидное значение
- */
-export const zQuantityNullable = createNumberField("Количество")
-  .refine((val) => val >= 0, "Количество не может быть отрицательным")
-  .refine((val) => val <= 999999, "Количество слишком большое")
-  .refine((val) => {
-    const decimalPlaces = (val.toString().split('.')[1] || '').length;
-    return decimalPlaces <= 3;
-  }, "Количество может содержать максимум 3 знака после запятой");
+
 
 /**
  * Схема для процентных полей (скидки, наценки)
@@ -150,6 +169,19 @@ export const zPercentOptional = zPercent.optional();
 export const zWeightOptional = zWeight.optional();
 
 /**
+ * Схема для названий сущностей (документы, заказы, продукты)
+ * 
+ * Стандартное поле названия с валидацией длины и обрезкой пробелов
+ * Используется во всех сущностях системы для унификации правил
+ */
+export const zName = z.string()
+  .min(1, "Название обязательно")
+  .max(255, "Название не должно превышать 255 символов")
+  .trim();
+
+export const zNameOptional = zName.optional();
+
+/**
  * Схемы для строковых представлений чисел (legacy поддержка)
  * 
  * Используются в случаях когда API должен принимать строки
@@ -160,8 +192,16 @@ export const zPriceString = z.string()
   .refine((val) => val === "" || Number(val) <= 999999999.99, "Цена слишком большая");
 
 export const zQuantityString = z.string()
-  .refine((val) => val === "" || (!isNaN(Number(val)) && Number(val) >= 0), "Введите корректное количество")
+  .refine((val) => val === "" || (!isNaN(Number(val)) && Number(val) > 0), "Введите корректное количество больше нуля")
   .refine((val) => val === "" || Number(val) <= 999999, "Количество слишком большое");
+
+export const zQuantityAllowZeroString = z.string()
+  .refine((val) => val === "" || (!isNaN(Number(val)) && Number(val) >= 0), "Введите корректное количество (0 или больше)")
+  .refine((val) => val === "" || Number(val) <= 999999, "Количество слишком большое");
+
+export const zQuantityCanBeNegativeString = z.string()
+  .refine((val) => val === "" || (!isNaN(Number(val)) && Number.isInteger(Number(val))), "Введите корректное целое число")
+  .refine((val) => val === "" || (Number(val) >= -999999 && Number(val) <= 999999), "Количество вне допустимого диапазона");
 
 export const zWeightString = z.string()
   .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Введите корректное значение веса")
@@ -191,5 +231,8 @@ export const parseQuantity = (value: string | number): number => {
  */
 export type Price = z.infer<typeof zPrice>;
 export type Quantity = z.infer<typeof zQuantity>;
+export type QuantityAllowZero = z.infer<typeof zQuantityAllowZero>;
+export type QuantityCanBeNegative = z.infer<typeof zQuantityCanBeNegative>;
 export type Percent = z.infer<typeof zPercent>;
 export type Weight = z.infer<typeof zWeight>;
+export type Name = z.infer<typeof zName>;

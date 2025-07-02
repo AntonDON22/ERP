@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { DocumentService } from "../services/documentService";
+import { CachedInventoryService } from "../services/cachedInventoryService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
@@ -86,6 +87,10 @@ router.post("/create-receipt", async (req, res) => {
     
     const document = await storage.createReceiptDocument(documentData, processedItems);
     res.status(201).json(document);
+    
+    // Инвалидируем кеш остатков после создания документа
+    await CachedInventoryService.invalidateInventoryCache(validatedData.warehouseId);
+    
   } catch (error) {
     if (error instanceof z.ZodError) {
       const validationError = fromZodError(error);
@@ -105,6 +110,14 @@ router.put("/:id", async (req, res) => {
     const document = await documentService.update(id, validatedData);
     if (!document) {
       return res.status(404).json({ error: "Документ не найден" });
+    }
+    
+    // Инвалидируем кеш остатков после обновления документа
+    if (validatedData.warehouseId) {
+      await CachedInventoryService.invalidateInventoryCache(validatedData.warehouseId);
+    } else {
+      // Если склад не указан, инвалидируем весь кеш
+      await CachedInventoryService.invalidateInventoryCache();
     }
     
     res.json(document);
@@ -128,6 +141,9 @@ router.delete("/:id", async (req, res) => {
       return res.status(404).json({ error: "Документ не найден" });
     }
     
+    // Инвалидируем весь кеш остатков после удаления документа
+    await CachedInventoryService.invalidateInventoryCache();
+    
     res.json({ success: true });
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -144,6 +160,10 @@ router.post("/delete-multiple", async (req, res) => {
   try {
     const validatedData = deleteDocumentsSchema.parse(req.body);
     const result = await documentService.deleteMultiple(validatedData.documentIds);
+    
+    // Инвалидируем весь кеш остатков после множественного удаления
+    await CachedInventoryService.invalidateInventoryCache();
+    
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -7,6 +7,10 @@ import logRoutes from "./logRoutes";
 import { InventoryService } from "../services/inventoryService";
 import { ContractorService } from "../services/contractorService";
 import { WarehouseService } from "../services/warehouseService";
+import { CachedInventoryService } from "../services/cachedInventoryService";
+import { PaginationService } from "../services/paginationService";
+import { PerformanceMetricsService } from "../services/performanceMetricsService";
+import { inventoryCache, mediumCache } from "../middleware/cacheMiddleware";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
@@ -36,11 +40,13 @@ const deleteWarehousesSchema = z.object({
   warehouseIds: z.array(z.number()).min(1, "Укажите хотя бы один склад для удаления"),
 });
 
-// Маршруты для инвентаря
-router.get("/inventory", async (req, res) => {
+// Маршруты для инвентаря с кешированием
+router.get("/inventory", inventoryCache, async (req, res) => {
   try {
     const warehouseId = req.query.warehouseId ? parseInt(req.query.warehouseId as string) : undefined;
-    const inventory = await inventoryService.getInventory(warehouseId);
+    
+    // Используем кешированный сервис для улучшенной производительности
+    const inventory = await CachedInventoryService.getInventory(warehouseId);
     
     // Валидация API ответа для гарантии согласованности
     try {
@@ -57,10 +63,12 @@ router.get("/inventory", async (req, res) => {
   }
 });
 
-router.get("/inventory/availability", async (req, res) => {
+router.get("/inventory/availability", inventoryCache, async (req, res) => {
   try {
     const warehouseId = req.query.warehouseId ? parseInt(req.query.warehouseId as string) : undefined;
-    const availability = await inventoryService.getInventoryAvailability(warehouseId);
+    
+    // Используем кешированный сервис для улучшенной производительности
+    const availability = await CachedInventoryService.getInventoryAvailability(warehouseId);
     
     // Валидация API ответа для гарантии согласованности
     try {
@@ -93,8 +101,8 @@ router.get("/materialized-views/status", async (req, res) => {
   }
 });
 
-// Маршруты для контрагентов
-router.get("/contractors", async (req, res) => {
+// Маршруты для контрагентов с кешированием
+router.get("/contractors", mediumCache, async (req, res) => {
   try {
     const contractors = await contractorService.getAll();
     res.json(contractors);
@@ -149,8 +157,8 @@ router.post("/contractors/delete-multiple", async (req, res) => {
   }
 });
 
-// Маршруты для складов
-router.get("/warehouses", async (req, res) => {
+// Маршруты для складов с кешированием
+router.get("/warehouses", mediumCache, async (req, res) => {
   try {
     const warehouses = await warehouseService.getAll();
     res.json(warehouses);
@@ -214,6 +222,27 @@ router.get("/changelog", async (req, res) => {
   } catch (error) {
     apiLogger.error("Failed to get changelog", { error: error instanceof Error ? error.message : String(error) });
     res.status(500).json({ error: "Ошибка получения истории обновлений" });
+  }
+});
+
+// GET /api/metrics - получение метрик производительности
+router.get("/metrics", async (req, res) => {
+  try {
+    const metrics = PerformanceMetricsService.getMetrics();
+    const endpointStats = PerformanceMetricsService.getEndpointStats();
+    const cacheMetrics = await PerformanceMetricsService.getCacheMetrics();
+    const trends = PerformanceMetricsService.getPerformanceTrends();
+
+    res.json({
+      overview: metrics,
+      endpoints: endpointStats,
+      cache: cacheMetrics,
+      trends: trends,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    apiLogger.error("Failed to get performance metrics", { error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка получения метрик производительности" });
   }
 });
 

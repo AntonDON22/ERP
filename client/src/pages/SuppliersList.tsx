@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "@/components/DataTable";
 import { Supplier } from "@shared/schema";
-import { useSuppliers, useDeleteSuppliers, useImportSuppliers } from "@/hooks/useTypedQuery";
+import { useSuppliers, useDeleteSuppliers, useImportSuppliers } from "@/hooks/api";
 import { useLocation } from "wouter";
 
 const suppliersColumns: ColumnConfig<Supplier>[] = [

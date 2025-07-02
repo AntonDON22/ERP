@@ -1,8 +1,7 @@
 import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "../components/DataTable";
 import { Warehouse } from "@shared/schema";
-import { useWarehouses } from "@/hooks/useWarehouses";
-import { useDeleteWarehouses, useImportWarehouses } from "@/hooks/useTypedQuery";
+import { useWarehouses, useDeleteWarehouses, useImportWarehouses } from "@/hooks/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
 

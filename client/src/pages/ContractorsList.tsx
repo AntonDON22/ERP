@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "@/components/DataTable";
 import { Contractor } from "@shared/schema";
-import { useContractors, useDeleteContractors, useImportContractors } from "@/hooks/useTypedQuery";
+import { useContractors, useDeleteContractors, useImportContractors } from "@/hooks/api";
 import { useLocation } from "wouter";
 
 const contractorsColumns: ColumnConfig<Contractor>[] = [

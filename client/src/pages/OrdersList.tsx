@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import DataTable, { ColumnConfig } from "@/components/DataTable";
-import { useOrders, useDeleteOrders } from "@/hooks/useTypedQuery";
+import { useOrders, useDeleteOrders } from "@/hooks/api";
 import { Order } from "@shared/schema";
 import { useLocation } from "wouter";
 

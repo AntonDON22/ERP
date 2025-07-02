@@ -1,5 +1,5 @@
 import CreateEntityForm, { FormField } from "@/components/CreateEntityForm";
-import { useCreateWarehouse } from "@/hooks/useTypedQuery";
+import { useCreateWarehouse } from "@/hooks/api";
 
 const warehouseFields: FormField[] = [
   {

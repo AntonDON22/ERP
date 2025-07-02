@@ -1,5 +1,5 @@
 import CreateEntityForm, { FormField } from "@/components/CreateEntityForm";
-import { useCreateSupplier } from "@/hooks/useTypedQuery";
+import { useCreateSupplier } from "@/hooks/api";
 
 const supplierFields: FormField[] = [
   {

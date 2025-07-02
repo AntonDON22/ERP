@@ -1,8 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import DataTable, { type ColumnConfig } from "@/components/DataTable";
-import { useInventory, useInventoryAvailability } from "@/hooks/useTypedQuery";
-import { useWarehouses } from "@/hooks/useWarehouses";
+import { useInventory, useInventoryAvailability, useWarehouses } from "@/hooks/api";
 import {
   Select,
   SelectContent,

@@ -1,5 +1,5 @@
 import CreateEntityForm, { FormField } from "@/components/CreateEntityForm";
-import { useCreateContractor } from "@/hooks/useTypedQuery";
+import { useCreateContractor } from "@/hooks/api";
 
 const contractorFields: FormField[] = [
   {

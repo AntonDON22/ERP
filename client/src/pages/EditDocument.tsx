@@ -1,6 +1,6 @@
 import { useParams } from "wouter";
 import Document, { DocumentTypeConfig } from "@/components/Document";
-import { useCreateReceiptDocument, useDocument } from "@/hooks/useTypedQuery";
+import { useCreateReceiptDocument, useDocument } from "@/hooks/api";
 
 const editConfig: DocumentTypeConfig = {
   title: "Документ",

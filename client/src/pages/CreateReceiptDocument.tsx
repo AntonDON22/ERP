@@ -1,5 +1,5 @@
 import Document, { DocumentTypeConfig } from "@/components/Document";
-import { useCreateReceiptDocument } from "@/hooks/useTypedQuery";
+import { useCreateReceiptDocument } from "@/hooks/api";
 
 const receiptConfig: DocumentTypeConfig = {
   title: "Документ",

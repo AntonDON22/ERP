@@ -17,9 +17,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts, useCreateOrder } from "@/hooks/useTypedQuery";
-import { useWarehouses } from "@/hooks/useWarehouses";
-import { useContractors } from "@/hooks/useTypedQuery";
+import { useProducts, useCreateOrder } from "@/hooks/api";
+import { useWarehouses } from "@/hooks/api";
+import { useContractors } from "@/hooks/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Product, Warehouse, Contractor, orderSchema } from "@shared/schema";
 

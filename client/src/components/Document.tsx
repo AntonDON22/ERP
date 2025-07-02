@@ -15,8 +15,8 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts, useUpdateDocument } from "@/hooks/useTypedQuery";
-import { useWarehouses } from "@/hooks/useWarehouses";
+import { useProducts, useUpdateDocument } from "@/hooks/api";
+import { useWarehouses } from "@/hooks/api";
 
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Product, Warehouse } from "@shared/schema";

@@ -1,6 +1,5 @@
 import { useMemo } from "react";
-import { useDocuments, useDeleteDocuments } from "@/hooks/useTypedQuery";
-import { useWarehouses } from "@/hooks/useWarehouses";
+import { useDocuments, useDeleteDocuments, useWarehouses } from "@/hooks/api";
 import DataTable, { ColumnConfig } from "@/components/DataTable";
 import { DocumentRecord } from "@shared/schema";
 import { useLocation } from "wouter";

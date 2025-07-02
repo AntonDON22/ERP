@@ -1,13 +1,11 @@
 import { storage } from "../storage";
-import { insertOrderSchema, insertOrderItemSchema, type InsertOrder, type Order, type CreateOrderItem } from "../../shared/schema";
+import { createOrderSchema, insertOrderSchema, insertOrderItemSchema, type InsertOrder, type Order, type CreateOrderItem } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { apiLogger } from "../../shared/logger";
 
 export class OrderService {
   async getAll(): Promise<Order[]> {
-    // TODO: Реализовать getOrders в storage
-    // Пока используем прямой запрос к БД
-    return [];
+    return storage.getOrders();
   }
 
   async getById(id: number): Promise<Order | undefined> {
@@ -16,8 +14,23 @@ export class OrderService {
     return undefined;
   }
 
-  async create(orderData: InsertOrder, items: CreateOrderItem[], isReserved: boolean = false): Promise<Order> {
-    const validatedOrder = insertOrderSchema.parse(orderData);
+  async create(orderData: any, items: CreateOrderItem[], isReserved: boolean = false): Promise<Order> {
+    // Сначала валидируем базовые поля с гибкой схемой
+    const baseValidatedData = createOrderSchema.parse(orderData);
+    
+    // Генерируем автоматические поля если они не переданы
+    const currentDate = new Date().toLocaleDateString('ru-RU');
+    const totalAmount = items.reduce((sum, item) => sum + (Number(item.price) * Number(item.quantity)), 0);
+    
+    const processedOrderData = {
+      ...baseValidatedData,
+      name: baseValidatedData.name || `Заказ ${currentDate}`,
+      totalAmount: baseValidatedData.totalAmount || totalAmount.toString(),
+      date: baseValidatedData.date || currentDate
+    };
+    
+    // Теперь валидируем полный заказ со строгой схемой
+    const validatedOrder = insertOrderSchema.parse(processedOrderData);
     const validatedItems = items.map(item => insertOrderItemSchema.parse(item));
     
     // Используем транзакционный сервис для создания заказа с резервами

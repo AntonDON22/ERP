@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, logs, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse, type Log } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, logs, orders, orderItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse, type Log, type Order, type InsertOrder, type OrderItem } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
 import { getMoscowTime } from "../shared/timeUtils";
@@ -50,6 +50,13 @@ export interface IStorage {
   
   // Receipt Documents with FIFO
   createReceiptDocument(document: InsertDocument, items: CreateDocumentItem[]): Promise<DocumentRecord>;
+  
+  // Orders
+  getOrders(): Promise<Order[]>;
+  getOrder(id: number): Promise<Order | undefined>;
+  createOrder(order: InsertOrder): Promise<Order>;
+  updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order | undefined>;
+  deleteOrder(id: number): Promise<boolean>;
   
   // Logs
   getLogs(params: {
@@ -308,6 +315,26 @@ export class MemStorage implements IStorage {
 
   async getLogModules(): Promise<string[]> {
     return []; // MemStorage doesn't support logs
+  }
+
+  async getOrders(): Promise<Order[]> {
+    return []; // MemStorage doesn't support orders
+  }
+
+  async getOrder(id: number): Promise<Order | undefined> {
+    return undefined; // MemStorage doesn't support orders
+  }
+
+  async createOrder(order: InsertOrder): Promise<Order> {
+    throw new Error("Orders not supported in MemStorage");
+  }
+
+  async updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order | undefined> {
+    throw new Error("Orders not supported in MemStorage");
+  }
+
+  async deleteOrder(id: number): Promise<boolean> {
+    throw new Error("Orders not supported in MemStorage");
   }
 }
 
@@ -994,6 +1021,73 @@ export class DatabaseStorage implements IStorage {
       return result.map(row => row.module);
     } catch (error) {
       console.error("Error fetching log modules:", error);
+      throw error;
+    }
+  }
+
+  async getOrders(): Promise<Order[]> {
+    try {
+      return await db.select().from(orders).orderBy(orders.createdAt);
+    } catch (error) {
+      dbLogger.error("Error in getOrders", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  async getOrder(id: number): Promise<Order | undefined> {
+    try {
+      const [order] = await db.select().from(orders).where(eq(orders.id, id));
+      return order || undefined;
+    } catch (error) {
+      dbLogger.error("Error in getOrder", { error: getErrorMessage(error), id });
+      throw error;
+    }
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    try {
+      // Гарантируем что обязательные поля заполнены
+      const orderData = {
+        ...insertOrder,
+        date: insertOrder.date || getMoscowTime().toISOString().split('T')[0],
+        createdAt: getMoscowTime(),
+        updatedAt: getMoscowTime()
+      };
+
+      const [order] = await db
+        .insert(orders)
+        .values(orderData)
+        .returning();
+      return order;
+    } catch (error) {
+      dbLogger.error("Error in createOrder", { error: getErrorMessage(error), order: insertOrder });
+      throw error;
+    }
+  }
+
+  async updateOrder(id: number, updateData: Partial<InsertOrder>): Promise<Order | undefined> {
+    try {
+      const [order] = await db
+        .update(orders)
+        .set({ ...updateData, updatedAt: getMoscowTime() })
+        .where(eq(orders.id, id))
+        .returning();
+      return order || undefined;
+    } catch (error) {
+      dbLogger.error("Error in updateOrder", { error: getErrorMessage(error), id, updateData });
+      throw error;
+    }
+  }
+
+  async deleteOrder(id: number): Promise<boolean> {
+    try {
+      // Сначала удаляем связанные записи
+      await db.delete(orderItems).where(eq(orderItems.orderId, id));
+      
+      const result = await db.delete(orders).where(eq(orders.id, id));
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      dbLogger.error("Error in deleteOrder", { error: getErrorMessage(error), id });
       throw error;
     }
   }

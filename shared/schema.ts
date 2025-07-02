@@ -277,21 +277,19 @@ export const orderItems = pgTable("order_items", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
-export const insertOrderSchema = createInsertSchema(orders).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-}).extend({
+// Схема для создания заказов - более гибкая валидация (кастомная)
+export const createOrderSchema = z.object({
   name: z.string()
     .min(1, "Название заказа обязательно")
     .max(255, "Название не должно превышать 255 символов")
-    .trim(),
+    .trim()
+    .optional(),  // Опционально для создания
   status: z.enum(['Новый', 'В работе', 'Выполнен', 'Отменен'], {
     errorMap: () => ({ message: "Некорректный статус заказа" })
   }),
   customerId: zId.optional(),
   warehouseId: zId,
-  totalAmount: zPriceString,
+  totalAmount: zPriceString.optional(),  // Опционально для создания
   notes: z.string()
     .optional()
     .refine(val => !val || val.length <= 1000, "Примечания не должны превышать 1000 символов")
@@ -300,6 +298,15 @@ export const insertOrderSchema = createInsertSchema(orders).omit({
     .optional()
     .refine(val => !val || !isNaN(Date.parse(val)), "Некорректная дата"),
   isReserved: z.boolean().optional(),
+});
+
+// Схема для полного заказа - строгая валидация  
+export const insertOrderSchema = createOrderSchema.extend({
+  name: z.string()
+    .min(1, "Название заказа обязательно")
+    .max(255, "Название не должно превышать 255 символов")
+    .trim(),
+  totalAmount: zPriceString,
 });
 
 export const insertOrderItemSchema = createInsertSchema(orderItems).omit({

@@ -46,7 +46,8 @@ router.get("/:id", async (req, res) => {
 // POST /api/orders/create
 router.post("/create", async (req, res) => {
   try {
-    const order = await orderService.create(req.body, req.body.items || []);
+    const { items, isReserved, ...orderData } = req.body;
+    const order = await orderService.create(orderData, items || [], isReserved || false);
     res.status(201).json(order);
   } catch (error) {
     apiLogger.error("Failed to create order", { body: req.body, error: error instanceof Error ? error.message : String(error) });

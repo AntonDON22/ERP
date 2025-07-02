@@ -109,7 +109,10 @@ export default function Document({ config, documentData }: DocumentProps) {
   // Обновление формы при изменении documentData
   useEffect(() => {
     if (documentData) {
-      form.reset({
+      console.log("🔄 Document - заполнение формы данными:", documentData);
+      console.log("📦 Document - items из данных:", documentData.items);
+      
+      const formData = {
         warehouseId: documentData.warehouseId ?? 0,
         status: (documentData.status as "draft" | "posted") ?? "draft",
         items: documentData.items?.map((item) => ({
@@ -117,7 +120,10 @@ export default function Document({ config, documentData }: DocumentProps) {
           quantity: item.quantity,
           price: item.price,
         })) || [{ productId: 0, quantity: 1, price: 0 }],
-      });
+      };
+      
+      console.log("📋 Document - форма будет заполнена:", formData);
+      form.reset(formData);
     }
   }, [documentData, form]);
 

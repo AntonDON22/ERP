@@ -62,62 +62,30 @@ export default function EditOrder() {
     name: "items",
   });
 
-  // Загрузка позиций заказа отдельно
-  const [orderItems, setOrderItems] = useState<any[]>([]);
-  const [isLoadingItems, setIsLoadingItems] = useState(false);
-
-  useEffect(() => {
-    const loadOrderItems = async () => {
-      if (orderId && orderData) {
-        try {
-          setIsLoadingItems(true);
-          const response = await fetch(`/api/orders/${orderId}/items`);
-          const items = await response.json();
-          setOrderItems(items);
-          
-          if (items && items.length > 0) {
-            form.setValue(
-              "items",
-              items.map((item: any) => ({
-                productId: item.productId,
-                quantity: parseFloat(item.quantity),
-                price: parseFloat(item.price),
-              }))
-            );
-          } else {
-            // Если нет товаров, создаем пустой товар
-            form.setValue("items", [{ productId: 6, quantity: 1, price: 0 }]);
-          }
-        } catch (error) {
-          console.error("Ошибка загрузки позиций заказа:", error);
-          // Fallback к пустому товару
-          form.setValue("items", [{ productId: 6, quantity: 1, price: 0 }]);
-        } finally {
-          setIsLoadingItems(false);
-        }
-      }
-    };
-
-    loadOrderItems();
-  }, [orderId, orderData, form]);
-
-  // Заполнение основных данных формы при загрузке заказа
+  // Обновление формы при изменении orderData
   useEffect(() => {
     if (orderData) {
       console.log("🔄 Заполнение формы данными заказа:", orderData);
-
-      setOrderStatus(
-        (orderData.status || "Новый") as "Новый" | "В работе" | "Выполнен" | "Отменен"
-      );
-      setIsReserved(orderData.isReserved || false);
-      form.setValue("customerId", orderData.customerId || 0);
-      form.setValue("warehouseId", orderData.warehouseId || 0);
-      form.setValue(
-        "status",
-        (orderData.status || "Новый") as "Новый" | "В работе" | "Выполнен" | "Отменен"
-      );
+      
+      // Заполняем форму данными из orderData (который теперь содержит items)
+      form.reset({
+        customerId: orderData.customerId ?? undefined,
+        warehouseId: orderData.warehouseId ?? 33,
+        status: (orderData.status as "Новый" | "В работе" | "Выполнен" | "Отменен") ?? "Новый",
+        items: orderData.items?.map((item: any) => ({
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        })) || [{ productId: 6, quantity: 1, price: 0 }],
+      });
+      
+      // Обновляем состояния
+      setOrderStatus(orderData.status ?? "Новый");
+      setIsReserved(orderData.isReserved ?? false);
     }
   }, [orderData, form]);
+
+
 
   // Обработчик сохранения
   const handleSave = async (data: FormOrder) => {

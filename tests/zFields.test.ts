@@ -148,14 +148,14 @@ describe('Универсальные схемы валидации числов�
 
   describe('Граничные случаи', () => {
     it('должен корректно обрабатывать пустые строки', () => {
-      // z.coerce.number() преобразует пустые строки в 0
+      // z.coerce.number() преобразует пустые строки в 0, но zQuantity требует > 0
       expect(zPrice.parse("")).toBe(0);
-      expect(zQuantity.parse("")).toBe(0);
+      expect(() => zQuantity.parse("")).toThrow("Количество должно быть больше нуля");
     });
 
     it('должен корректно обрабатывать undefined и null', () => {
-      // z.coerce.number() преобразует undefined и null в 0
-      expect(zPrice.parse(undefined as any)).toBe(0);
+      // z.coerce.number() преобразует null в 0
+      expect(() => zPrice.parse(undefined as any)).toThrow();
       expect(zPrice.parse(null as any)).toBe(0);
     });
 

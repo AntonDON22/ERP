@@ -83,37 +83,35 @@ export const documents = pgTable("documents", {
   // postedAt - не используется в логике системы
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
+export const insertUserSchema = z.object({
+  username: z.string().min(1, "Имя пользователя обязательно"),
+  password: z.string().min(1, "Пароль обязателен"),
 });
 
-export const insertProductSchema = createInsertSchema(products)
-  .omit({
-    id: true,
-  })
-  .extend({
-    name: z
-      .string()
-      .min(1, "Название обязательно")
-      .max(255, "Название не должно превышать 255 символов")
-      .trim(),
-    sku: z
-      .string()
-      .min(1, "Артикул обязателен")
-      .max(100, "Артикул не должен превышать 100 символов")
-      .regex(
-        /^[A-Za-z0-9_-]+$/,
-        "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
-      )
-      .trim(),
-    price: zPrice,
-    purchasePrice: zPrice.optional(),
-    weight: zWeight.optional(),
-    height: zWeight.optional(), // используем zWeight для консистентности размеров
-    width: zWeight.optional(),
-    length: zWeight.optional(),
-  });
+export const insertProductSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Название обязательно")
+    .max(255, "Название не должно превышать 255 символов")
+    .trim(),
+  sku: z
+    .string()
+    .min(1, "Артикул обязателен")
+    .max(100, "Артикул не должен превышать 100 символов")
+    .regex(
+      /^[A-Za-z0-9_-]+$/,
+      "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
+    )
+    .trim(),
+  barcode: z.string().optional(),
+  price: zPrice,
+  purchasePrice: zPrice.optional(),
+  weight: zWeight.optional(),
+  height: zWeight.optional(),
+  width: zWeight.optional(),
+  length: zWeight.optional(),
+  imageUrl: z.string().optional(),
+});
 
 // Гибкая схема для импорта Excel
 export const importProductSchema = z.object({
@@ -173,90 +171,71 @@ export const importProductSchema = z.object({
     .transform((val) => (val && val.trim() ? val.trim() : "")),
 });
 
-export const insertSupplierSchema = createInsertSchema(suppliers)
-  .omit({
-    id: true,
-  })
-  .extend({
-    name: z
-      .string()
-      .min(1, "Название обязательно")
-      .max(255, "Название не должно превышать 255 символов")
-      .trim()
-      .refine((val) => val.length > 0, "Название не может быть пустым"),
-    website: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || val.trim() === "" || val.startsWith("http"),
-        "Вебсайт должен начинаться с http или https"
-      )
-      .transform((val) => val?.trim() || undefined),
-  });
+export const insertSupplierSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Название обязательно")
+    .max(255, "Название не должно превышать 255 символов")
+    .trim()
+    .refine((val) => val.length > 0, "Название не может быть пустым"),
+  website: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || val.trim() === "" || val.startsWith("http"),
+      "Вебсайт должен начинаться с http или https"
+    )
+    .transform((val) => val?.trim() || undefined),
+});
 
-export const insertContractorSchema = createInsertSchema(contractors)
-  .omit({
-    id: true,
-  })
-  .extend({
-    name: z
-      .string()
-      .min(1, "Название обязательно")
-      .max(255, "Название не должно превышать 255 символов")
-      .trim()
-      .refine((val) => val.length > 0, "Название не может быть пустым"),
-    website: z
-      .string()
-      .optional()
-      .refine(
-        (val) => !val || val.trim() === "" || val.startsWith("http"),
-        "Вебсайт должен начинаться с http или https"
-      )
-      .transform((val) => val?.trim() || undefined),
-  });
+export const insertContractorSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Название обязательно")
+    .max(255, "Название не должно превышать 255 символов")
+    .trim()
+    .refine((val) => val.length > 0, "Название не может быть пустым"),
+  website: z
+    .string()
+    .optional()
+    .refine(
+      (val) => !val || val.trim() === "" || val.startsWith("http"),
+      "Вебсайт должен начинаться с http или https"
+    )
+    .transform((val) => val?.trim() || undefined),
+});
 
-export const insertWarehouseSchema = createInsertSchema(warehouses)
-  .omit({
-    id: true,
-  })
-  .extend({
-    name: z
-      .string()
-      .min(1, "Название обязательно")
-      .max(255, "Название не должно превышать 255 символов")
-      .trim()
-      .refine((val) => val.length > 0, "Название не может быть пустым"),
-    address: z
-      .string()
-      .optional()
-      .transform((val) => val?.trim() || undefined)
-      .refine((val) => !val || val.length <= 500, "Адрес не должен превышать 500 символов"),
-  });
+export const insertWarehouseSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Название обязательно")
+    .max(255, "Название не должно превышать 255 символов")
+    .trim()
+    .refine((val) => val.length > 0, "Название не может быть пустым"),
+  address: z
+    .string()
+    .optional()
+    .transform((val) => val?.trim() || undefined)
+    .refine((val) => !val || val.length <= 500, "Адрес не должен превышать 500 символов"),
+});
 
-export const insertDocumentSchema = createInsertSchema(documents)
-  .omit({
-    id: true,
-    createdAt: true,
-    updatedAt: true,
-  })
-  .extend({
-    name: z
-      .string()
-      .max(255, "Название не должно превышать 255 символов")
-      .trim()
-      .optional()
-      .default(""),
-    type: z.enum(["income", "outcome", "return"], {
-      errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" }),
-    }),
-    status: z
-      .enum(["draft", "posted"], {
-        errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" }),
-      })
-      .default("draft"),
-
-    warehouseId: zId.optional(),
-  });
+export const insertDocumentSchema = z.object({
+  name: z
+    .string()
+    .max(255, "Название не должно превышать 255 символов")
+    .trim()
+    .optional()
+    .default(""),
+  type: z.enum(["income", "outcome", "return"], {
+    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" }),
+  }),
+  status: z
+    .enum(["draft", "posted"], {
+      errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" }),
+    })
+    .default("draft"),
+  warehouseId: zId.optional(),
+});
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -307,16 +286,11 @@ export const documentItems = pgTable("document_items", {
 // КРИТИЧЕСКИ ВАЖНО: Данная схема использует поля из zFields.ts для единообразной валидации.
 // НЕ изменяйте вручную правила валидации — только через zFields.
 // Эта схема используется для записи в БД через Drizzle ORM.
-export const insertDocumentItemSchema = createInsertSchema(documentItems)
-  .omit({
-    id: true,
-    documentId: true,
-  })
-  .extend({
-    productId: zId,
-    quantity: zQuantity,
-    price: zPrice.optional(),
-  });
+export const insertDocumentItemSchema = z.object({
+  productId: zId,
+  quantity: zQuantity,
+  price: zPrice.optional(),
+});
 
 // Type for items when creating receipts (without documentId)
 export type CreateDocumentItem = z.infer<typeof insertDocumentItemSchema>;
@@ -398,16 +372,11 @@ export const insertOrderSchema = createOrderSchema.extend({
   isReserved: z.boolean().default(false), // Обязательное поле с дефолтом
 });
 
-export const insertOrderItemSchema = createInsertSchema(orderItems)
-  .omit({
-    id: true,
-    orderId: true,
-  })
-  .extend({
-    productId: zId,
-    quantity: zQuantityInteger,
-    price: zPrice, // ✅ Исправлено: используем zPrice вместо zPriceString
-  });
+export const insertOrderItemSchema = z.object({
+  productId: zId,
+  quantity: zQuantityInteger,
+  price: zPrice,
+});
 
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
@@ -469,9 +438,11 @@ export const logs = pgTable(
 );
 
 // Схемы валидации для логов
-export const insertLogSchema = createInsertSchema(logs).omit({
-  id: true,
-  timestamp: true,
+export const insertLogSchema = z.object({
+  level: z.string(),
+  service: z.string(),
+  message: z.string(),
+  meta: z.record(z.any()).optional(),
 });
 
 export type InsertLog = z.infer<typeof insertLogSchema>;

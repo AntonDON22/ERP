@@ -243,7 +243,8 @@ export class TransactionService {
         .update(orders)
         .set({ 
           name,
-          totalAmount: totalAmount.toFixed(2)
+          totalAmount: totalAmount.toFixed(2),
+          isReserved: isReserved
         })
         .where(eq(orders.id, createdOrder.id))
         .returning();

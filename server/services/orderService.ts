@@ -24,13 +24,17 @@ export class OrderService {
     const processedOrderData = {
       ...baseValidatedData,
       name: baseValidatedData.name || `Заказ ${currentDate}`,
+      status: baseValidatedData.status || "Новый",
       totalAmount: baseValidatedData.totalAmount || totalAmount.toString(),
-      date: baseValidatedData.date || currentDate
+      date: baseValidatedData.date || currentDate,
+      isReserved: isReserved
     };
     
     // Теперь валидируем полный заказ со строгой схемой
     const validatedOrder = insertOrderSchema.parse(processedOrderData);
     const validatedItems = items.map(item => insertOrderItemSchema.parse(item));
+    
+
     
     // Используем транзакционный сервис для создания заказа с резервами
     return await transactionService.processOrderWithReserves(validatedOrder, validatedItems, isReserved);

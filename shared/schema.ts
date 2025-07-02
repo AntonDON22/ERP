@@ -1,7 +1,7 @@
 import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName, zNameOptional, zNotes, zDate, zOrderStatus } from "./zFields";
+import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName, zNameOptional, zNotes, zDate, zOrderStatus, zOrderStatusOptional } from "./zFields";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -273,7 +273,7 @@ export const orderItems = pgTable("order_items", {
 // ✅ Схема для создания заказов - использует централизованные поля zFields.ts
 export const createOrderSchema = z.object({
   name: zNameOptional,  // ✅ Мигрировано на централизованное поле
-  status: zOrderStatus, // ✅ Мигрировано на централизованное поле
+  status: zOrderStatusOptional, // ✅ Мигрировано на централизованное поле (опционально)
   customerId: zId.optional(),
   warehouseId: zId,
   totalAmount: zPriceString.optional(),
@@ -285,6 +285,7 @@ export const createOrderSchema = z.object({
 // ✅ Схема для полного заказа - использует централизованные поля zFields.ts
 export const insertOrderSchema = createOrderSchema.extend({
   name: zName,          // ✅ Мигрировано на централизованное поле (обязательно)
+  status: zOrderStatus, // ✅ Обязательное поле без дефолта (обрабатывается в сервисе)
   totalAmount: zPriceString,
   isReserved: z.boolean().default(false), // Обязательное поле с дефолтом
 });

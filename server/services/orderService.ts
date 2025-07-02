@@ -12,16 +12,9 @@ export class OrderService {
     return storage.getOrder(id);
   }
 
-  async create(orderData: any, items: any[], isReserved: boolean = false): Promise<Order> {
+  async create(orderData: any, items: CreateOrderItem[], isReserved: boolean = false): Promise<Order> {
     // Сначала валидируем базовые поля с гибкой схемой
     const baseValidatedData = createOrderSchema.parse(orderData);
-    
-    // Преобразуем позиции из чисел в строки для базы данных
-    const processedItems = items.map(item => ({
-      productId: Number(item.productId),
-      quantity: String(item.quantity),
-      price: String(item.price)
-    }));
     
     // Генерируем автоматические поля если они не переданы
     const currentDate = new Date().toLocaleDateString('ru-RU');
@@ -36,7 +29,7 @@ export class OrderService {
     
     // Теперь валидируем полный заказ со строгой схемой
     const validatedOrder = insertOrderSchema.parse(processedOrderData);
-    const validatedItems = processedItems.map(item => insertOrderItemSchema.parse(item));
+    const validatedItems = items.map(item => insertOrderItemSchema.parse(item));
     
     // Используем транзакционный сервис для создания заказа с резервами
     return await transactionService.processOrderWithReserves(validatedOrder, validatedItems, isReserved);

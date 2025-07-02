@@ -1124,16 +1124,7 @@ export class DatabaseStorage implements IStorage {
       await db.delete(reserves).where(eq(reserves.orderId, id));
       
       const result = await db.delete(orders).where(eq(orders.id, id));
-      const success = (result.rowCount || 0) > 0;
-      
-      // Инвалидируем кеш остатков после удаления заказа с резервами
-      if (success) {
-        const { cacheService } = await import("./services/cacheService");
-        await cacheService.invalidatePattern("inventory:*");
-        dbLogger.info("Inventory cache invalidated after order deletion", { orderId: id });
-      }
-      
-      return success;
+      return (result.rowCount || 0) > 0;
     } catch (error) {
       dbLogger.error("Error in deleteOrder", { error: getErrorMessage(error), id });
       throw error;

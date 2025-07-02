@@ -31,13 +31,65 @@
   - Физические атрибуты (weight, dimensions)
   - Медиа (image_url, barcode)
 
-### API Endpoints
+### API Endpoints (ФИНАЛЬНАЯ СТРУКТУРА - НЕ ИЗМЕНЯТЬ!)
+
+#### Товары
 - `GET /api/products` - Получить все продукты
-- `GET /api/products/:id` - Получить один продукт
-- `POST /api/products` - Создать новый продукт с загрузкой изображения
-- `PUT /api/products/:id` - Обновить существующий продукт
+- `GET /api/products/:id` - Получить один продукт  
+- `POST /api/products` - Создать новый продукт
+- `PUT /api/products/:id` - Обновить продукт
 - `DELETE /api/products/:id` - Удалить продукт
-- `GET /uploads/*` - Служить загруженным изображениям
+- `POST /api/products/delete-multiple` - Множественное удаление товаров
+
+#### Поставщики
+- `GET /api/suppliers` - Получить всех поставщиков
+- `GET /api/suppliers/:id` - Получить поставщика
+- `POST /api/suppliers` - Создать поставщика
+- `PUT /api/suppliers/:id` - Обновить поставщика
+- `DELETE /api/suppliers/:id` - Удалить поставщика
+- `POST /api/suppliers/delete-multiple` - Множественное удаление поставщиков
+
+#### Контрагенты
+- `GET /api/contractors` - Получить всех контрагентов
+- `GET /api/contractors/:id` - Получить контрагента
+- `POST /api/contractors` - Создать контрагента
+- `PUT /api/contractors/:id` - Обновить контрагента
+- `DELETE /api/contractors/:id` - Удалить контрагента
+- `POST /api/contractors/delete-multiple` - Множественное удаление контрагентов
+
+#### Склады
+- `GET /api/warehouses` - Получить все склады
+- `GET /api/warehouses/:id` - Получить склад
+- `POST /api/warehouses` - Создать склад
+- `PUT /api/warehouses/:id` - Обновить склад
+- `DELETE /api/warehouses/:id` - Удалить склад
+- `POST /api/warehouses/delete-multiple` - Множественное удаление складов
+
+#### Документы
+- `GET /api/documents` - Получить все документы
+- `GET /api/documents/:id` - Получить документ
+- `POST /api/documents/create-receipt` - Создать документ (ТОЛЬКО ЭТОТ ENDPOINT!)
+- `PUT /api/documents/:id` - Обновить документ
+- `DELETE /api/documents/:id` - Удалить документ
+- `POST /api/documents/delete-multiple` - Множественное удаление документов
+
+#### Заказы
+- `GET /api/orders` - Получить все заказы
+- `GET /api/orders/:id` - Получить заказ
+- `POST /api/orders/create` - Создать заказ (ТОЛЬКО ЭТОТ ENDPOINT!)
+- `PUT /api/orders/:id` - Обновить заказ
+- `DELETE /api/orders/:id` - Удалить заказ
+- `POST /api/orders/delete-multiple` - Множественное удаление заказов
+
+#### Остатки
+- `GET /api/inventory` - Получить остатки товаров
+- `GET /api/inventory/availability` - Получить доступность товаров с резервами
+
+#### Логи и метрики
+- `GET /api/logs` - Получить системные логи
+- `GET /api/logs/modules` - Получить модули логирования
+- `GET /api/metrics` - Получить метрики производительности
+- `GET /api/changelog` - Получить историю изменений
 
 ### Страницы фронтенда
 - **ProductsList**: Основной список продуктов с поиском, фильтрацией и сортировкой
@@ -318,8 +370,10 @@ Always update Dashboard changelog: Add new entries to the changelog history on t
 When asked to create "identical" or "same" pages: Copy the exact structure, styling, and layout without adding extra wrappers or modifications. Pay attention to padding, margins, and HTML structure to ensure visual consistency.
 
 **КРИТИЧЕСКОЕ ПРАВИЛО - API маршруты:**
-ВСЕГДА сначала проверять существующие API маршруты через grep/search перед созданием новых. НИКОГДА не создавать новые маршруты без острой необходимости. Сначала искать существующие endpoint'ы в:
-- server/routes/
-- client/src/hooks/
-- использовать bash команды для поиска
-ТОЛЬКО после подтверждения отсутствия нужного маршрута создавать новый.
+ОБЯЗАТЕЛЬНО использовать ТОЛЬКО endpoint'ы из секции "API Endpoints (ФИНАЛЬНАЯ СТРУКТУРА)" выше. НИКОГДА не создавать новые маршруты и не изменять существующие. СТРОГО следовать документированным endpoint'ам:
+
+- Документы: ТОЛЬКО `/api/documents/create-receipt` для создания
+- Заказы: ТОЛЬКО `/api/orders/create` для создания  
+- Все остальные: стандартные REST endpoint'ы
+
+ПЕРЕД любыми изменениями API проверять replit.md секцию "API Endpoints". НЕ ТРОГАТЬ рабочие маршруты!

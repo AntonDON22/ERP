@@ -16,11 +16,13 @@ export default function Navigation() {
   const isDocumentsActive = location === "/documents";
   const isInventoryActive = location === "/inventory";
   const isOrdersActive = location === "/orders";
+  const isResponsiveTestActive = location === "/responsive-test";
 
   const isSettingsActive =
     location.startsWith("/suppliers") ||
     location.startsWith("/contractors") ||
-    location.startsWith("/warehouses");
+    location.startsWith("/warehouses") ||
+    location === "/responsive-test";
 
   const mainNavItems = [
     { href: "/", label: "Главная", isActive: isHomeActive },
@@ -34,6 +36,7 @@ export default function Navigation() {
     { href: "/suppliers", label: "Поставщики", isActive: isSuppliersActive },
     { href: "/contractors", label: "Контрагенты", isActive: isContractorsActive },
     { href: "/warehouses", label: "Склады", isActive: isWarehousesActive },
+    { href: "/responsive-test", label: "Тест адаптивности", isActive: isResponsiveTestActive },
   ];
 
   return (

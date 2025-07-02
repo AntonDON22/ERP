@@ -10,6 +10,7 @@
 - **documentStatusService.test.ts** - Тесты системы статусов документов (проведение/отмена)
 - **inventoryService.test.ts** - Тесты управления остатками товаров
 - **dataCleanerService.test.ts** - Тесты очистки и валидации данных
+- **cacheService.test.ts** - Тесты системы кеширования (memory fallback, TTL, pattern invalidation)
 - **README.md** - Детальная документация service тестов
 
 ### Utils Tests (`tests/utils/`)
@@ -22,6 +23,7 @@
 Тесты middleware и безопасности:
 
 - **validation.test.ts** - Тесты валидации запросов (критично для безопасности)
+- **cacheMiddleware.test.ts** - Тесты HTTP кеширования (cache hit/miss, key generation, error handling)
 - **README.md** - Документация по тестам безопасности
 
 ### Integration Tests (`tests/integration/`)
@@ -30,6 +32,7 @@
 - **api.test.ts** - Тесты API endpoints
 - **apiValidation.test.ts** - Валидация API ответов
 - **system.test.ts** - Полные системные тесты
+- **cacheIntegration.test.ts** - Интеграционные тесты кеширования (производительность, инвалидация)
 - **README.md** - Документация интеграционных тестов
 
 ### Adaptive Tests (`tests/adaptive/`)
@@ -47,6 +50,8 @@
 ✅ **DataCleanerService** - Очистка данных от валют и единиц измерения  
 ✅ **TimeUtils** - Московское время для всех операций
 ✅ **Validation Middleware** - Безопасность и валидация
+✅ **CacheService** - Система кеширования с memory fallback (10 тестов)
+✅ **CacheMiddleware** - HTTP кеширование и производительность (16 тестов)
 
 ### Важные компоненты (>80% покрытие):
 ✅ **InventoryService** - Управление остатками

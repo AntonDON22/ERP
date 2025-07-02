@@ -1,4 +1,4 @@
-import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, logs, orders, orderItems, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse, type Log, type Order, type InsertOrder, type OrderItem } from "@shared/schema";
+import { users, products, suppliers, contractors, documents, inventory, documentItems, warehouses, logs, orders, orderItems, reserves, type User, type InsertUser, type Product, type InsertProduct, type Supplier, type InsertSupplier, type Contractor, type InsertContractor, type DocumentRecord, type InsertDocument, type DocumentItem, type CreateDocumentItem, type Inventory, type Warehouse, type InsertWarehouse, type Log, type Order, type InsertOrder, type OrderItem } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc, or, isNull } from "drizzle-orm";
 import { getMoscowTime } from "../shared/timeUtils";
@@ -1083,6 +1083,7 @@ export class DatabaseStorage implements IStorage {
     try {
       // Сначала удаляем связанные записи
       await db.delete(orderItems).where(eq(orderItems.orderId, id));
+      await db.delete(reserves).where(eq(reserves.orderId, id));
       
       const result = await db.delete(orders).where(eq(orders.id, id));
       return (result.rowCount || 0) > 0;

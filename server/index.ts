@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { logRequests, logErrors } from "./middleware/logging";
 import { logger } from "@shared/logger";
+import { cacheWarmupService } from "./services/cacheWarmupService";
 
 const app = express();
 app.set('trust proxy', 1); // Доверяем первому прокси для корректной работы rate limiter
@@ -132,12 +133,21 @@ app.use((req, res, next) => {
     port,
     host: "0.0.0.0",
     reusePort: true,
-  }, () => {
+  }, async () => {
     logger.info(`Server started successfully`, { 
       port, 
       host: "0.0.0.0", 
       environment: app.get("env"),
       pid: process.pid 
     });
+
+    // Запускаем разогрев кеша после запуска сервера
+    try {
+      await cacheWarmupService.warmupCache();
+    } catch (error) {
+      logger.error('Критическая ошибка разогрева кеша при запуске сервера', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
   });
 })();

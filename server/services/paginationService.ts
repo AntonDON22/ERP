@@ -1,13 +1,21 @@
-export interface PaginationParams {
+/**
+ * Сервис пагинации для API endpoints
+ * Обеспечивает безопасную постраничную загрузку с защитой от SQL инъекций
+ */
+
+import { logger } from '../../shared/logger';
+
+interface PaginationParams {
   page?: number;
   limit?: number;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  offset?: number;
+  sort?: string;
+  order?: 'asc' | 'desc';
 }
 
-export interface PaginatedResult<T> {
+interface PaginationResult<T> {
   data: T[];
-  pagination: {
+  meta: {
     page: number;
     limit: number;
     total: number;
@@ -18,51 +26,125 @@ export interface PaginatedResult<T> {
 }
 
 export class PaginationService {
-  static readonly DEFAULT_LIMIT = 20;
-  static readonly MAX_LIMIT = 100;
+  private readonly DEFAULT_LIMIT = 50;
+  private readonly MAX_LIMIT = 1000;
+  private readonly DEFAULT_PAGE = 1;
+  
+  // Безопасные поля для сортировки (защита от SQL инъекций)
+  private readonly SAFE_SORT_FIELDS = new Set([
+    'id', 'name', 'sku', 'price', 'createdAt', 'updatedAt',
+    'quantity', 'type', 'status', 'date'
+  ]);
 
-  static parsePaginationParams(query: any): Required<PaginationParams> {
-    const page = Math.max(1, parseInt(query.page) || 1);
+  /**
+   * Нормализует параметры пагинации
+   */
+  normalizeParams(params: any): Required<PaginationParams> {
+    const page = Math.max(1, parseInt(params.page || this.DEFAULT_PAGE));
     const limit = Math.min(
-      this.MAX_LIMIT, 
-      Math.max(1, parseInt(query.limit) || this.DEFAULT_LIMIT)
+      Math.max(1, parseInt(params.limit || this.DEFAULT_LIMIT)),
+      this.MAX_LIMIT
     );
-    const sortBy = query.sortBy || 'id';
-    const sortOrder = query.sortOrder === 'desc' ? 'desc' : 'asc';
+    const offset = (page - 1) * limit;
+    
+    // Валидация и санитизация сортировки
+    let sort = 'id';
+    let order: 'asc' | 'desc' = 'desc';
+    
+    if (params.sort && this.SAFE_SORT_FIELDS.has(params.sort)) {
+      sort = params.sort;
+    }
+    
+    if (params.order === 'asc' || params.order === 'desc') {
+      order = params.order;
+    }
 
-    return { page, limit, sortBy, sortOrder };
+    return { page, limit, offset, sort, order };
   }
 
-  static getOffset(page: number, limit: number): number {
-    return (page - 1) * limit;
-  }
-
-  static createResult<T>(
+  /**
+   * Создает результат пагинации
+   */
+  createResult<T>(
     data: T[], 
     total: number, 
     params: Required<PaginationParams>
-  ): PaginatedResult<T> {
-    const { page, limit } = params;
-    const totalPages = Math.ceil(total / limit);
-
+  ): PaginationResult<T> {
+    const totalPages = Math.ceil(total / params.limit);
+    
     return {
       data,
-      pagination: {
-        page,
-        limit,
+      meta: {
+        page: params.page,
+        limit: params.limit,
         total,
         totalPages,
-        hasNext: page < totalPages,
-        hasPrev: page > 1,
-      },
+        hasNext: params.page < totalPages,
+        hasPrev: params.page > 1
+      }
     };
   }
 
-  // Генерация SQL для сортировки с защитой от SQL инъекций
-  static getSortClause(sortBy: string, sortOrder: 'asc' | 'desc', allowedFields: string[]): string {
-    if (!allowedFields.includes(sortBy)) {
-      sortBy = 'id'; // fallback к безопасному полю
+  /**
+   * Логирует использование пагинации для мониторинга
+   */
+  logUsage(endpoint: string, params: Required<PaginationParams>, total: number): void {
+    logger.debug('Пагинация применена', {
+      endpoint,
+      page: params.page,
+      limit: params.limit,
+      offset: params.offset,
+      sort: params.sort,
+      order: params.order,
+      total,
+      loadedRecords: Math.min(params.limit, total - params.offset)
+    });
+  }
+
+  /**
+   * Генерирует SQL LIMIT и OFFSET для безопасного использования
+   */
+  getSqlLimitOffset(params: Required<PaginationParams>): { limit: number; offset: number } {
+    return {
+      limit: params.limit,
+      offset: params.offset
+    };
+  }
+
+  /**
+   * Генерирует SQL ORDER BY для безопасного использования
+   */
+  getSqlOrderBy(params: Required<PaginationParams>): string {
+    // Дополнительная защита - белый список полей
+    if (!this.SAFE_SORT_FIELDS.has(params.sort)) {
+      params.sort = 'id';
     }
-    return `ORDER BY ${sortBy} ${sortOrder.toUpperCase()}`;
+    
+    return `ORDER BY ${params.sort} ${params.order.toUpperCase()}`;
+  }
+
+  /**
+   * Проверяет эффективность запроса пагинации
+   */
+  validateEfficiency(params: Required<PaginationParams>, total: number): void {
+    const maxReasonableOffset = 10000; // Предел для эффективной пагинации
+    
+    if (params.offset > maxReasonableOffset) {
+      logger.warn('Неэффективная пагинация - большой offset', {
+        page: params.page,
+        offset: params.offset,
+        total,
+        recommendation: 'Рассмотрите использование cursor-based пагинации'
+      });
+    }
+    
+    if (params.limit > 500) {
+      logger.warn('Большой лимит пагинации может снизить производительность', {
+        limit: params.limit,
+        recommendation: 'Рекомендуется лимит до 500 записей'
+      });
+    }
   }
 }
+
+export const paginationService = new PaginationService();

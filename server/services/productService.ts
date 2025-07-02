@@ -1,11 +1,50 @@
 import { storage } from "../storage";
 import { insertProductSchema, type InsertProduct, type Product } from "../../shared/schema";
 import { DataCleanerService } from "./dataCleanerService";
+import { paginationService } from "./paginationService";
 import { apiLogger } from "../../shared/logger";
 
 export class ProductService {
   async getAll(): Promise<Product[]> {
     return await storage.getProducts();
+  }
+
+  async getAllPaginated(params: any) {
+    const normalizedParams = paginationService.normalizeParams(params);
+    
+    // Получаем все продукты (пока без SQL пагинации в storage)
+    const allProducts = await storage.getProducts();
+    const total = allProducts.length;
+    
+    // Применяем сортировку
+    const sortedProducts = this.sortProducts(allProducts, normalizedParams.sort, normalizedParams.order);
+    
+    // Применяем пагинацию в памяти
+    const startIndex = normalizedParams.offset;
+    const endIndex = startIndex + normalizedParams.limit;
+    const data = sortedProducts.slice(startIndex, endIndex);
+    
+    return paginationService.createResult(data, total, normalizedParams);
+  }
+
+  private sortProducts(products: Product[], sortField: string, order: 'asc' | 'desc'): Product[] {
+    return [...products].sort((a, b) => {
+      let aValue: any = a[sortField as keyof Product];
+      let bValue: any = b[sortField as keyof Product];
+      
+      // Обработка специальных случаев
+      if (sortField === 'price' || sortField === 'weight') {
+        aValue = parseFloat(aValue) || 0;
+        bValue = parseFloat(bValue) || 0;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (aValue < bValue) return order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
   }
 
   async getById(id: number): Promise<Product | undefined> {

@@ -192,6 +192,26 @@ class CacheService {
     await this.set(key, fresh, ttlSeconds);
     return fresh;
   }
+
+  /**
+   * Проверяет существование ключа в кеше
+   */
+  async exists(key: string): Promise<boolean> {
+    try {
+      if (this.isConnected) {
+        const exists = await this.client.exists(key);
+        return exists === 1;
+      }
+      
+      return this.memoryCache.has(key);
+    } catch (error) {
+      logger.error('Ошибка проверки существования ключа в кеше', { 
+        key, 
+        error: error instanceof Error ? error.message : String(error)
+      });
+      return this.memoryCache.has(key);
+    }
+  }
 }
 
 export const cacheService = new CacheService();

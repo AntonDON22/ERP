@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { ProductService } from "../services/productService";
+import { paginationService } from "../services/paginationService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
@@ -18,7 +19,7 @@ const getProductSchema = z.object({
   id: z.string().transform(val => parseInt(val)).refine(val => !isNaN(val), "ID должен быть числом"),
 });
 
-// GET /api/products
+// GET /api/products (временно без пагинации)
 router.get("/", async (req, res) => {
   try {
     const products = await productService.getAll();

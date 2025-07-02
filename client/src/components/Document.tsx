@@ -42,7 +42,9 @@ export interface ExistingDocumentData {
   }>;
 }
 
-// Схема для элемента документа
+// ВАЖНО: Эти схемы должны мигрировать на использование zFields.ts из shared/
+// НЕ изменяйте вручную правила валидации — импортируйте из shared/zFields
+// TODO: Рефакторинг - перейти на centralized validation через zFields
 const documentItemSchema = z.object({
   productId: z.number().min(1, "Выберите товар"),
   quantity: z.number().min(1, "Количество должно быть больше 0"), // Целые числа

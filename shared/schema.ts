@@ -211,21 +211,16 @@ export const documentItems = pgTable("document_items", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
+// КРИТИЧЕСКИ ВАЖНО: Данная схема использует поля из zFields.ts для единообразной валидации.
+// НЕ изменяйте вручную правила валидации — только через zFields.
+// Эта схема используется для записи в БД через Drizzle ORM.
 export const insertDocumentItemSchema = createInsertSchema(documentItems).omit({
   id: true,
   documentId: true,
 }).extend({
-  productId: z.number()
-    .positive("ID продукта должен быть положительным")
-    .int("ID продукта должен быть целым числом"),
-  quantity: z.string()
-    .refine((val) => !isNaN(Number(val)) && Number(val) > 0, "Количество должно быть положительным числом")
-    .refine((val) => Number(val) <= 999999, "Количество слишком большое")
-    .refine((val) => Number.isInteger(Number(val)), "Количество должно быть целым числом"),
-  price: z.string()
-    .optional()
-    .refine((val) => !val || (!isNaN(Number(val)) && Number(val) >= 0), "Цена должна быть положительным числом")
-    .refine((val) => !val || Number(val) <= 999999999.99, "Цена слишком большая"),
+  productId: zId,
+  quantity: zQuantityString,
+  price: zPriceString.optional(),
 });
 
 // Type for items when creating receipts (without documentId)
@@ -237,7 +232,8 @@ export type DocumentItem = typeof documentItems.$inferSelect;
 
 export type Inventory = typeof inventory.$inferSelect;
 
-// Схемы валидации для создания документов
+// ВАЖНО: Схемы валидации для создания документов используют поля из zFields.ts
+// НЕ изменяйте вручную правила валидации — только через zFields.
 export const documentItemSchema = z.object({
   productId: zId,
   quantity: zQuantity,
@@ -324,15 +320,19 @@ export type CreateOrderItem = z.infer<typeof insertOrderItemSchema>;
 export type InsertOrderItem = CreateOrderItem & { orderId?: number };
 export type OrderItem = typeof orderItems.$inferSelect;
 
+// ВАЖНО: Данная схема должна использовать поля из zFields.ts. 
+// НЕ изменяйте вручную правила валидации — только через zFields.
 export const orderItemSchema = z.object({
-  productId: z.number().min(1, "Товар обязателен"),
-  quantity: z.number().min(1, "Количество должно быть больше 0"),
-  price: z.number().min(0, "Цена не может быть отрицательной"),
+  productId: zId,
+  quantity: zQuantityInteger,
+  price: zPrice,
 });
 
+// ВАЖНО: Данная схема должна использовать поля из zFields.ts.
+// НЕ изменяйте вручную правила валидации — только через zFields.
 export const orderSchema = z.object({
-  customerId: z.number().optional(),
-  warehouseId: z.number().min(1, "Склад обязателен"),
+  customerId: zId.optional(),
+  warehouseId: zId,
   status: z.string(),
   isReserved: z.boolean().optional(),
   items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),

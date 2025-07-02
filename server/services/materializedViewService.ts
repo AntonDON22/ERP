@@ -64,9 +64,7 @@ export class MaterializedViewService {
           id,
           name,
           sku,
-          total_quantity::text,
-          movement_count,
-          last_movement_date
+          quantity::text as total_quantity
         FROM inventory_summary
         ORDER BY name
       `);

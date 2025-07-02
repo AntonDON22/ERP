@@ -354,10 +354,9 @@ export class DatabaseStorage implements IStorage {
             SELECT 
               p.id::int as id,
               p.name as name,
-              COALESCE(iv.total_quantity, 0)::decimal as quantity
+              COALESCE(iv.quantity, 0)::decimal as quantity
             FROM products p
-            LEFT JOIN inventory_summary iv ON p.id = iv.product_id 
-              AND (iv.warehouse_id = ${warehouseId} OR iv.warehouse_id IS NULL)
+            LEFT JOIN inventory_summary iv ON p.id = iv.id
             ORDER BY p.id
           `);
         } else {
@@ -366,9 +365,9 @@ export class DatabaseStorage implements IStorage {
             SELECT 
               p.id::int as id,
               p.name as name,
-              COALESCE(SUM(iv.total_quantity), 0)::decimal as quantity
+              COALESCE(SUM(iv.quantity), 0)::decimal as quantity
             FROM products p
-            LEFT JOIN inventory_summary iv ON p.id = iv.product_id
+            LEFT JOIN inventory_summary iv ON p.id = iv.id
             GROUP BY p.id, p.name
             ORDER BY p.id
           `);

@@ -1,6 +1,32 @@
 node_modules
 dist
+build
 .DS_Store
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Кеш и временные файлы
+.cache
+.tmp
+*.log
+*.tsbuildinfo
+
+# Тестовые файлы и документация
+tests/
+attached_assets/
+*.test.ts
+*.test.tsx
+*.md
+!README.md
+!replit.md
+
+# IDE и редакторы
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Системные файлы
+.DS_Store
+Thumbs.db

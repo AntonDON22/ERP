@@ -123,17 +123,29 @@ export class InventoryService {
           SELECT 
             p.id,
             p.name,
-            COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' AND d.warehouse_id = $1 THEN i.quantity ELSE 0 END) AS DECIMAL), 0) as quantity,
-            COALESCE(CAST(SUM(CASE WHEN r.warehouse_id = $1 THEN r.quantity ELSE 0 END) AS DECIMAL), 0) as reserved,
-            COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' AND d.warehouse_id = $1 THEN i.quantity ELSE 0 END) AS DECIMAL), 0) - COALESCE(CAST(SUM(CASE WHEN r.warehouse_id = $1 THEN r.quantity ELSE 0 END) AS DECIMAL), 0) as available
+            COALESCE(warehouse_qty.quantity, 0) as quantity,
+            COALESCE(warehouse_reserved.reserved, 0) as reserved,
+            COALESCE(warehouse_qty.quantity, 0) - COALESCE(warehouse_reserved.reserved, 0) as available
           FROM products p
-          LEFT JOIN inventory i ON p.id = i.product_id
-          LEFT JOIN documents d ON i.document_id = d.id
-          LEFT JOIN reserves r ON p.id = r.product_id
-          WHERE (d.status = 'posted' OR d.status IS NULL OR i.id IS NULL)
-          GROUP BY p.id, p.name
-          HAVING COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' AND d.warehouse_id = $1 THEN i.quantity ELSE 0 END) AS DECIMAL), 0) > 0 
-              OR COALESCE(CAST(SUM(CASE WHEN r.warehouse_id = $1 THEN r.quantity ELSE 0 END) AS DECIMAL), 0) > 0
+          LEFT JOIN (
+            SELECT 
+              i.product_id,
+              CAST(SUM(i.quantity) AS DECIMAL) as quantity
+            FROM inventory i
+            JOIN documents d ON i.document_id = d.id
+            WHERE d.status = 'posted' AND d.warehouse_id = $1
+            GROUP BY i.product_id
+          ) warehouse_qty ON p.id = warehouse_qty.product_id
+          LEFT JOIN (
+            SELECT 
+              product_id,
+              CAST(SUM(quantity) AS DECIMAL) as reserved
+            FROM reserves
+            WHERE warehouse_id = $1
+            GROUP BY product_id
+          ) warehouse_reserved ON p.id = warehouse_reserved.product_id
+          WHERE COALESCE(warehouse_qty.quantity, 0) > 0 
+             OR COALESCE(warehouse_reserved.reserved, 0) > 0
           ORDER BY p.name
         `;
         result = await pool.query(queryText, [warehouseId]);

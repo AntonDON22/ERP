@@ -26,6 +26,22 @@ router.use("/documents", documentRoutes);
 router.use("/orders", orderRoutes);
 router.use("/logs", logRoutes);
 
+// Endpoint для логирования клиентских ошибок
+router.post("/client-errors", (req, res) => {
+  const { message, stack, url, lineNumber, columnNumber, userAgent } = req.body;
+  
+  apiLogger.error(`Client-side error: ${message}`, {
+    stack,
+    url,
+    lineNumber,
+    columnNumber,
+    userAgent,
+    timestamp: new Date().toISOString()
+  });
+  
+  res.status(200).json({ status: "logged" });
+});
+
 // Сервисы для остальных API
 const inventoryService = new InventoryService();
 const contractorService = new ContractorService();

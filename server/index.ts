@@ -81,12 +81,20 @@ app.use((req, res, next) => {
   // Middleware для обработки ошибок
   app.use(logErrors);
   
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
+    // Логируем ошибку сервера
+    logger.error(`Server error: ${message}`, {
+      method: req.method,
+      url: req.url,
+      status,
+      stack: err.stack,
+      userAgent: req.get('User-Agent')
+    });
+
     res.status(status).json({ message });
-    throw err;
   });
 
   // importantly only setup vite in development and after

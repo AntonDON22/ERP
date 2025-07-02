@@ -26,10 +26,16 @@ export default function EditDocument() {
     return <div className="p-6">Ошибка загрузки документа</div>;
   }
 
+  // Адаптер для совместимости типов (null -> undefined)
+  const adaptedDocument = {
+    ...document,
+    warehouseId: document.warehouseId ?? undefined
+  } as any; // Временный cast для совместимости типов
+
   return (
     <Document 
       config={editConfig}
-      documentData={document}
+      documentData={adaptedDocument}
     />
   );
 }

@@ -86,7 +86,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     resolver: zodResolver(documentSchema),
     defaultValues: {
       warehouseId: documentData?.warehouseId ?? 0,
-      status: documentData?.status ?? 'draft',
+      status: (documentData?.status as "draft" | "posted") ?? 'draft',
       items: documentData?.items?.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -105,7 +105,7 @@ export default function Document({ config, documentData }: DocumentProps) {
     if (documentData) {
       form.reset({
         warehouseId: documentData.warehouseId ?? 0,
-        status: documentData.status ?? 'draft',
+        status: (documentData.status as "draft" | "posted") ?? 'draft',
         items: documentData.items?.map(item => ({
           productId: item.productId,
           quantity: item.quantity,

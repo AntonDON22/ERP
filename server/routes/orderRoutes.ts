@@ -75,6 +75,26 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/orders/:id
+router.delete("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    if (isNaN(id)) {
+      return res.status(400).json({ error: "Некорректный ID заказа" });
+    }
+    
+    const success = await orderService.delete(id);
+    if (!success) {
+      return res.status(404).json({ error: "Заказ не найден" });
+    }
+    
+    res.json({ success: true, message: "Заказ успешно удален" });
+  } catch (error) {
+    apiLogger.error("Failed to delete order", { orderId: req.params.id, error: error instanceof Error ? error.message : String(error) });
+    res.status(500).json({ error: "Ошибка удаления заказа" });
+  }
+});
+
 // POST /api/orders/delete-multiple
 router.post("/delete-multiple", async (req, res) => {
   try {

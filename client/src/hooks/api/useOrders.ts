@@ -20,7 +20,7 @@ export function useOrders() {
 
 export function useOrder(id: number) {
   return useQuery<OrderWithItems>({
-    queryKey: ["/api/orders", id],
+    queryKey: [`/api/orders/${id}`],
     enabled: !!id,
   });
 }

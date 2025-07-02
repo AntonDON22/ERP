@@ -1209,8 +1209,36 @@ export class DatabaseStorage implements IStorage {
 
   async getOrder(id: number): Promise<Order | undefined> {
     try {
-      const result = await db.select().from(orders).where(eq(orders.id, id));
-      return result[0] || undefined;
+      console.log(`[DB] Starting getOrder for ID ${id}...`);
+      
+      // Получаем заказ
+      const orderResult = await db.select().from(orders).where(eq(orders.id, id));
+      if (!orderResult[0]) {
+        console.log(`[DB] Order ${id} not found`);
+        return undefined;
+      }
+
+      // Получаем позиции заказа
+      const itemsResult = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, id));
+
+      console.log(`[DB] getOrder completed for order ${id} with ${itemsResult.length} items`);
+
+      // Формируем заказ с позициями
+      const order = orderResult[0];
+      const items = itemsResult.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        price: Number(item.price),
+      }));
+
+      return {
+        ...order,
+        items,
+      } as any;
     } catch (error) {
       dbLogger.error("Error in getOrder", { error: getErrorMessage(error), id });
       throw error;

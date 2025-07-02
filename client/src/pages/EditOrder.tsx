@@ -65,7 +65,8 @@ export default function EditOrder() {
   // Обновление формы при изменении orderData
   useEffect(() => {
     if (orderData) {
-      console.log("🔄 Заполнение формы данными заказа:", orderData);
+      console.log("🔄 EditOrder - заполнение формы данными заказа:", orderData);
+      console.log("📦 EditOrder - items из данных:", orderData.items);
       
       // Заполняем форму данными из orderData (который теперь содержит items)
       form.reset({

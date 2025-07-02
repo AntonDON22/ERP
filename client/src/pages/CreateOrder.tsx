@@ -40,10 +40,10 @@ export default function CreateOrder() {
   const form = useForm<FormOrder>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
-      customerId: 0,
-      warehouseId: 0,
+      customerId: 34, // ID существующего контрагента (обязательное поле)
+      warehouseId: 33, // ID существующего склада
       status: "Новый",
-      items: [{ productId: 0, quantity: 1, price: 0 }],
+      items: [{ productId: 6, quantity: 1, price: 0 }], // ID существующего товара
     },
   });
 
@@ -80,7 +80,7 @@ export default function CreateOrder() {
     try {
       const orderToSave = {
         status: orderStatus,
-        customerId: data.customerId || null,
+        customerId: data.customerId || 34, // Гарантируем валидный ID контрагента
         warehouseId: data.warehouseId,
         isReserved,
         items: data.items.map((item: FormOrderItem) => ({
@@ -113,7 +113,7 @@ export default function CreateOrder() {
   };
 
   const addItem = () => {
-    append({ productId: 0, quantity: 1, price: 0 });
+    append({ productId: 6, quantity: 1, price: 0 }); // ID существующего товара
   };
 
   const removeItem = (index: number) => {
@@ -230,7 +230,14 @@ export default function CreateOrder() {
         </CardContent>
       </Card>
 
-      <form id="order-form" onSubmit={form.handleSubmit(handleSave)} className="space-y-6">
+      <form id="order-form" onSubmit={form.handleSubmit(handleSave, (errors) => {
+        console.log("❌ Form validation failed:", errors);
+        toast({
+          title: "Ошибка валидации",
+          description: "Обязательно выберите контрагента и склад",
+          variant: "destructive",
+        });
+      })} className="space-y-6">
         <Card>
           <CardHeader>
             <div className="flex justify-between items-center">

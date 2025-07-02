@@ -315,7 +315,7 @@ export const orderItemSchema = z.object({
 
 // ✅ Схема заказа - использует централизованные поля zFields.ts
 export const orderSchema = z.object({
-  customerId: zId.optional(),
+  customerId: zId, // Обязательное поле - контрагент должен быть выбран
   warehouseId: zId,
   status: zOrderStatus,  // ✅ Мигрировано на централизованное поле
   isReserved: z.boolean().optional(),

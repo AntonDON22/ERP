@@ -44,8 +44,8 @@ export default function EditOrder() {
   const form = useForm<FormOrder>({
     resolver: zodResolver(orderSchema),
     defaultValues: {
-      customerId: 0,
-      warehouseId: 0,
+      customerId: 34, // ID существующего контрагента (обязательное поле)
+      warehouseId: 33, // ID существующего склада
       status: "Новый",
       items: [{ productId: 6, quantity: 1, price: 0 }], // Используем ID существующего товара
     },
@@ -264,7 +264,6 @@ export default function EditOrder() {
                   <SelectValue placeholder="Выберите контрагента" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0">Без контрагента</SelectItem>
                   {contractors.map((contractor: Contractor) => (
                     <SelectItem key={contractor.id} value={contractor.id.toString()}>
                       {contractor.name}
@@ -272,6 +271,11 @@ export default function EditOrder() {
                   ))}
                 </SelectContent>
               </Select>
+              {form.formState.errors.customerId && (
+                <p className="text-sm text-red-500 mt-1">
+                  {form.formState.errors.customerId.message}
+                </p>
+              )}
             </div>
           </div>
         </CardContent>

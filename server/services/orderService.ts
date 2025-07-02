@@ -2,6 +2,7 @@ import { storage } from "../storage";
 import { createOrderSchema, insertOrderSchema, insertOrderItemSchema, type InsertOrder, type Order, type CreateOrderItem } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { apiLogger } from "../../shared/logger";
+import { cacheService } from "./cacheService";
 
 export class OrderService {
   async getAll(): Promise<Order[]> {
@@ -47,7 +48,16 @@ export class OrderService {
   }
 
   async delete(id: number): Promise<boolean> {
-    return storage.deleteOrder(id);
+    // Используем storage.deleteOrder который корректно удаляет резервы
+    const result = await storage.deleteOrder(id);
+    
+    // Инвалидация кеша остатков после удаления заказа с резервами
+    if (result) {
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Inventory cache invalidated after order deletion", { orderId: id });
+    }
+    
+    return result;
   }
 
   async deleteMultiple(ids: number[]): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
@@ -76,6 +86,12 @@ export class OrderService {
         apiLogger.error(`Error deleting order ${id}`, { orderId: id, error: error instanceof Error ? error.message : String(error) });
         results.push({ id, status: 'error' });
       }
+    }
+
+    // Дополнительная инвалидация кеша если было удалено несколько заказов
+    if (deletedCount > 0) {
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Inventory cache invalidated after multiple order deletion", { deletedCount });
     }
 
     return { deletedCount, results };

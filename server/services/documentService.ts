@@ -54,7 +54,8 @@ export class DocumentService {
 
     for (const id of validIds) {
       try {
-        const success = await storage.deleteDocument(id);
+        // Используем транзакционное удаление для правильной инвалидации кеша
+        const success = await transactionService.deleteDocumentWithInventory(id);
         if (success) {
           deletedCount++;
           results.push({ id, status: 'deleted' });

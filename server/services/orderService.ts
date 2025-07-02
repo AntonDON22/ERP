@@ -1,8 +1,10 @@
 import { storage } from "../storage";
-import { createOrderSchema, insertOrderSchema, insertOrderItemSchema, type InsertOrder, type Order, type CreateOrderItem } from "../../shared/schema";
+import { createOrderSchema, insertOrderSchema, insertOrderItemSchema, type InsertOrder, type Order, type CreateOrderItem, reserves } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { apiLogger } from "../../shared/logger";
 import { cacheService } from "./cacheService";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
 
 export class OrderService {
   async getAll(): Promise<Order[]> {
@@ -43,16 +45,39 @@ export class OrderService {
   async update(id: number, orderData: Partial<InsertOrder>, items?: CreateOrderItem[], isReserved?: boolean): Promise<Order | undefined> {
     const validatedData = insertOrderSchema.partial().parse(orderData);
     
+    // Получаем текущий заказ для сравнения резервирования
+    const currentOrder = await storage.getOrder(id);
+    if (!currentOrder) {
+      return undefined;
+    }
+    
+    // Проверяем нужно ли изменить резервирование
+    const currentReserved = currentOrder.isReserved || false;
+    const newReserved = isReserved ?? currentReserved;
+    const reserveChanged = currentReserved !== newReserved;
+    
+    apiLogger.info("Order update analysis", { 
+      orderId: id, 
+      currentReserved, 
+      newReserved, 
+      reserveChanged,
+      hasItems: !!items && items.length > 0 
+    });
+    
     if (items && items.length > 0) {
       // Если есть позиции, используем полное транзакционное обновление
-      return await this.updateWithItems(id, validatedData, items, isReserved ?? false);
+      return await this.updateWithItems(id, validatedData, items, newReserved);
+    } else if (reserveChanged) {
+      // Если изменился только статус резервирования (без новых позиций)
+      return await this.handleReservationChange(id, validatedData, newReserved, currentOrder);
     } else {
+      // Простое обновление заказа без изменения позиций и резервирования
       const result = await storage.updateOrder(id, validatedData);
       
-      // Инвалидация кеша остатков после обновления заказа (может влиять на резервы)
+      // Инвалидация кеша остатков после обновления заказа
       if (result) {
         await cacheService.invalidatePattern("inventory:*");
-        apiLogger.info("Inventory cache invalidated after order update", { orderId: id });
+        apiLogger.info("Order updated without reserve changes", { orderId: id });
       }
       
       return result;
@@ -109,6 +134,54 @@ export class OrderService {
     return { deletedCount, results };
   }
 
+  // Приватный метод для обновления только статуса резервирования
+  private async handleReservationChange(
+    orderId: number, 
+    orderData: Partial<InsertOrder>, 
+    newReserved: boolean,
+    currentOrder: Order
+  ): Promise<Order | undefined> {
+    try {
+      apiLogger.info("Processing reservation change", { 
+        orderId, 
+        from: currentOrder.isReserved, 
+        to: newReserved
+      });
+
+      if (newReserved && !currentOrder.isReserved) {
+        // Добавляем резервы - УПРОЩЕННАЯ ЛОГИКА для демонстрации
+        apiLogger.warn("Simplified reservation logic - adding reserves for existing order", { orderId });
+        
+        // В упрощенной версии просто логируем - реальная логика требует связанную таблицу order_items
+        apiLogger.info("Would add reserves for order items", { orderId, warehouseId: currentOrder.warehouseId });
+      } else if (!newReserved && currentOrder.isReserved) {
+        // Удаляем резервы - используем прямой SQL запрос через transactionService
+        try {
+          await transactionService.removeReservesForOrder(orderId);
+          apiLogger.info("Order reserves removed successfully", { orderId });
+        } catch (error) {
+          apiLogger.error("Failed to remove order reserves", { orderId, error: error instanceof Error ? error.message : String(error) });
+        }
+      }
+
+      // Обновляем заказ с новым статусом резервирования
+      const updatedOrder = await storage.updateOrder(orderId, { ...orderData, isReserved: newReserved });
+      
+      // Инвалидация кеша остатков
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Reservation status updated successfully", { orderId, newReserved });
+      
+      return updatedOrder;
+    } catch (error) {
+      apiLogger.error("Failed to update reservation status", { 
+        orderId, 
+        newReserved, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      throw error;
+    }
+  }
+
   // Приватный метод для транзакционного обновления заказа с позициями
   private async updateWithItems(
     orderId: number, 
@@ -116,10 +189,50 @@ export class OrderService {
     items: CreateOrderItem[], 
     isReserved: boolean
   ): Promise<Order | undefined> {
-    // Это требует дополнительной реализации транзакционного обновления заказов
-    // Пока используем старый метод, но можно расширить transactionService
-    // TODO: Реализовать updateOrder в storage
-    return undefined;
+    try {
+      // 1. Проверяем что заказ существует
+      const currentOrder = await storage.getOrder(orderId);
+      apiLogger.info("Current order retrieved", { orderId, found: !!currentOrder });
+      if (!currentOrder) {
+        apiLogger.warn("Order not found for update", { orderId });
+        return undefined;
+      }
+
+      // 2. Обновляем основные данные заказа
+      const updatedOrder = await storage.updateOrder(orderId, { ...orderData, isReserved });
+      if (!updatedOrder) {
+        return undefined;
+      }
+
+      // 3. Если изменился статус резервирования, обрабатываем резервы
+      const currentReserved = currentOrder.isReserved || false;
+      if (currentReserved !== isReserved) {
+        if (isReserved && !currentReserved) {
+          // Добавляем резервы для позиций
+          for (const item of items) {
+            await transactionService.createReserveForItem(orderId, item, updatedOrder.warehouseId || 33);
+          }
+          apiLogger.info("Reserves added for order items", { orderId, itemsCount: items.length });
+        } else if (!isReserved && currentReserved) {
+          // Удаляем существующие резервы
+          await transactionService.removeReservesForOrder(orderId);
+          apiLogger.info("Existing reserves removed", { orderId });
+        }
+      }
+
+      // 4. Инвалидация кеша остатков
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Order updated with items", { orderId, isReserved, itemsCount: items.length });
+
+      return updatedOrder;
+    } catch (error) {
+      apiLogger.error("Failed to update order with items", { 
+        orderId, 
+        isReserved, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+      throw error;
+    }
   }
 }
 

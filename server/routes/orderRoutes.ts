@@ -65,7 +65,10 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ error: "Некорректный ID заказа" });
     }
     
-    const order = await orderService.update(id, req.body);
+    const { items, isReserved, ...orderData } = req.body;
+    apiLogger.info("Updating order", { orderId: id, orderData, hasItems: !!items, isReserved });
+    
+    const order = await orderService.update(id, orderData, items, isReserved);
     if (!order) {
       return res.status(404).json({ error: "Заказ не найден" });
     }

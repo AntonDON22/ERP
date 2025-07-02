@@ -355,6 +355,24 @@ export class TransactionService {
 
     console.log("✅ FIFO-списание завершено");
   }
+
+  // Метод для удаления резервов заказа
+  async removeReservesForOrder(orderId: number): Promise<void> {
+    await db.delete(reserves).where(eq(reserves.orderId, orderId));
+    apiLogger.info("Reserves removed for order", { orderId });
+  }
+
+  // Метод для создания резерва для отдельной позиции заказа
+  async createReserveForItem(orderId: number, item: any, warehouseId: number): Promise<void> {
+    await db.insert(reserves).values({
+      orderId,
+      productId: item.productId,
+      warehouseId,
+      quantity: item.quantity,
+      createdAt: getMoscowTime(),
+    });
+    apiLogger.info("Reserve created for order item", { orderId, productId: item.productId, quantity: item.quantity });
+  }
 }
 
 export const transactionService = new TransactionService();

@@ -10,16 +10,19 @@
 - **documentStatusService.test.ts** - Тесты системы статусов документов (проведение/отмена)
 - **inventoryService.test.ts** - Тесты управления остатками товаров
 - **dataCleanerService.test.ts** - Тесты очистки и валидации данных
+- **README.md** - Детальная документация service тестов
 
 ### Utils Tests (`tests/utils/`)
 Тесты для утилит:
 
 - **timeUtils.test.ts** - Тесты работы с московским временем
+- **README.md** - Документация по тестированию утилит
 
 ### Middleware Tests (`tests/middleware/`)
 Тесты middleware и безопасности:
 
 - **validation.test.ts** - Тесты валидации запросов (критично для безопасности)
+- **README.md** - Документация по тестам безопасности
 
 ### Integration Tests (`tests/integration/`)
 Интеграционные тесты:
@@ -27,6 +30,7 @@
 - **api.test.ts** - Тесты API endpoints
 - **apiValidation.test.ts** - Валидация API ответов
 - **system.test.ts** - Полные системные тесты
+- **README.md** - Документация интеграционных тестов
 
 ### Adaptive Tests (`tests/adaptive/`)
 Тесты адаптивности интерфейса:
@@ -34,6 +38,7 @@
 - **runSystemTest.sh** - Bash-скрипт для CI/CD проверки адаптивности
 - Проверка горизонтальной прокрутки и мобильной навигации
 - Валидация responsive breakpoints и Stylelint
+- **README.md** - Детальная документация адаптивных тестов
 
 ## Покрытие тестами
 
@@ -108,25 +113,25 @@
 ### Запуск тестов
 ```bash
 # Все тесты
-npm run test
+npx vitest run
 
 # Только unit тесты  
-npm run test:unit
+npx vitest run tests/services tests/utils tests/middleware tests/zFields.test.ts tests/logs.test.ts
 
 # Только интеграционные
-npm run test:integration
+npx vitest run tests/integration
 
 # Адаптивные тесты (отдельно)
-npm run test:adaptive
+./run-adaptive-tests.sh
 
 # С покрытием
-npm run test:coverage
+npx vitest run --coverage
 
 # Watch режим
-npm run test:watch
+npx vitest
 
-# CI режим
-npm run test:ci
+# CI режим  
+npx vitest run --reporter=junit --outputFile=test-results.xml
 ```
 
 ## Моки и заглушки

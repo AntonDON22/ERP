@@ -1,7 +1,7 @@
 import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName } from "./zFields";
+import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName, zNameOptional, zNotes, zDate, zOrderStatus } from "./zFields";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -270,39 +270,21 @@ export const orderItems = pgTable("order_items", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull().default("0"),
 });
 
-// Схема для создания заказов - более гибкая валидация (кастомная)
+// ✅ Схема для создания заказов - использует централизованные поля zFields.ts
 export const createOrderSchema = z.object({
-  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
-  name: z.string()
-    .min(1, "Название заказа обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .optional(),  // Опционально для создания
-  status: z.enum(['Новый', 'В работе', 'Выполнен', 'Отменен'], {
-    errorMap: () => ({ message: "Некорректный статус заказа" })
-  }),
+  name: zNameOptional,  // ✅ Мигрировано на централизованное поле
+  status: zOrderStatus, // ✅ Мигрировано на централизованное поле
   customerId: zId.optional(),
   warehouseId: zId,
-  totalAmount: zPriceString.optional(),  // Опционально для создания
-  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
-  notes: z.string()
-    .optional()
-    .refine(val => !val || val.length <= 1000, "Примечания не должны превышать 1000 символов")
-    .transform(val => val?.trim() || undefined),
-  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
-  date: z.string()
-    .optional()
-    .refine(val => !val || !isNaN(Date.parse(val)), "Некорректная дата"),
+  totalAmount: zPriceString.optional(),
+  notes: zNotes,        // ✅ Мигрировано на централизованное поле
+  date: zDate,          // ✅ Мигрировано на централизованное поле
   isReserved: z.boolean().optional(),
 });
 
-// Схема для полного заказа - строгая валидация  
+// ✅ Схема для полного заказа - использует централизованные поля zFields.ts
 export const insertOrderSchema = createOrderSchema.extend({
-  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
-  name: z.string()
-    .min(1, "Название заказа обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim(),
+  name: zName,          // ✅ Мигрировано на централизованное поле (обязательно)
   totalAmount: zPriceString,
   isReserved: z.boolean().default(false), // Обязательное поле с дефолтом
 });
@@ -330,13 +312,11 @@ export const orderItemSchema = z.object({
   price: zPrice,
 });
 
-// ВАЖНО: Данная схема должна использовать поля из zFields.ts.
-// НЕ изменяйте вручную правила валидации — только через zFields.
+// ✅ Схема заказа - использует централизованные поля zFields.ts
 export const orderSchema = z.object({
   customerId: zId.optional(),
   warehouseId: zId,
-  // Внимание: поле валидируется вручную. Рекомендуется использовать соответствующее поле из zFields.ts для унификации
-  status: z.string(),
+  status: zOrderStatus,  // ✅ Мигрировано на централизованное поле
   isReserved: z.boolean().optional(),
   items: z.array(orderItemSchema).min(1, "Добавьте хотя бы один товар"),
 });

@@ -182,6 +182,42 @@ export const zName = z.string()
 export const zNameOptional = zName.optional();
 
 /**
+ * Поле для примечаний и заметок
+ * Максимум 1000 символов, поддерживает пустые значения
+ */
+export const zNotes = z.string()
+  .max(1000, "Примечания не должны превышать 1000 символов")
+  .trim()
+  .optional()
+  .transform(val => val || undefined);
+
+/**
+ * Поле для дат в строковом формате
+ * Проверяет что строка может быть преобразована в валидную дату
+ */
+export const zDate = z.string()
+  .refine(val => !isNaN(Date.parse(val)), "Некорректная дата")
+  .optional();
+
+/**
+ * Статус заказа - только допустимые значения
+ */
+export const zOrderStatus = z.enum(['Новый', 'В работе', 'Выполнен', 'Отменен'], {
+  errorMap: () => ({ message: "Некорректный статус заказа" })
+});
+
+export const zOrderStatusOptional = zOrderStatus.optional();
+
+/**
+ * ID в строковом формате (для URL параметров)
+ * Автоматически преобразует строку в число после валидации
+ */
+export const zIdString = z.string()
+  .regex(/^\d+$/, "ID должен содержать только цифры")
+  .transform(Number)
+  .refine(val => val > 0 && val <= Number.MAX_SAFE_INTEGER, "ID должен быть положительным числом");
+
+/**
  * Схемы для строковых представлений чисел (legacy поддержка)
  * 
  * Используются в случаях когда API должен принимать строки

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodSchema, ZodError, z } from "zod";
+import { zId, zIdString } from "../../shared/zFields";
 
 /**
  * Middleware для валидации тела запроса с помощью Zod схемы
@@ -86,64 +87,35 @@ export function validateQuery(schema: ZodSchema) {
 }
 
 /**
- * Схема для валидации ID в параметрах
- * Внимание: схема валидируется вручную. Рекомендуется мигрировать на zId из shared/zFields.ts для унификации
+ * ✅ Схема для валидации ID в параметрах - использует централизованное поле zFields.ts
  */
 export const idParamSchema = z.object({
-  id: z.string()
-    .regex(/^\d+$/, "ID должен содержать только цифры")
-    .transform(Number)
-    .refine(val => val > 0, "ID должен быть положительным")
+  id: zIdString  // ✅ Мигрировано на централизованное поле
 });
 
 /**
- * Схемы для валидации массивов ID в теле запроса
- * Внимание: все схемы валидируются вручную. Рекомендуется мигрировать на zId из shared/zFields.ts для унификации
+ * ✅ Схемы для валидации массивов ID - используют централизованные поля zFields.ts
  */
 export const productIdsSchema = z.object({
-  productIds: z.array(
-    z.number()
-      .positive("ID должен быть положительным")
-      .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID товара")
+  productIds: z.array(zId).min(1, "Укажите хотя бы один ID товара")  // ✅ Мигрировано
 });
 
 export const supplierIdsSchema = z.object({
-  supplierIds: z.array(
-    z.number()
-      .positive("ID должен быть положительным")
-      .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID поставщика")
+  supplierIds: z.array(zId).min(1, "Укажите хотя бы один ID поставщика")  // ✅ Мигрировано
 });
 
 export const contractorIdsSchema = z.object({
-  contractorIds: z.array(
-    z.number()
-      .positive("ID должен быть положительным")
-      .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID контрагента")
+  contractorIds: z.array(zId).min(1, "Укажите хотя бы один ID контрагента")  // ✅ Мигрировано
 });
 
 export const documentIdsSchema = z.object({
-  documentIds: z.array(
-    z.number()
-      .positive("ID должен быть положительным")
-      .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID документа")
+  documentIds: z.array(zId).min(1, "Укажите хотя бы один ID документа")  // ✅ Мигрировано
 });
 
 export const orderIdsSchema = z.object({
-  orderIds: z.array(
-    z.number()
-      .positive("ID должен быть положительным")
-      .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID заказа")
+  orderIds: z.array(zId).min(1, "Укажите хотя бы один ID заказа")  // ✅ Мигрировано
 });
 
 export const warehouseIdsSchema = z.object({
-  warehouseIds: z.array(
-    z.number()
-      .positive("ID должен быть положительным")
-      .int("ID должен быть целым числом")
-  ).min(1, "Укажите хотя бы один ID склада")
+  warehouseIds: z.array(zId).min(1, "Укажите хотя бы один ID склада")  // ✅ Мигрировано
 });

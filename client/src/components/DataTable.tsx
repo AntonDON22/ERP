@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { ResponsiveTableWrapper } from "@/components/ui/responsive-table-wrapper";
 import * as XLSX from "xlsx";
 import { useDebounce } from "../hooks/useDebounce";
 
@@ -459,8 +460,8 @@ function DataTable<T = any>({
         </div>
 
       {/* Панель управления */}
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex-1 min-w-64">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+        <div className="flex-1 min-w-0">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <Input
@@ -473,7 +474,7 @@ function DataTable<T = any>({
         </div>
 
         {warehouseFilter && (
-          <div className="min-w-48">
+          <div className="w-full sm:w-48">
             <Select
               value={warehouseFilter.selectedWarehouseId?.toString() || "all"}
               onValueChange={(value) => {
@@ -495,7 +496,7 @@ function DataTable<T = any>({
           </div>
         )}
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {onCreate && (
             <Button
               variant="default"
@@ -595,12 +596,13 @@ function DataTable<T = any>({
             </PopoverContent>
           </Popover>
         </div>
-        <div className="overflow-x-auto">
+        
+        <ResponsiveTableWrapper className="border-0 shadow-none bg-transparent">
           <table key={forceRender} ref={tableRef} className="w-full table-fixed">
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {!hideSelectionColumn && (
-                  <th className="w-12 px-4 py-3 text-left">
+                  <th className="w-12 px-2 sm:px-4 py-3 text-left">
                     <Checkbox
                       checked={isAllSelected}
                       onCheckedChange={handleSelectAll}
@@ -616,7 +618,7 @@ function DataTable<T = any>({
                     <th
                       key={columnKey}
                       data-column={columnKey}
-                      className={`px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${column.className || ''}`}
+                      className={`px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider relative ${column.className || ''}`}
                       style={{ width: `${width}px` }}
                     >
                       <div className="flex items-center justify-between">
@@ -626,11 +628,11 @@ function DataTable<T = any>({
                               onClick={() => handleSort(column.key as keyof T)}
                               className="flex items-center gap-1 hover:text-gray-700 transition-colors"
                             >
-                              {column.label}
-                              <ArrowUpDown className="w-3 h-3" />
+                              <span className="truncate">{column.label}</span>
+                              <ArrowUpDown className="w-3 h-3 flex-shrink-0" />
                             </button>
                           ) : (
-                            column.label
+                            <span className="truncate">{column.label}</span>
                           )}
                         </div>
                         
@@ -664,7 +666,7 @@ function DataTable<T = any>({
                   }}
                 >
                   {!hideSelectionColumn && (
-                    <td className="px-4 py-3">
+                    <td className="px-2 sm:px-4 py-3">
                       <Checkbox
                         checked={selectedItems.has(item.id)}
                         onCheckedChange={(checked) => handleSelectItem(item.id, checked as boolean)}
@@ -681,7 +683,7 @@ function DataTable<T = any>({
                     return (
                       <td
                         key={columnKey}
-                        className={`px-4 py-3 text-sm ${column.className || ''}`}
+                        className={`px-2 sm:px-4 py-3 text-sm ${column.className || ''}`}
                         style={{ width: `${width}px` }}
                       >
                         <div className="overflow-hidden">
@@ -706,7 +708,7 @@ function DataTable<T = any>({
               ))}
             </tbody>
           </table>
-        </div>
+        </ResponsiveTableWrapper>
 
         {filteredAndSortedData.length === 0 && (
           <div className="text-center py-12">

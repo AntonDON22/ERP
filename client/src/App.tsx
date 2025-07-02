@@ -20,6 +20,7 @@ import WarehousesList from "@/pages/WarehousesList";
 import CreateSupplier from "@/pages/CreateSupplier";
 import CreateContractor from "@/pages/CreateContractor";
 import CreateWarehouse from "@/pages/CreateWarehouse";
+import ResponsiveTest from "@/pages/ResponsiveTest";
 
 
 
@@ -46,6 +47,7 @@ function App() {
               <Route path="/orders" component={OrdersList} />
               <Route path="/orders/create" component={CreateOrder} />
               <Route path="/orders/:id" component={EditOrder} />
+              <Route path="/responsive-test" component={ResponsiveTest} />
             </Switch>
           </div>
         </Router>

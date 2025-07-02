@@ -210,21 +210,23 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Главная панель</h1>
-        <p className="text-gray-600 mt-1">Мониторинг системы и история обновлений</p>
+    <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <div className="text-center sm:text-left">
+        <h1 className="text-2xl sm:text-3xl font-bold">Главная панель</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Мониторинг системы и история обновлений</p>
       </div>
 
-      <Tabs defaultValue="updates" className="space-y-6">
+      <Tabs defaultValue="updates" className="space-y-4 sm:space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="updates" className="flex items-center gap-2">
-            <Calendar className="w-4 h-4" />
-            Обновления
+          <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Обновления</span>
+            <span className="sm:hidden">Обновл.</span>
           </TabsTrigger>
-          <TabsTrigger value="logs" className="flex items-center gap-2">
-            <Activity className="w-4 h-4" />
-            Логи
+          <TabsTrigger value="logs" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Логи</span>
+            <span className="sm:hidden">Логи</span>
           </TabsTrigger>
         </TabsList>
 
@@ -312,11 +314,11 @@ export default function Dashboard() {
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Фильтры */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Уровень</label>
+                  <label className="text-xs sm:text-sm font-medium">Уровень</label>
                   <Select value={filters.level} onValueChange={(value) => setFilters(prev => ({ ...prev, level: value }))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-xs sm:text-sm">
                       <SelectValue placeholder="Все уровни" />
                     </SelectTrigger>
                     <SelectContent>
@@ -330,9 +332,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">Модуль</label>
+                  <label className="text-xs sm:text-sm font-medium">Модуль</label>
                   <Select value={filters.module} onValueChange={(value) => setFilters(prev => ({ ...prev, module: value }))}>
-                    <SelectTrigger>
+                    <SelectTrigger className="text-xs sm:text-sm">
                       <SelectValue placeholder="Все модули" />
                     </SelectTrigger>
                     <SelectContent>
@@ -346,15 +348,15 @@ export default function Dashboard() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Поиск</label>
+                <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+                  <label className="text-xs sm:text-sm font-medium">Поиск</label>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-3 h-3 sm:w-4 sm:h-4" />
                     <Input
                       placeholder="Поиск по сообщению..."
                       value={filters.search}
                       onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-                      className="pl-10"
+                      className="pl-8 sm:pl-10 text-xs sm:text-sm"
                     />
                   </div>
                 </div>
@@ -362,28 +364,28 @@ export default function Dashboard() {
 
               {/* Статистика */}
               {logs && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-lg">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4 p-3 sm:p-4 bg-gray-50 rounded-lg">
                   <div className="text-center">
-                    <div className="text-sm text-gray-600">Ошибки</div>
-                    <div className="text-lg font-semibold text-red-600">
+                    <div className="text-xs sm:text-sm text-gray-600">Ошибки</div>
+                    <div className="text-base sm:text-lg font-semibold text-red-600">
                       {filteredLogs.filter((log: LogEntry) => log.level === 'ERROR').length}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm text-gray-600">Предупреждения</div>
-                    <div className="text-lg font-semibold text-yellow-600">
+                    <div className="text-xs sm:text-sm text-gray-600">Предупр.</div>
+                    <div className="text-base sm:text-lg font-semibold text-yellow-600">
                       {filteredLogs.filter((log: LogEntry) => log.level === 'WARN').length}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm text-gray-600">Информация</div>
-                    <div className="text-lg font-semibold text-blue-600">
+                    <div className="text-xs sm:text-sm text-gray-600">Информ.</div>
+                    <div className="text-base sm:text-lg font-semibold text-blue-600">
                       {filteredLogs.filter((log: LogEntry) => log.level === 'INFO').length}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-sm text-gray-600">Всего записей</div>
-                    <div className="text-lg font-semibold">
+                    <div className="text-xs sm:text-sm text-gray-600">Всего</div>
+                    <div className="text-base sm:text-lg font-semibold">
                       {filteredLogs.length}
                     </div>
                   </div>
@@ -414,19 +416,20 @@ export default function Dashboard() {
               ) : (
                 <div className="space-y-2">
                   {currentLogs.map((log: LogEntry) => (
-                    <div key={log.id} className="bg-white border rounded-lg p-4 hover:shadow-sm transition-shadow">
-                      <div className="flex items-center justify-between gap-4 mb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <Clock className="w-4 h-4" />
-                            {formatTimestamp(log.timestamp)}
+                    <div key={log.id} className="bg-white border rounded-lg p-3 sm:p-4 hover:shadow-sm transition-shadow">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-4 mb-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-gray-500">
+                            <Clock className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span className="truncate">{formatTimestamp(log.timestamp)}</span>
                           </div>
                           
                           {getLevelBadge(log.level)}
                           
-                          <Badge variant="outline" className="flex items-center gap-1">
+                          <Badge variant="outline" className="flex items-center gap-1 text-xs">
                             <User className="w-3 h-3" />
-                            {log.module}
+                            <span className="hidden sm:inline">{log.module}</span>
+                            <span className="sm:hidden">{log.module.substring(0, 3)}</span>
                           </Badge>
                         </div>
                         

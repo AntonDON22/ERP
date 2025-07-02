@@ -35,27 +35,27 @@ export default function Navigation() {
 
   return (
     <nav className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <div className="flex-shrink-0 flex items-center space-x-3">
+      <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
+        <div className="flex justify-between h-14 sm:h-16">
+          <div className="flex items-center min-w-0">
+            <div className="flex-shrink-0 flex items-center space-x-2 sm:space-x-3">
               <img 
                 src={logoPath} 
                 alt="iGrape Group Logo" 
-                className="h-8 w-8"
+                className="h-6 w-6 sm:h-8 sm:w-8"
               />
-              <h1 className="text-lg md:text-xl font-semibold text-gray-900">
+              <h1 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate">
                 iGrape Group
               </h1>
             </div>
             
             {/* Desktop Navigation */}
-            <div className="hidden md:ml-8 md:flex md:space-x-8">
+            <div className="hidden md:ml-4 lg:ml-8 md:flex md:space-x-4 lg:space-x-8">
               {mainNavItems.map((item) => (
                 <Link 
                   key={item.href}
                   href={item.href}
-                  className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors ${
+                  className={`py-2 px-1 text-xs md:text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                     item.isActive 
                       ? "border-blue-600 text-blue-600" 
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -69,7 +69,7 @@ export default function Navigation() {
               <div className="relative">
                 <button
                   onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-                  className={`py-2 px-1 text-sm font-medium border-b-2 transition-colors flex items-center gap-1 ${
+                  className={`py-2 px-1 text-xs md:text-sm font-medium border-b-2 transition-colors flex items-center gap-1 whitespace-nowrap ${
                     isSettingsActive
                       ? "border-blue-600 text-blue-600"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -77,14 +77,14 @@ export default function Navigation() {
                 >
                   Настройки
                   {isSettingsOpen ? (
-                    <ChevronDown className="h-4 w-4" />
+                    <ChevronDown className="h-3 w-3 md:h-4 md:w-4" />
                   ) : (
-                    <ChevronRight className="h-4 w-4" />
+                    <ChevronRight className="h-3 w-3 md:h-4 md:w-4" />
                   )}
                 </button>
                 
                 {isSettingsOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[180px]">
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 min-w-[160px] md:min-w-[180px]">
                     {settingsItems.map((item) => (
                       <Link
                         key={item.href}

@@ -30,6 +30,33 @@ interface LogEntry {
   details?: string;
 }
 
+interface PerformanceMetrics {
+  overview: {
+    cacheHitRate: number;
+    averageResponseTime: number;
+    databaseQueryCount: number;
+    totalRequests: number;
+    systemHealth: 'healthy' | 'warning' | 'critical';
+  };
+  endpoints: Record<string, {
+    totalRequests: number;
+    avgResponseTime: number;
+    cacheHitRate: number;
+    totalDbQueries: number;
+  }>;
+  cache: {
+    hit_rate: number;
+    memory_usage: string;
+    total_keys: number;
+    status: string;
+  };
+  trends: {
+    trend: 'improving' | 'stable' | 'degrading';
+    improvement: number;
+  };
+  timestamp: string;
+}
+
 export default function Dashboard() {
   const [openSections, setOpenSections] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState({
@@ -54,6 +81,12 @@ export default function Dashboard() {
 
   const { data: modules } = useQuery<string[]>({
     queryKey: ['/api/logs/modules'],
+  });
+
+  // Метрики производительности
+  const { data: metrics, isLoading: metricsLoading, refetch: refetchMetrics } = useQuery<PerformanceMetrics>({
+    queryKey: ['/api/metrics'],
+    refetchInterval: 10000, // Обновляем каждые 10 секунд
   });
 
   const toggleSection = (date: string) => {
@@ -209,6 +242,10 @@ export default function Dashboard() {
     refetchLogs();
   };
 
+  const handleRefreshMetrics = () => {
+    refetchMetrics();
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       <div className="text-center sm:text-left">
@@ -217,7 +254,7 @@ export default function Dashboard() {
       </div>
 
       <Tabs defaultValue="updates" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="updates" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
             <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Обновления</span>
@@ -227,6 +264,11 @@ export default function Dashboard() {
             <Activity className="w-3 h-3 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">Логи</span>
             <span className="sm:hidden">Логи</span>
+          </TabsTrigger>
+          <TabsTrigger value="metrics" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+            <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Метрики</span>
+            <span className="sm:hidden">Метрики</span>
           </TabsTrigger>
         </TabsList>
 
@@ -493,6 +535,175 @@ export default function Dashboard() {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="metrics">
+          <div className="grid gap-6">
+            {/* Общий обзор */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Время ответа</CardTitle>
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {metricsLoading ? "..." : `${metrics?.overview.averageResponseTime || 0}ms`}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Среднее за запрос</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Cache Hit Rate</CardTitle>
+                  <Zap className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {metricsLoading ? "..." : `${metrics?.overview.cacheHitRate || 0}%`}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Попадания в кеш</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Всего запросов</CardTitle>
+                  <Activity className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {metricsLoading ? "..." : metrics?.overview.totalRequests || 0}
+                  </div>
+                  <p className="text-xs text-muted-foreground">За сессию</p>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Здоровье системы</CardTitle>
+                  <AlertCircle className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    <Badge 
+                      variant={
+                        metrics?.overview.systemHealth === 'healthy' ? 'default' :
+                        metrics?.overview.systemHealth === 'warning' ? 'secondary' : 'destructive'
+                      }
+                      className="text-sm"
+                    >
+                      {metricsLoading ? "..." : 
+                        metrics?.overview.systemHealth === 'healthy' ? 'Отлично' :
+                        metrics?.overview.systemHealth === 'warning' ? 'Норма' : 'Проблемы'
+                      }
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Состояние системы</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Детальная статистика */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Статистика по эндпоинтам */}
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5" />
+                    Статистика API эндпоинтов
+                  </CardTitle>
+                  <Button variant="outline" size="sm" onClick={() => refetchMetrics()}>
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  {metricsLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="text-gray-500">Загрузка метрик...</div>
+                    </div>
+                  ) : !metrics?.endpoints || Object.keys(metrics.endpoints).length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      Нет данных о запросах
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {Object.entries(metrics.endpoints).map(([endpoint, stats]) => (
+                        <div key={endpoint} className="p-3 border rounded-lg">
+                          <div className="flex items-center justify-between mb-2">
+                            <code className="text-sm bg-gray-100 px-2 py-1 rounded">{endpoint}</code>
+                            <span className="text-sm text-gray-500">{stats.totalRequests} запросов</span>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-500">Время ответа:</span>
+                              <span className="ml-2 font-medium">{stats.avgResponseTime}ms</span>
+                            </div>
+                            <div>
+                              <span className="text-gray-500">Cache rate:</span>
+                              <span className="ml-2 font-medium">{stats.cacheHitRate}%</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Тренды и кеш */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    Состояние кеша и тренды
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="p-3 border rounded-lg">
+                      <h4 className="font-medium mb-2">Кеш системы</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>
+                          <span className="text-gray-500">Статус:</span>
+                          <span className="ml-2 font-medium">{metrics?.cache.status || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-500">Ключей:</span>
+                          <span className="ml-2 font-medium">{metrics?.cache.total_keys || 0}</span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="p-3 border rounded-lg">
+                      <h4 className="font-medium mb-2">Тренд производительности</h4>
+                      <div className="flex items-center gap-2">
+                        <Badge 
+                          variant={
+                            metrics?.trends.trend === 'improving' ? 'default' :
+                            metrics?.trends.trend === 'stable' ? 'secondary' : 'destructive'
+                          }
+                        >
+                          {metrics?.trends.trend === 'improving' ? 'Улучшение' :
+                           metrics?.trends.trend === 'stable' ? 'Стабильно' : 'Ухудшение'}
+                        </Badge>
+                        {metrics?.trends.improvement !== undefined && metrics.trends.improvement !== 0 && (
+                          <span className="text-sm text-gray-500">
+                            {metrics.trends.improvement > 0 ? '+' : ''}{metrics.trends.improvement}%
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-xs text-gray-500 pt-2 border-t">
+                      Последнее обновление: {metrics?.timestamp ? new Date(metrics.timestamp).toLocaleTimeString() : 'N/A'}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
       </Tabs>
     </div>

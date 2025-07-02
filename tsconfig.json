@@ -4,11 +4,17 @@
     "node_modules",
     "build", 
     "dist",
+    ".turbo",
+    ".cache",
+    ".tmp",
     "**/*.test.ts",
+    "**/*.test.tsx",
     "tests/**/*",
     "attached_assets/**/*",
     ".cache/**/*",
-    "**/.git/**/*"
+    "**/.git/**/*",
+    "**/coverage/**/*",
+    "**/tmp/**/*"
   ],
   "compilerOptions": {
     "incremental": true,
@@ -30,6 +36,7 @@
     },
     "typeRoots": ["./node_modules/@types"],
     "maxNodeModuleJsDepth": 0,
-    "disableSourceOfProjectReferenceRedirect": true
+    "disableSourceOfProjectReferenceRedirect": true,
+    "disableAutomaticTypeAcquisition": true
   }
 }

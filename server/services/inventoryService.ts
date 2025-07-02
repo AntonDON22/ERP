@@ -1,4 +1,4 @@
-import { db } from "../db";
+import { db, pool } from "../db";
 import { products, inventory, reserves } from "@shared/schema";
 import { sql } from "drizzle-orm";
 import { materializedViewService } from "./materializedViewService";
@@ -115,25 +115,46 @@ export class InventoryService {
     const startTime = Date.now();
     
     try {
-      const warehouseFilter = warehouseId 
-        ? sql`AND (d.warehouse_id = ${warehouseId} OR d.warehouse_id IS NULL) AND (r.warehouse_id = ${warehouseId} OR r.warehouse_id IS NULL)`
-        : sql``;
+      // Используем pool для прямого SQL запроса с параметрами
+      let result;
       
-      const result = await db.execute(sql`
-        SELECT 
-          p.id,
-          p.name,
-          COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) as quantity,
-          COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as reserved,
-          COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) - COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as available
-        FROM products p
-        LEFT JOIN inventory i ON p.id = i.product_id
-        LEFT JOIN documents d ON i.document_id = d.id
-        LEFT JOIN reserves r ON p.id = r.product_id ${warehouseFilter}
-        WHERE (d.status = 'posted' OR d.status IS NULL OR i.id IS NULL) ${warehouseFilter}
-        GROUP BY p.id, p.name
-        ORDER BY p.name
-      `);
+      if (warehouseId) {
+        const queryText = `
+          SELECT 
+            p.id,
+            p.name,
+            COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' AND d.warehouse_id = $1 THEN i.quantity ELSE 0 END) AS DECIMAL), 0) as quantity,
+            COALESCE(CAST(SUM(CASE WHEN r.warehouse_id = $1 THEN r.quantity ELSE 0 END) AS DECIMAL), 0) as reserved,
+            COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' AND d.warehouse_id = $1 THEN i.quantity ELSE 0 END) AS DECIMAL), 0) - COALESCE(CAST(SUM(CASE WHEN r.warehouse_id = $1 THEN r.quantity ELSE 0 END) AS DECIMAL), 0) as available
+          FROM products p
+          LEFT JOIN inventory i ON p.id = i.product_id
+          LEFT JOIN documents d ON i.document_id = d.id
+          LEFT JOIN reserves r ON p.id = r.product_id
+          WHERE (d.status = 'posted' OR d.status IS NULL OR i.id IS NULL)
+          GROUP BY p.id, p.name
+          HAVING COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' AND d.warehouse_id = $1 THEN i.quantity ELSE 0 END) AS DECIMAL), 0) > 0 
+              OR COALESCE(CAST(SUM(CASE WHEN r.warehouse_id = $1 THEN r.quantity ELSE 0 END) AS DECIMAL), 0) > 0
+          ORDER BY p.name
+        `;
+        result = await pool.query(queryText, [warehouseId]);
+      } else {
+        const queryText = `
+          SELECT 
+            p.id,
+            p.name,
+            COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) as quantity,
+            COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as reserved,
+            COALESCE(CAST(SUM(CASE WHEN d.status = 'posted' THEN i.quantity ELSE 0 END) AS DECIMAL), 0) - COALESCE(CAST(SUM(r.quantity) AS DECIMAL), 0) as available
+          FROM products p
+          LEFT JOIN inventory i ON p.id = i.product_id
+          LEFT JOIN documents d ON i.document_id = d.id
+          LEFT JOIN reserves r ON p.id = r.product_id
+          WHERE (d.status = 'posted' OR d.status IS NULL OR i.id IS NULL)
+          GROUP BY p.id, p.name
+          ORDER BY p.name
+        `;
+        result = await pool.query(queryText);
+      }
       
       const duration = Date.now() - startTime;
       console.log(`[DB] Inventory availability completed in ${duration}ms, returned ${result.rows.length} items`);

@@ -1,15 +1,11 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import DataTable from "../components/DataTable";
-import { Button } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
-import { Badge } from "../components/ui/badge";
-import { RefreshCw, Search, Filter } from "lucide-react";
-import { format } from "date-fns";
-import { ru } from "date-fns/locale";
-
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RefreshCw, Filter, Search, AlertCircle, Clock, User, MessageSquare, Copy, Check } from "lucide-react";
 interface LogEntry {
   id: number;
   timestamp: string;
@@ -21,102 +17,75 @@ interface LogEntry {
 
 export default function LogsList() {
   const [filters, setFilters] = useState({
-    level: '',
-    module: '',
+    level: 'all',
+    module: 'all',
     search: ''
   });
+  
+  const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
 
-  // Получение списка модулей для фильтра
-  const { data: modules = [] } = useQuery<string[]>({
+  // Получаем логи
+  const { data: logs, isLoading, refetch } = useQuery<LogEntry[]>({
+    queryKey: ['/api/logs'],
+    refetchInterval: 30000, // Обновляем каждые 30 секунд
+  });
+
+  // Получаем список модулей
+  const { data: modules } = useQuery<string[]>({
     queryKey: ['/api/logs/modules'],
-    staleTime: 5 * 60 * 1000, // Кешируем на 5 минут
   });
 
-  // Получение логов с фильтрацией  
-  const { data: logs = [], isLoading, refetch } = useQuery<LogEntry[]>({
-    queryKey: ['/api/logs', filters],
-    staleTime: 0, // Всегда обновляем логи
-  });
-
-  // Определяем цвет для каждого уровня лога
-  const getLevelBadge = (level: string) => {
-    const variants = {
-      DEBUG: "default",
-      INFO: "secondary", 
-      WARN: "default",
-      ERROR: "destructive"
-    } as const;
-    
-    const colors = {
-      DEBUG: "text-blue-600",
-      INFO: "text-green-600",
-      WARN: "text-yellow-600", 
-      ERROR: "text-red-600"
-    } as const;
-
-    return (
-      <Badge variant={variants[level as keyof typeof variants] || "default"}>
-        <span className={colors[level as keyof typeof colors] || ""}>
-          {level}
-        </span>
-      </Badge>
-    );
-  };
-
-  // Форматирование времени для отображения
+  // Функция форматирования времени
   const formatTimestamp = (timestamp: string) => {
     try {
-      return format(new Date(timestamp), "dd.MM.yyyy HH:mm:ss", { locale: ru });
+      const date = new Date(timestamp);
+      const now = new Date();
+      
+      // Показываем дату и время
+      return date.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
     } catch {
       return timestamp;
     }
   };
 
-  // Определяем колонки таблицы
-  const columns = useMemo(() => [
-    {
-      key: "timestamp",
-      label: "Время",
-      width: "150px",
-      format: (timestamp: string) => formatTimestamp(timestamp),
-      copyable: true,
-    },
-    {
-      key: "level",
-      label: "Уровень", 
-      width: "100px",
-      format: (level: string) => level,
-    },
-    {
-      key: "module",
-      label: "Модуль",
-      width: "120px",
-      format: (module: string) => module,
-      copyable: true,
-    },
-    {
-      key: "message",
-      label: "Сообщение",
-      width: "400px",
-      format: (message: string) => message,
-      copyable: true,
-      multiline: true,
-    },
-    {
-      key: "details",
-      label: "Детали",
-      width: "150px",
-      format: (details: string | null) => {
-        if (!details || details === null) return '';
-        try {
-          const parsed = JSON.parse(details);
-          return JSON.stringify(parsed, null, 2);
-        } catch {
-          return String(details);
-        }
-      },
-    },
-  ], []);
+  // Функция копирования в буфер обмена
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      const key = `${type}-${text}`;
+      setCopiedStates(prev => ({ ...prev, [key]: true }));
+      setTimeout(() => {
+        setCopiedStates(prev => ({ ...prev, [key]: false }));
+      }, 2000);
+    } catch (err) {
+      console.error('Ошибка копирования:', err);
+    }
+  };
+
+  // Функция получения badge для уровня
+  const getLevelBadge = (level: string) => {
+    const variants = {
+      DEBUG: { variant: "secondary" as const, className: "bg-gray-100 text-gray-800" },
+      INFO: { variant: "default" as const, className: "bg-blue-100 text-blue-800" },
+      WARN: { variant: "outline" as const, className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+      ERROR: { variant: "destructive" as const, className: "bg-red-100 text-red-800" }
+    };
+    
+    const config = variants[level as keyof typeof variants] || variants.INFO;
+    
+    return (
+      <Badge variant={config.variant} className={config.className}>
+        {level}
+      </Badge>
+    );
+  };
 
   // Фильтрация логов
   const filteredLogs = useMemo(() => {
@@ -149,18 +118,41 @@ export default function LogsList() {
   };
 
   const clearFilters = () => {
-    setFilters({ level: '', module: '', search: '' });
+    setFilters({ level: 'all', module: 'all', search: '' });
+  };
+
+  // Компонент для копируемого текста
+  const CopyableText = ({ text, type }: { text: string; type: string }) => {
+    const key = `${type}-${text}`;
+    const isCopied = copiedStates[key];
+    
+    return (
+      <div className="flex items-center gap-2 group">
+        <span className="flex-1">{text}</span>
+        <button
+          onClick={() => copyToClipboard(text, type)}
+          className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-gray-100 rounded"
+          title={`Копировать ${type.toLowerCase()}`}
+        >
+          {isCopied ? (
+            <Check className="w-3 h-3 text-green-600" />
+          ) : (
+            <Copy className="w-3 h-3 text-gray-500" />
+          )}
+        </button>
+      </div>
+    );
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Логи системы</h1>
-        <Button 
-          onClick={handleRefresh} 
-          variant="outline"
-          disabled={isLoading}
-        >
+      {/* Заголовок */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Системные логи</h1>
+          <p className="text-gray-600 mt-1">Просмотр и анализ журналов системы</p>
+        </div>
+        <Button onClick={handleRefresh} variant="outline" size="sm" disabled={isLoading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
           Обновить
         </Button>
@@ -188,7 +180,7 @@ export default function LogsList() {
                 />
               </div>
             </div>
-
+            
             <div>
               <label className="text-sm font-medium">Уровень</label>
               <Select 
@@ -207,7 +199,7 @@ export default function LogsList() {
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div>
               <label className="text-sm font-medium">Модуль</label>
               <Select 
@@ -219,7 +211,7 @@ export default function LogsList() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Все модули</SelectItem>
-                  {modules.map((module: string) => (
+                  {modules?.map((module: string) => (
                     <SelectItem key={module} value={module}>
                       {module}
                     </SelectItem>
@@ -227,13 +219,9 @@ export default function LogsList() {
                 </SelectContent>
               </Select>
             </div>
-
+            
             <div className="flex items-end">
-              <Button 
-                variant="outline" 
-                onClick={clearFilters}
-                className="w-full"
-              >
+              <Button onClick={clearFilters} variant="outline" className="mt-1">
                 Очистить фильтры
               </Button>
             </div>
@@ -245,7 +233,9 @@ export default function LogsList() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold">{filteredLogs.length}</div>
+            <div className="text-2xl font-bold">
+              {filteredLogs.length}
+            </div>
             <p className="text-sm text-gray-600">Всего записей</p>
           </CardContent>
         </Card>
@@ -270,7 +260,7 @@ export default function LogsList() {
         
         <Card>
           <CardContent className="p-4">
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-blue-600">
               {filteredLogs.filter((log: LogEntry) => log.level === 'INFO').length}
             </div>
             <p className="text-sm text-gray-600">Информация</p>
@@ -278,17 +268,76 @@ export default function LogsList() {
         </Card>
       </div>
 
-      {/* Таблица логов */}
+      {/* Список логов */}
       <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="w-5 h-5" />
+            Журнал событий
+            {filteredLogs.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {filteredLogs.length}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
         <CardContent className="p-0">
-          <DataTable
-            data={filteredLogs}
-            columns={columns}
-            entityName="лог"
-            entityNamePlural="логи"
-            searchFields={["message", "module"]}
-            isLoading={isLoading}
-          />
+          {isLoading ? (
+            <div className="p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">Загрузка логов...</p>
+            </div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="p-8 text-center">
+              <AlertCircle className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-600">Логи не найдены</p>
+              <p className="text-sm text-gray-500 mt-1">
+                Попробуйте изменить фильтры или обновить страницу
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-200">
+              {filteredLogs.map((log: LogEntry) => (
+                <div key={log.id} className="p-4 hover:bg-gray-50 transition-colors">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      {/* Заголовок записи */}
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                          <Clock className="w-4 h-4" />
+                          {formatTimestamp(log.timestamp)}
+                        </div>
+                        
+                        {getLevelBadge(log.level)}
+                        
+                        <Badge variant="outline" className="flex items-center gap-1">
+                          <User className="w-3 h-3" />
+                          {log.module}
+                        </Badge>
+                      </div>
+                      
+                      {/* Сообщение */}
+                      <div className="mb-2">
+                        <CopyableText text={log.message} type="сообщение" />
+                      </div>
+                      
+                      {/* Детали */}
+                      {log.details && (
+                        <details className="mt-2">
+                          <summary className="cursor-pointer text-sm text-blue-600 hover:text-blue-800 font-medium">
+                            Показать детали
+                          </summary>
+                          <div className="mt-2 p-3 bg-gray-100 rounded text-xs font-mono overflow-x-auto">
+                            <pre>{log.details}</pre>
+                          </div>
+                        </details>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

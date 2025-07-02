@@ -11,38 +11,18 @@ import { z } from "zod";
 /**
  * Базовая схема для числовых полей с автопреобразованием строк
  *
- * Принимает строку или число, автоматически преобразует строку в число
- * Выбрасывает понятную ошибку если значение не является числом
+ * Использует z.coerce.number() для надежного преобразования строк в числа
+ * Обрабатывает случаи когда API получает число (1000) вместо строки ("1000")
+ * Решает проблемы FIFO-валидации при значениях 0 и -1
  */
 const createNumberField = (fieldName: string = "Поле") => {
-  return z.union([z.string(), z.number()]).transform((val, ctx) => {
-    // Если уже число - возвращаем как есть
-    if (typeof val === "number") {
-      return val;
-    }
-
-    // Если строка пустая или только пробелы - ошибка
-    if (typeof val === "string" && val.trim() === "") {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldName} должно быть числом`,
-      });
-      return z.NEVER;
-    }
-
-    // Преобразуем строку в число
-    const parsed = Number(val);
-
-    // Проверяем корректность преобразования
-    if (isNaN(parsed)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: `${fieldName} должно быть числом`,
-      });
-      return z.NEVER;
-    }
-
-    return parsed;
+  return z.coerce.number({
+    errorMap: (issue, ctx) => {
+      if (issue.code === z.ZodIssueCode.invalid_type) {
+        return { message: `${fieldName} должно быть числом` };
+      }
+      return { message: `Некорректное значение поля ${fieldName}` };
+    },
   });
 };
 

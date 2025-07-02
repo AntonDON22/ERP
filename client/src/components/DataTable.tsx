@@ -690,15 +690,30 @@ function DataTable<T = any>({
                       selectedItems.has(item.id) ? "bg-blue-50" : ""
                     } ${onRowClick ? "cursor-pointer" : ""}`}
                     onClick={(e) => {
-                      // Не обрабатываем клик если это чекбокс
-                      if ((e.target as HTMLElement).closest('input[type="checkbox"]')) {
+                      // Не обрабатываем клик если это чекбокс или его контейнер
+                      const target = e.target as HTMLElement;
+                      if (
+                        target.closest('input[type="checkbox"]') ||
+                        target.closest('[role="checkbox"]') ||
+                        target.closest('button[role="checkbox"]') ||
+                        target.tagName === 'INPUT' ||
+                        target.getAttribute('data-state') !== null
+                      ) {
+                        e.preventDefault();
+                        e.stopPropagation();
                         return;
                       }
                       onRowClick?.(item);
                     }}
                   >
                     {!hideSelectionColumn && (
-                      <td className="px-2 sm:px-4 py-3">
+                      <td 
+                        className="px-2 sm:px-4 py-3"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
                         <Checkbox
                           checked={selectedItems.has(item.id)}
                           onCheckedChange={(checked) =>

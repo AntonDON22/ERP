@@ -45,8 +45,8 @@ export class DocumentStatusService {
         // Создаем записи в inventory для каждой позиции
         const now = getMoscowTime();
         for (const item of items) {
-          const quantity = document.type === 'Оприходование' ? parseFloat(item.quantity) : -parseFloat(item.quantity);
-          const movementType = document.type === 'Оприходование' ? 'IN' : 'OUT';
+          const quantity = document.type === 'income' ? parseFloat(item.quantity) : -parseFloat(item.quantity);
+          const movementType = document.type === 'income' ? 'IN' : 'OUT';
           
           await tx.insert(inventory).values({
             productId: item.productId,
@@ -62,8 +62,7 @@ export class DocumentStatusService {
         const [updatedDocument] = await tx
           .update(documents)
           .set({ 
-            status: 'posted',
-            postedAt: now
+            status: 'posted'
           })
           .where(eq(documents.id, documentId))
           .returning();
@@ -119,7 +118,7 @@ export class DocumentStatusService {
           .update(documents)
           .set({ 
             status: 'draft',
-            postedAt: null
+
           })
           .where(eq(documents.id, documentId))
           .returning();

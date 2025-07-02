@@ -789,7 +789,7 @@ export class DatabaseStorage implements IStorage {
           } else if (oldStatus === 'draft' && newStatus === 'posted') {
             // Документ был черновиком, теперь проведен - создаем движения инвентаря
             for (const item of items) {
-              if (updatedDocument.type === 'Оприходование') {
+              if (updatedDocument.type === 'income') {
                 await tx
                   .insert(inventory)
                   .values({
@@ -799,7 +799,7 @@ export class DatabaseStorage implements IStorage {
                     movementType: 'IN',
                     documentId: id,
                   });
-              } else if (updatedDocument.type === 'Списание') {
+              } else if (updatedDocument.type === 'outcome') {
                 await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price, id);
               }
             }
@@ -899,7 +899,7 @@ export class DatabaseStorage implements IStorage {
 
           // 3. Обрабатываем движения инвентаря по FIFO только для проведенных документов
           if (updatedDocument.status === 'posted') {
-            if (updatedDocument.type === 'Оприходование') {
+            if (updatedDocument.type === 'income') {
               // Приход товара - просто добавляем запись
               await tx
                 .insert(inventory)
@@ -910,7 +910,7 @@ export class DatabaseStorage implements IStorage {
                   movementType: 'IN',
                   documentId: createdDocument.id,
                 });
-            } else if (updatedDocument.type === 'Списание') {
+            } else if (updatedDocument.type === 'outcome') {
               // Списание товара - используем FIFO логику
               await this.processWriteoffFIFO(tx, item.productId, Number(item.quantity), item.price ?? "0", createdDocument.id);
             }

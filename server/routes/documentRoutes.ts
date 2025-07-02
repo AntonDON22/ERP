@@ -14,10 +14,10 @@ const documentService = new DocumentService();
 // Валидация схем
 const createDocumentSchema = z.object({
   type: z.string().refine(val => {
-    return val === "Оприходование" || val === "Списание";
-  }, "Тип документа должен быть 'Оприходование' или 'Списание'"),
+    return val === "income" || val === "outcome" || val === "return";
+  }, "Тип документа должен быть 'income', 'outcome' или 'return'"),
   status: z.enum(["draft", "posted"], { required_error: "Статус документа обязателен" }),
-  name: z.string().min(1, "Название документа обязательно"),
+  name: z.string().optional().default(""),
   warehouseId: z.number().min(1, "Выберите склад"),
   items: z.array(z.object({
     productId: z.number().min(1, "Выберите товар"),
@@ -68,13 +68,13 @@ router.get("/:id", async (req, res) => {
 // POST /api/documents/create-receipt
 router.post("/create-receipt", async (req, res) => {
   try {
-    const validatedData = createDocumentSchema.parse(req.body);
+    const validatedData = receiptDocumentSchema.parse(req.body);
     
-    // Преобразуем данные для создания документа через storage
+    // Используем проверенные данные из receiptDocumentSchema
     const documentData = {
       type: validatedData.type,
       status: validatedData.status,
-      name: validatedData.name,
+      name: validatedData.name || "",
       warehouseId: validatedData.warehouseId
     };
     

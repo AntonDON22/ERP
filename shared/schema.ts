@@ -1,7 +1,10 @@
-import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, decimal, varchar, index, numeric, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName, zNameOptional, zNotes, zDate, zOrderStatus, zOrderStatusOptional } from "./zFields";
+import { zPrice, zQuantity, zQuantityInteger, zQuantityString, zPriceString, zWeight, zWeightString, zDimensionString, zId, zName, zNameOptional, zDocumentName, zNotes, zDate, zOrderStatus, zOrderStatusOptional } from "./zFields";
+
+// Enum для типов документов
+export const documentTypeEnum = pgEnum('document_type_enum', ['income', 'outcome', 'return']);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -45,7 +48,7 @@ export const warehouses = pgTable("warehouses", {
 export const documents = pgTable("documents", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type"),
+  type: documentTypeEnum("type").notNull().default("income"),
   status: text("status").notNull().default("draft"), // "draft" или "posted"
   warehouseId: integer("warehouse_id").references(() => warehouses.id),
   createdAt: timestamp("created_at").defaultNow(),
@@ -153,11 +156,12 @@ export const insertDocumentSchema = createInsertSchema(documents).omit({
   updatedAt: true,
 }).extend({
   name: z.string()
-    .min(1, "Название обязательно")
     .max(255, "Название не должно превышать 255 символов")
-    .trim(),
-  type: z.enum(['Оприходование', 'Списание'], {
-    errorMap: () => ({ message: "Тип документа должен быть 'Оприходование' или 'Списание'" })
+    .trim()
+    .optional()
+    .default(""),
+  type: z.enum(['income', 'outcome', 'return'], {
+    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" })
   }),
   status: z.enum(['draft', 'posted'], {
     errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
@@ -238,7 +242,13 @@ export const documentItemSchema = z.object({
 });
 
 export const receiptDocumentSchema = z.object({
-  name: zName, // ✅ Мигрировано на централизованное поле zName
+  type: z.enum(['income', 'outcome', 'return'], {
+    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" })
+  }),
+  status: z.enum(['draft', 'posted'], {
+    errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" })
+  }),
+  name: zDocumentName, // Поддерживает пустые значения для автогенерации
   warehouseId: zId,
   items: z.array(documentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });

@@ -4,7 +4,7 @@ import { useCreateReceiptDocument, useDocument } from "@/hooks/useTypedQuery";
 
 const editConfig: DocumentTypeConfig = {
   title: "Документ",
-  type: "Оприходование",
+  type: "income",
   namePrefix: "Оприходование",
   submitLabel: "Сохранить",
   successMessage: "Документ успешно сохранен",

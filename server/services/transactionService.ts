@@ -63,7 +63,7 @@ export class TransactionService {
           quantity: item.quantity.toString(),
           price: item.price ?? "0",
           documentId: createdDocument.id,
-          movementType: updatedDocument.type === 'Оприходование' ? 'IN' : 'OUT',
+          movementType: updatedDocument.type === 'income' ? 'IN' : 'OUT',
           warehouseId: updatedDocument.warehouseId || undefined
         });
       }
@@ -132,7 +132,7 @@ export class TransactionService {
             quantity: item.quantity.toString(),
             price: item.price ?? "0",
             documentId: documentId,
-            movementType: document.type === 'Оприходование' ? 'IN' : 'OUT',
+            movementType: document.type === 'income' ? 'IN' : 'OUT',
             warehouseId: document.warehouseId || undefined
           });
         }

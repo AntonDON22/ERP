@@ -75,6 +75,11 @@ export class DocumentService {
     // Валидация документа
     const validatedDocument = insertDocumentSchema.parse(documentData);
     
+    // Автогенерация названия с правильным типом
+    if (!validatedDocument.name || validatedDocument.name.trim().length === 0) {
+      validatedDocument.name = this.generateDocumentName(validatedDocument.type);
+    }
+    
     // Валидация позиций
     const validatedItems = items.map(item => insertDocumentItemSchema.parse(item));
     
@@ -82,13 +87,23 @@ export class DocumentService {
     return await transactionService.createDocumentWithInventory(validatedDocument, validatedItems);
   }
 
+  private getDocumentTypeName(type: string): string {
+    const typeNames = {
+      'income': 'Оприходование',
+      'outcome': 'Списание',
+      'return': 'Возврат'
+    };
+    return typeNames[type as keyof typeof typeNames] || type;
+  }
+
   private generateDocumentName(type: string): string {
     const dateStr = getMoscowDateForDocument();
+    const typeName = this.getDocumentTypeName(type);
     
     // Простая генерация номера (в реальной системе нужно учитывать concurrent access)
     const number = Math.floor(Math.random() * 1000) + 1;
     
-    return `${type} ${dateStr}-${number}`;
+    return `${typeName} ${dateStr}-${number}`;
   }
 }
 

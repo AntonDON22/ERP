@@ -31,8 +31,7 @@ export interface ExistingDocumentData {
   id: number;
   name: string;
   type: string;
-  date: string;
-  status: 'draft' | 'posted';
+  status: string;
   warehouseId?: number;
   items: Array<{
     id: number;
@@ -150,7 +149,7 @@ export default function Document({ config, documentData }: DocumentProps) {
         items: data.items.map((item: FormDocumentItem) => ({
           productId: item.productId,
           quantity: item.quantity.toString(),
-          price: documentType === 'Оприходование' ? item.price.toString() : undefined,
+          price: documentType === 'income' ? item.price.toString() : undefined,
         })),
       };
 
@@ -251,8 +250,9 @@ export default function Document({ config, documentData }: DocumentProps) {
                   <SelectValue placeholder="Выберите тип" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Оприходование">Оприходование</SelectItem>
-                  <SelectItem value="Списание">Списание</SelectItem>
+                  <SelectItem value="income">Оприходование</SelectItem>
+                  <SelectItem value="outcome">Списание</SelectItem>
+                  <SelectItem value="return">Возврат</SelectItem>
                 </SelectContent>
               </Select>
             </div>

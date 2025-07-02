@@ -80,8 +80,8 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// POST /api/documents/create-receipt
-router.post("/create-receipt", async (req, res) => {
+// POST /api/documents/create
+router.post("/create", async (req, res) => {
   try {
     const validatedData = receiptDocumentSchema.parse(req.body);
 

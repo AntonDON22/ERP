@@ -185,60 +185,7 @@ export class OrderService {
     }
   }
 
-  async delete(id: number): Promise<boolean> {
-    // Используем storage.deleteOrder который корректно удаляет резервы
-    const result = await storage.deleteOrder(id);
 
-    // Инвалидация кеша остатков после удаления заказа с резервами
-    if (result) {
-      await cacheService.invalidatePattern("inventory:*");
-      apiLogger.info("Inventory cache invalidated after order deletion", { orderId: id });
-    }
-
-    return result;
-  }
-
-  async deleteMultiple(
-    ids: number[]
-  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
-    if (!Array.isArray(ids) || ids.length === 0) {
-      throw new Error("Укажите массив ID заказов для удаления");
-    }
-
-    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
-    if (validIds.length !== ids.length) {
-      throw new Error("Некорректные ID заказов");
-    }
-
-    let deletedCount = 0;
-    const results = [];
-
-    for (const id of validIds) {
-      try {
-        const success = await this.delete(id);
-        if (success) {
-          deletedCount++;
-          results.push({ id, status: "deleted" });
-        } else {
-          results.push({ id, status: "not_found" });
-        }
-      } catch (error) {
-        apiLogger.error(`Error deleting order ${id}`, {
-          orderId: id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        results.push({ id, status: "error" });
-      }
-    }
-
-    // Дополнительная инвалидация кеша если было удалено несколько заказов
-    if (deletedCount > 0) {
-      await cacheService.invalidatePattern("inventory:*");
-      apiLogger.info("Inventory cache invalidated after multiple order deletion", { deletedCount });
-    }
-
-    return { deletedCount, results };
-  }
 
   // Приватный метод для обновления позиций заказа
   private static async updateOrderItems(orderId: number, items: CreateOrderItem[]): Promise<void> {
@@ -422,5 +369,3 @@ export class OrderService {
     }
   }
 }
-
-export const orderService = new OrderService();

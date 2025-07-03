@@ -10,6 +10,18 @@ vi.mock('../../server/db', () => ({
 
 // Мокаем logger
 vi.mock('../../shared/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
   dbLogger: {
     startOperation: vi.fn(() => vi.fn()),
     info: vi.fn(),

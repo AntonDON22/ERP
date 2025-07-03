@@ -1,20 +1,38 @@
-import { storage } from "../storage";
 import { insertProductSchema, type InsertProduct, type Product } from "../../shared/schema";
 import { DataCleanerService } from "./dataCleanerService";
 import { paginationService } from "./paginationService";
-import { apiLogger } from "../../shared/logger";
+import { BaseService } from "./baseService";
 
-export class ProductService {
-  async getAll(): Promise<Product[]> {
-    return await storage.getProducts();
+export class ProductService extends BaseService<Product, InsertProduct> {
+  protected entityName = "Product";
+  protected pluralName = "Products";
+  protected storageMethodPrefix = "Product";
+  protected insertSchema = insertProductSchema;
+  protected updateSchema = insertProductSchema.partial();
+
+  protected async validateImportData(data: unknown): Promise<InsertProduct> {
+    const productData = data as Record<string, unknown>;
+    const sanitizedData = DataCleanerService.sanitizeProductData(productData);
+    
+    return insertProductSchema.parse({
+      name: sanitizedData.name,
+      sku: sanitizedData.sku,
+      price: parseFloat(sanitizedData.price) || 0,
+      purchasePrice: parseFloat(sanitizedData.purchasePrice) || undefined,
+      weight: parseFloat(sanitizedData.weight) || undefined,
+      length: parseFloat(sanitizedData.length) || undefined,
+      width: parseFloat(sanitizedData.width) || undefined,
+      height: parseFloat(sanitizedData.height) || undefined,
+      barcode: sanitizedData.barcode || undefined,
+    });
   }
 
-  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  // Специализированный метод пагинации для продуктов
   async getAllPaginated(params: Record<string, unknown>) {
     const normalizedParams = paginationService.normalizeParams(params);
 
-    // Получаем все продукты (пока без SQL пагинации в storage)
-    const allProducts = await storage.getProducts();
+    // Получаем все продукты через BaseService
+    const allProducts = await this.getAll();
     const total = allProducts.length;
 
     // Применяем сортировку
@@ -53,113 +71,6 @@ export class ProductService {
       }
       return 0;
     });
-  }
-
-  async getById(id: number): Promise<Product | undefined> {
-    return await storage.getProduct(id);
-  }
-
-  async create(data: InsertProduct): Promise<Product> {
-    const validatedData = insertProductSchema.parse(data);
-    return await storage.createProduct(validatedData);
-  }
-
-  async update(id: number, data: Partial<InsertProduct>): Promise<Product | undefined> {
-    const validatedData = insertProductSchema.partial().parse(data);
-    return await storage.updateProduct(id, validatedData);
-  }
-
-  async delete(id: number): Promise<boolean> {
-    return await storage.deleteProduct(id);
-  }
-
-  async deleteMultiple(
-    ids: number[]
-  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
-    if (!Array.isArray(ids) || ids.length === 0) {
-      throw new Error("Укажите массив ID товаров для удаления");
-    }
-
-    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
-    if (validIds.length !== ids.length) {
-      throw new Error("Некорректные ID товаров");
-    }
-
-    let deletedCount = 0;
-    const results = [];
-
-    for (const id of validIds) {
-      try {
-        const success = await storage.deleteProduct(id);
-        if (success) {
-          deletedCount++;
-          results.push({ id, status: "deleted" });
-        } else {
-          results.push({ id, status: "not_found" });
-        }
-      } catch (error) {
-        apiLogger.error(`Error deleting product ${id}`, {
-          productId: id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        results.push({ id, status: "error" });
-      }
-    }
-
-    return { deletedCount, results };
-  }
-
-  // ✅ ИСПРАВЛЕНО: Типизация вместо any
-  async import(products: Record<string, unknown>[]): Promise<Product[]> {
-    if (!Array.isArray(products)) {
-      throw new Error("Ожидается массив товаров");
-    }
-
-    const results = [];
-    for (const productData of products) {
-      try {
-        const sanitizedData = DataCleanerService.sanitizeProductData(productData);
-        
-        // ✅ ИСПРАВЛЕНО: Преобразование строковых полей в правильные типы
-        const validatedData: InsertProduct = {
-          name: sanitizedData.name,
-          sku: sanitizedData.sku,
-          price: parseFloat(sanitizedData.price) || 0,
-          purchasePrice: parseFloat(sanitizedData.purchasePrice) || undefined,
-          weight: parseFloat(sanitizedData.weight) || undefined,
-          length: parseFloat(sanitizedData.length) || undefined,
-          width: parseFloat(sanitizedData.width) || undefined,
-          height: parseFloat(sanitizedData.height) || undefined,
-          barcode: sanitizedData.barcode || undefined,
-        };
-
-        // Проверяем наличие ID для обновления
-        const id = productData.ID || productData.id;
-        let product;
-
-        if (id && Number.isInteger(Number(id))) {
-          const numericId = Number(id);
-          // Обновляем существующий товар
-          product = await storage.updateProduct(numericId, validatedData);
-          if (!product) {
-            // Если товар с таким ID не найден, создаем нового
-            product = await storage.createProduct(validatedData);
-          }
-        } else {
-          // Создаем новый товар
-          product = await storage.createProduct(validatedData);
-        }
-
-        results.push(product);
-      } catch (error) {
-        apiLogger.error("Error importing product", {
-          productData,
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    }
-
-    return results;
   }
 }
 

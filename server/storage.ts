@@ -410,7 +410,12 @@ export class DatabaseStorage implements IStorage {
     const endOperation = dbLogger.startOperation("getInventory", { warehouseId });
 
     try {
-      console.log("[DB] Starting getInventory query...");
+      dbLogger.debug("Database operation started", {
+        operation: "getInventory",
+        module: "storage",
+        queryType: "select",
+        warehouseId
+      });
       let result;
 
       // Попытка использовать материализованное представление для лучшей производительности
@@ -506,9 +511,14 @@ export class DatabaseStorage implements IStorage {
         quantity: Number(item.quantity) || 0,
       }));
 
-      console.log(
-        `[DB] getInventory completed in ${endOperation()}ms, returned ${mappedResult.length} items`
-      );
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getInventory",
+        module: "storage",
+        duration: `${duration}ms`,
+        resultCount: mappedResult.length,
+        warehouseId
+      });
       return mappedResult;
     } catch (error) {
       dbLogger.error("Error in getInventory", { error: getErrorMessage(error), warehouseId });
@@ -620,19 +630,30 @@ export class DatabaseStorage implements IStorage {
 
   // Suppliers
   async getSuppliers(): Promise<Supplier[]> {
-    const startTime = Date.now();
-    console.log("[DB] Starting getSuppliers query...");
-
+    const endOperation = dbLogger.startOperation("getSuppliers");
     try {
+      dbLogger.debug("Database operation started", {
+        operation: "getSuppliers",
+        module: "storage",
+        queryType: "select"
+      });
       const result = await db.select().from(suppliers);
-      const endTime = Date.now();
-      console.log(
-        `[DB] getSuppliers completed in ${endTime - startTime}ms, returned ${result.length} suppliers`
-      );
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getSuppliers",
+        module: "storage",
+        duration: `${duration}ms`,
+        resultCount: result.length
+      });
       return result;
     } catch (error) {
-      const endTime = Date.now();
-      console.error(`[DB] getSuppliers failed after ${endTime - startTime}ms:`, error);
+      const duration = endOperation();
+      dbLogger.error("Database operation failed", {
+        operation: "getSuppliers",
+        module: "storage",
+        duration: `${duration}ms`,
+        error: getErrorMessage(error)
+      });
       throw error;
     }
   }
@@ -665,19 +686,30 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getContractors(): Promise<Contractor[]> {
-    console.log(`[DB] Starting getContractors query...`);
-    const startTime = Date.now();
-
+    const endOperation = dbLogger.startOperation("getContractors");
     try {
+      dbLogger.debug("Database operation started", {
+        operation: "getContractors",
+        module: "storage",
+        queryType: "select"
+      });
       const result = await db.select().from(contractors);
-      const endTime = Date.now();
-      console.log(
-        `[DB] getContractors completed in ${endTime - startTime}ms, returned ${result.length} contractors`
-      );
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getContractors",
+        module: "storage",
+        duration: `${duration}ms`,
+        resultCount: result.length
+      });
       return result;
     } catch (error) {
-      const endTime = Date.now();
-      console.error(`[DB] getContractors failed in ${endTime - startTime}ms:`, error);
+      const duration = endOperation();
+      dbLogger.error("Database operation failed", {
+        operation: "getContractors",
+        module: "storage",
+        duration: `${duration}ms`,
+        error: getErrorMessage(error)
+      });
       throw error;
     }
   }
@@ -711,19 +743,30 @@ export class DatabaseStorage implements IStorage {
 
   // Warehouses
   async getWarehouses(): Promise<Warehouse[]> {
-    const startTime = Date.now();
-    console.log("[DB] Starting getWarehouses query...");
-
+    const endOperation = dbLogger.startOperation("getWarehouses");
     try {
+      dbLogger.debug("Database operation started", {
+        operation: "getWarehouses",
+        module: "storage",
+        queryType: "select"
+      });
       const result = await db.select().from(warehouses);
-      const endTime = Date.now();
-      console.log(
-        `[DB] getWarehouses completed in ${endTime - startTime}ms, returned ${result.length} warehouses`
-      );
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getWarehouses",
+        module: "storage",
+        duration: `${duration}ms`,
+        resultCount: result.length
+      });
       return result;
     } catch (error) {
-      const endTime = Date.now();
-      console.error(`[DB] getWarehouses failed after ${endTime - startTime}ms:`, error);
+      const duration = endOperation();
+      dbLogger.error("Database operation failed", {
+        operation: "getWarehouses",
+        module: "storage",
+        duration: `${duration}ms`,
+        error: getErrorMessage(error)
+      });
       throw error;
     }
   }
@@ -757,8 +800,12 @@ export class DatabaseStorage implements IStorage {
 
   // Documents
   async getDocuments(): Promise<DocumentRecord[]> {
-    const startTime = Date.now();
-    console.log("[DB] Starting getDocuments query...");
+    const endOperation = dbLogger.startOperation("getDocuments");
+    dbLogger.debug("Database operation started", {
+      operation: "getDocuments",
+      module: "storage",
+      queryType: "select"
+    });
 
     try {
       // Получаем все документы
@@ -795,37 +842,60 @@ export class DatabaseStorage implements IStorage {
         items: itemsByDocument[document.id] || [],
       })) as any[];
 
-      const endTime = Date.now();
-      console.log(
-        `[DB] getDocuments completed in ${endTime - startTime}ms, returned ${result.length} documents with items`
-      );
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getDocuments",
+        module: "storage",
+        duration: `${duration}ms`,
+        resultCount: result.length
+      });
       return result;
     } catch (error) {
-      const endTime = Date.now();
-      console.error(`[DB] getDocuments failed after ${endTime - startTime}ms:`, error);
+      const duration = endOperation();
+      dbLogger.error("Database operation failed", {
+        operation: "getDocuments",
+        module: "storage",
+        duration: `${duration}ms`,
+        error: getErrorMessage(error)
+      });
       throw error;
     }
   }
 
   async getDocument(id: number): Promise<DocumentRecord | undefined> {
-    console.log(`[DB] Starting getDocument for ID ${id}...`);
-    const startTime = Date.now();
+    const endOperation = dbLogger.startOperation("getDocument");
+    dbLogger.debug("Database operation started", {
+      operation: "getDocument",
+      module: "storage",
+      queryType: "select",
+      documentId: id
+    });
 
     try {
       const [document] = await db.select().from(documents).where(eq(documents.id, id));
 
       if (!document) {
-        console.log(`[DB] Document ${id} not found`);
+        const duration = endOperation();
+        dbLogger.info("Document not found", {
+          operation: "getDocument",
+          module: "storage",
+          documentId: id,
+          duration: `${duration}ms`
+        });
         return undefined;
       }
 
       // Получаем элементы документа
       const items = await db.select().from(documentItems).where(eq(documentItems.documentId, id));
 
-      const endTime = Date.now();
-      console.log(
-        `[DB] getDocument completed in ${endTime - startTime}ms for document ${id} with ${items.length} items`
-      );
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getDocument",
+        module: "storage",
+        documentId: id,
+        duration: `${duration}ms`,
+        itemsCount: items.length
+      });
 
       // Возвращаем документ с элементами
       return {
@@ -838,8 +908,14 @@ export class DatabaseStorage implements IStorage {
         })),
       } as any;
     } catch (error) {
-      const endTime = Date.now();
-      console.error(`[DB] getDocument failed after ${endTime - startTime}ms:`, error);
+      const duration = endOperation();
+      dbLogger.error("Database operation failed", {
+        operation: "getDocument",
+        module: "storage",
+        documentId: id,
+        duration: `${duration}ms`,
+        error: getErrorMessage(error)
+      });
       throw error;
     }
   }
@@ -904,7 +980,14 @@ export class DatabaseStorage implements IStorage {
           if (oldStatus === "posted" && newStatus === "draft") {
             // Документ был проведен, теперь черновик - отменяем движения инвентаря
             await tx.delete(inventory).where(eq(inventory.documentId, id));
-            console.log(`📝 Документ ${id} переведен в черновик, движения инвентаря отменены`);
+            dbLogger.info("Document status changed", {
+      operation: "updateDocument",
+      module: "storage",
+      documentId: id,
+      oldStatus: "draft",
+      newStatus: "posted",
+      message: "Документ переведен в черновик, движения инвентаря отменены"
+    });
           } else if (oldStatus === "draft" && newStatus === "posted") {
             // Документ был черновиком, теперь проведен - создаем движения инвентаря
             for (const item of items) {
@@ -927,44 +1010,64 @@ export class DatabaseStorage implements IStorage {
                 );
               }
             }
-            console.log(`✅ Документ ${id} проведен, движения инвентаря созданы`);
+            dbLogger.info("Document status changed", {
+      operation: "updateDocument",
+      module: "storage",
+      documentId: id,
+      oldStatus: "draft",
+      newStatus: "posted",
+      message: "Документ проведен, движения инвентаря созданы"
+    });
           }
         }
 
         return updatedDocument;
       });
     } catch (error) {
-      console.error("Error updating document:", error);
+      dbLogger.error("Error updating document", {
+      operation: "updateDocument",
+      module: "storage",
+      error: getErrorMessage(error)
+    });
       throw error;
     }
   }
 
   async deleteDocument(id: number): Promise<boolean> {
-    console.log(`[DB] Starting deleteDocument for ID ${id}...`);
-    const startTime = Date.now();
-
+    
+    
     try {
       // Сначала удаляем связанные записи из inventory
       const inventoryResult = await db.delete(inventory).where(eq(inventory.documentId, id));
-      console.log(
-        `[DB] Deleted ${inventoryResult.rowCount ?? 0} inventory records for document ${id}`
-      );
+      dbLogger.debug("Inventory records deleted", {
+        operation: "deleteDocument",
+        module: "storage",
+        documentId: id,
+        inventoryRecordsDeleted: inventoryResult.rowCount ?? 0
+      });
 
       // Затем удаляем связанные записи из document_items
       const itemsResult = await db.delete(documentItems).where(eq(documentItems.documentId, id));
-      console.log(`[DB] Deleted ${itemsResult.rowCount ?? 0} document items for document ${id}`);
+      dbLogger.debug("Document items deleted", {
+      operation: "deleteDocument",
+      module: "storage",
+      documentId: id,
+      itemsDeleted: itemsResult.rowCount ?? 0
+    });
 
       // Наконец удаляем сам документ
       const documentResult = await db.delete(documents).where(eq(documents.id, id));
 
-      const endTime = Date.now();
-      const success = (documentResult.rowCount ?? 0) > 0;
-      console.log(`[DB] deleteDocument completed in ${endTime - startTime}ms, success: ${success}`);
+            const success = (documentResult.rowCount ?? 0) > 0;
+      
 
       return success;
     } catch (error) {
-      const endTime = Date.now();
-      console.error(`[DB] deleteDocument failed in ${endTime - startTime}ms:`, error);
+            dbLogger.error("Database operation failed", {
+      operation: "deleteDocument",
+      module: "storage",
+      error: getErrorMessage(error)
+    });
       throw error;
     }
   }
@@ -1054,7 +1157,11 @@ export class DatabaseStorage implements IStorage {
         return updatedDocument;
       });
     } catch (error) {
-      console.error("Error creating receipt document:", error);
+      dbLogger.error("Error creating receipt document", {
+      operation: "createReceiptDocument",
+      module: "storage",
+      error: getErrorMessage(error)
+    });
       throw error;
     }
   }
@@ -1067,7 +1174,12 @@ export class DatabaseStorage implements IStorage {
     writeoffPrice: string,
     documentId: number
   ): Promise<void> {
-    console.log(`🔄 FIFO-списание товара ${productId}, количество: ${quantityToWriteoff}`);
+    dbLogger.debug("FIFO writeoff started", {
+      operation: "processWriteoffFIFO",
+      module: "storage",
+      productId,
+      quantityToWriteoff
+    });
 
     // 1. Получаем все приходы товара в порядке FIFO (по дате создания)
     const availableStock = await tx
@@ -1076,7 +1188,12 @@ export class DatabaseStorage implements IStorage {
       .where(and(eq(inventory.productId, productId), eq(inventory.movementType, "IN")))
       .orderBy(asc(inventory.createdAt));
 
-    console.log(`📦 Найдено приходов: ${availableStock.length}`);
+    dbLogger.debug("Available stock found", {
+      operation: "processWriteoffFIFO",
+      module: "storage",
+      productId,
+      availableStockCount: availableStock.length
+    });
 
     let remainingToWriteoff = quantityToWriteoff;
 
@@ -1098,9 +1215,14 @@ export class DatabaseStorage implements IStorage {
         });
 
         remainingToWriteoff -= quantityToTakeFromThisBatch;
-        console.log(
-          `📤 Списано ${quantityToTakeFromThisBatch} из партии ${stockItem.id}, остается списать: ${remainingToWriteoff}`
-        );
+        dbLogger.debug("Batch writeoff completed", {
+          operation: "processWriteoffFIFO",
+          module: "storage",
+          productId,
+          batchId: stockItem.id,
+          quantityWrittenOff: quantityToTakeFromThisBatch,
+          remainingToWriteoff
+        });
       }
     }
 
@@ -1111,7 +1233,12 @@ export class DatabaseStorage implements IStorage {
 
     // 3. Если остались несписанные товары - создаем запись о списании в минус
     if (remainingToWriteoff > 0) {
-      console.log(`⚠️ Списание в минус: ${remainingToWriteoff} единиц`);
+      dbLogger.warn("Negative inventory writeoff", {
+      operation: "processWriteoffFIFO",
+      module: "storage",
+      productId,
+      remainingToWriteoff
+    });
 
       await tx.insert(inventory).values({
         productId: productId,
@@ -1122,7 +1249,11 @@ export class DatabaseStorage implements IStorage {
       });
     }
 
-    console.log(`✅ FIFO-списание завершено`);
+    dbLogger.info("FIFO writeoff completed", {
+      operation: "processWriteoffFIFO",
+      module: "storage",
+      productId
+    });
   }
 
   // Методы для работы с логами
@@ -1174,7 +1305,11 @@ export class DatabaseStorage implements IStorage {
 
       return await query;
     } catch (error) {
-      console.error("Error fetching logs:", error);
+      dbLogger.error("Error fetching logs", {
+      operation: "getLogs",
+      module: "storage",
+      error: getErrorMessage(error)
+    });
       throw error;
     }
   }
@@ -1188,7 +1323,11 @@ export class DatabaseStorage implements IStorage {
 
       return result.map((row) => row.module);
     } catch (error) {
-      console.error("Error fetching log modules:", error);
+      dbLogger.error("Error fetching log modules", {
+      operation: "getLogModules",
+      module: "storage",
+      error: getErrorMessage(error)
+    });
       throw error;
     }
   }
@@ -1196,10 +1335,18 @@ export class DatabaseStorage implements IStorage {
   async clearAllLogs(): Promise<number> {
     try {
       const result = await db.delete(logs);
-      console.log(`[DB] Cleared ${result.rowCount || 0} log entries`);
+      dbLogger.info("Log entries cleared", {
+      operation: "clearAllLogs",
+      module: "storage",
+      clearedCount: result.rowCount || 0
+    });
       return result.rowCount || 0;
     } catch (error) {
-      console.error("Error clearing logs:", error);
+      dbLogger.error("Error clearing logs", {
+      operation: "clearAllLogs",
+      module: "storage",
+      error: getErrorMessage(error)
+    });
       throw error;
     }
   }
@@ -1249,12 +1396,16 @@ export class DatabaseStorage implements IStorage {
 
   async getOrder(id: number): Promise<Order | undefined> {
     try {
-      console.log(`[DB] Starting getOrder for ID ${id}...`);
+      
       
       // Получаем заказ
       const orderResult = await db.select().from(orders).where(eq(orders.id, id));
       if (!orderResult[0]) {
-        console.log(`[DB] Order ${id} not found`);
+        dbLogger.info("Order not found", {
+      operation: "getOrder",
+      module: "storage",
+      orderId: id
+    });
         return undefined;
       }
 
@@ -1264,7 +1415,12 @@ export class DatabaseStorage implements IStorage {
         .from(orderItems)
         .where(eq(orderItems.orderId, id));
 
-      console.log(`[DB] getOrder completed for order ${id} with ${itemsResult.length} items`);
+      dbLogger.info("Database operation completed", {
+      operation: "getOrder",
+      module: "storage",
+      orderId: id,
+      itemsCount: itemsResult.length
+    });
 
       // Формируем заказ с позициями
       const order = orderResult[0];

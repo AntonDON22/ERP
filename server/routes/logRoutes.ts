@@ -2,6 +2,7 @@ import { Router } from "express";
 import { storage } from "../storage";
 import { Request, Response } from "express";
 import { z } from "zod";
+import { apiLogger, getErrorMessage } from "../../shared/logger";
 
 const router = Router();
 
@@ -32,7 +33,11 @@ router.get("/", async (req: Request, res: Response) => {
 
     res.json(logs);
   } catch (error: any) {
-    console.error("Error fetching logs:", error);
+    apiLogger.error("Error fetching logs", {
+      operation: "getLogs",
+      module: "logRoutes",
+      error: getErrorMessage(error)
+    });
 
     if (error.name === "ZodError") {
       res.status(400).json({
@@ -52,7 +57,11 @@ router.get("/modules", async (req: Request, res: Response) => {
     const modules = await storage.getLogModules();
     res.json(modules);
   } catch (error) {
-    console.error("Error fetching log modules:", error);
+    apiLogger.error("Error fetching log modules", {
+      operation: "getLogModules",
+      module: "logRoutes",
+      error: getErrorMessage(error)
+    });
     res.status(500).json({ error: "Failed to fetch log modules" });
   }
 });
@@ -68,7 +77,11 @@ router.delete("/", async (req: Request, res: Response) => {
       deletedCount 
     });
   } catch (error) {
-    console.error("Error clearing logs:", error);
+    apiLogger.error("Error clearing logs", {
+      operation: "clearAllLogs",
+      module: "logRoutes",
+      error: getErrorMessage(error)
+    });
     res.status(500).json({ error: "Failed to clear logs" });
   }
 });

@@ -166,8 +166,12 @@ router.put("/:id", async (req, res) => {
       return res.status(400).json({ error: validationError.message });
     }
     
-    console.error('💥 Route error details:', error);
-    console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack');
+    apiLogger.error("Route error details", {
+      operation: "updateDocument",
+      module: "documentRoutes",
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : 'No stack'
+    });
     
     apiLogger.error("Failed to update document", {
       documentId: req.params.id,

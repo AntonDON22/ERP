@@ -1,4 +1,3 @@
-import { storage } from "../storage";
 import {
   createOrderSchema,
   insertOrderSchema,
@@ -14,25 +13,29 @@ import { apiLogger } from "../../shared/logger";
 import { cacheService } from "./cacheService";
 import { db } from "../db";
 import { eq } from "drizzle-orm";
+import { BaseService } from "./baseService";
 
-export class OrderService {
-  static async getAll(): Promise<Order[]> {
-    return storage.getOrders();
+export class OrderService extends BaseService<Order, InsertOrder> {
+  protected entityName = "Order";
+  protected pluralName = "Orders";
+  protected storageMethodPrefix = "Order";
+  protected insertSchema = insertOrderSchema;
+  protected updateSchema = insertOrderSchema.partial();
+
+  protected async validateImportData(data: unknown): Promise<InsertOrder> {
+    return insertOrderSchema.parse(data);
   }
 
-  static async getById(id: number): Promise<Order | undefined> {
-    return storage.getOrder(id);
-  }
-
-  static async delete(id: number): Promise<boolean> {
+  // Переопределяем метод delete для использования транзакционного удаления
+  async delete(id: number): Promise<boolean> {
     // Проверяем существование заказа перед удалением
-    const existingOrder = await OrderService.getById(id);
+    const existingOrder = await this.getById(id);
     if (!existingOrder) {
       throw new Error(`Заказ с ID ${id} не найден`);
     }
 
-    // Используем storage.deleteOrder который корректно удаляет резервы
-    const result = await storage.deleteOrder(id);
+    // Используем базовый метод delete который вызывает storage.deleteOrder
+    const result = await super.delete(id);
 
     // Инвалидация кеша остатков после удаления заказа с резервами
     if (result) {
@@ -43,7 +46,7 @@ export class OrderService {
     return result;
   }
 
-  static async deleteMultiple(
+  async deleteMultiple(
     ids: number[]
   ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
     if (!Array.isArray(ids) || ids.length === 0) {
@@ -383,4 +386,9 @@ export class OrderService {
       throw error;
     }
   }
+
+  // Статические методы переведены в инстанс-методы, удалён устаревший код
+  // TODO: Обновить остальные методы для работы с инстансами вместо статических вызовов
 }
+
+export const orderService = new OrderService();

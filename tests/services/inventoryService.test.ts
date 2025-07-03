@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Создаем мокированную БД
 const mockExecute = vi.fn();
+const mockQuery = vi.fn();
 vi.mock('../../server/db', () => ({
   db: {
     execute: mockExecute,
+  },
+  pool: {
+    query: mockQuery,
   },
 }));
 
@@ -138,7 +142,7 @@ describe('InventoryService', () => {
 
     it('should handle materialized view fallback', async () => {
       mockMaterializedViewService.getInventoryAvailability.mockRejectedValue(new Error('View error'));
-      mockExecute.mockResolvedValueOnce({ rows: [] });
+      mockQuery.mockResolvedValueOnce({ rows: [] });
 
       const result = await inventoryService.getInventoryAvailability();
       expect(Array.isArray(result)).toBe(true);
@@ -152,7 +156,8 @@ describe('InventoryService', () => {
         { id: 2, name: 'Товар 2', quantity: '0.000' },
       ];
 
-      mockExecute.mockResolvedValueOnce({ rows: mockInventoryData });
+      // Мокируем материализованное представление
+      mockMaterializedViewService.getInventorySummary.mockResolvedValueOnce(mockInventoryData);
 
       const result = await inventoryService.getInventory();
 

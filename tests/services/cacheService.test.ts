@@ -1,4 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+
+// Мокаем logger
+vi.mock('../../shared/logger', () => ({
+  default: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 import { cacheService } from '../../server/services/cacheService';
 
 describe('CacheService', () => {

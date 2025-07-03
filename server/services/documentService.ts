@@ -1,4 +1,3 @@
-import { storage } from "../storage";
 import {
   insertDocumentSchema,
   insertDocumentItemSchema,
@@ -8,57 +7,48 @@ import {
 } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { getMoscowDateForDocument } from "../../shared/timeUtils";
-import { logger } from "../../shared/logger";
-import { apiLogger } from "../../shared/logger";
+import { logger, apiLogger } from "../../shared/logger";
 import { toNumber } from "@shared/utils";
+import { BaseService } from "./baseService";
 
-export class DocumentService {
-  async getAll(): Promise<DocumentRecord[]> {
-    return await storage.getDocuments();
+export class DocumentService extends BaseService<DocumentRecord, InsertDocument> {
+  protected entityName = "Document";
+  protected pluralName = "Documents";
+  protected storageMethodPrefix = "Document";
+  protected insertSchema = insertDocumentSchema;
+  protected updateSchema = insertDocumentSchema.partial();
+
+  protected async validateImportData(data: unknown): Promise<InsertDocument> {
+    return insertDocumentSchema.parse(data);
   }
 
-  async getById(id: number): Promise<DocumentRecord | undefined> {
-    return await storage.getDocument(id);
-  }
-
-  async create(data: InsertDocument): Promise<DocumentRecord> {
-    const validatedData = insertDocumentSchema.parse(data);
-    return await storage.createDocument(validatedData);
-  }
-
+  // Переопределяем метод update для поддержки позиций документов
   async update(
     id: number,
     data: Partial<InsertDocument>,
     items?: Array<{ productId: number; quantity: string | number }>
   ): Promise<DocumentRecord | undefined> {
-    const validatedData = insertDocumentSchema.partial().parse(data);
-    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    const validatedData = this.updateSchema.parse(data);
     logger.info('🔍 DocumentService.update validatedData:', { validatedData });
 
     if (items && items.length > 0) {
-      // Преобразуем items в правильный формат CreateDocumentItem
       const processedItems = items.map(item => ({
         productId: item.productId,
-        quantity: toNumber(item.quantity), // Преобразуем в number
+        quantity: toNumber(item.quantity),
       }));
 
-      // Используем транзакционное обновление
       return await transactionService.updateDocumentWithInventory(id, validatedData, processedItems);
     } else {
-      // Простое обновление документа без позиций
-      return await storage.updateDocument(id, validatedData);
+      return await super.update(id, validatedData);
     }
   }
 
+  // Переопределяем метод delete для использования транзакционного удаления
   async delete(id: number): Promise<boolean> {
-    // Всегда используем транзакционное удаление для целостности данных
     return await transactionService.deleteDocumentWithInventory(id);
   }
 
-  async deleteById(id: number): Promise<boolean> {
-    return await this.delete(id);
-  }
-
+  // Переопределяем метод deleteMultiple для использования транзакционного удаления
   async deleteMultiple(
     ids: number[]
   ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
@@ -76,7 +66,6 @@ export class DocumentService {
 
     for (const id of validIds) {
       try {
-        // Используем транзакционное удаление для правильной инвалидации кеша
         const success = await transactionService.deleteDocumentWithInventory(id);
         if (success) {
           deletedCount++;
@@ -85,11 +74,12 @@ export class DocumentService {
           results.push({ id, status: "not_found" });
         }
       } catch (error) {
-        apiLogger.error(`Error deleting document ${id}`, {
+        logger.error(`Error deleting document ${id}`, {
           documentId: id,
           error: error instanceof Error ? error.message : String(error),
         });
         results.push({ id, status: "error" });
+        throw error;
       }
     }
 

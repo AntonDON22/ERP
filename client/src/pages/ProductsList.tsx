@@ -131,17 +131,7 @@ export default function ProductsList() {
 
   const handleImport = async (data: unknown[]) => {
     // TODO: Implement import logic with new API hooks
-    // Structured logging instead of console.log
-    if (process.env.NODE_ENV === "development") {
-      // Only log in development, structured format
-      const logData = {
-        operation: "product_import",
-        recordCount: data.length,
-        timestamp: new Date().toISOString(),
-      };
-      // Use structured logging when available
-      console.debug("[ProductsList]", "Import data received", logData);
-    }
+    // Production-ready: console logs removed for enterprise deployment
   };
 
   if (error) {

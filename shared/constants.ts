@@ -29,19 +29,7 @@ export const ORDER_STATUS = {
 
 export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 
-// API endpoints
-export const API_ENDPOINTS = {
-  PRODUCTS: "/api/products",
-  INVENTORY: "/api/inventory",
-  DOCUMENTS: "/api/documents",
-  ORDERS: "/api/orders",
-  SUPPLIERS: "/api/suppliers",
-  CONTRACTORS: "/api/contractors",
-  WAREHOUSES: "/api/warehouses",
-  LOGS: "/api/logs",
-  METRICS: "/api/metrics",
-  CHANGELOG: "/api/changelog",
-} as const;
+// API endpoints перенесены в shared/apiRoutes.ts для централизации
 
 // Cache ключи
 export const CACHE_KEYS = {

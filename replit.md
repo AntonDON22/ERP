@@ -409,6 +409,7 @@
 - 3 июля 2025. Comprehensive система тестирования валидации: 8 категорий тестов покрывают все аспекты (new-fields-comprehensive 35 тестов, comprehensive-validation 47 тестов, schema-validation 13 тестов, quantity-validation 28 тестов), создан VALIDATION_FINALIZATION_REPORT.md с полным анализом достижений
 - 3 июля 2025. Полный аудит API маршрутизации: проведен comprehensive анализ централизации API маршрутов, 99% кода использует shared/apiRoutes.ts, обнаружено дублирование в shared/constants.ts (неиспользуемое), создан API_ROUTES_AUDIT_REPORT.md
 - 3 июля 2025. Архитектурная защита API маршрутов: все 8 хуков hooks/api/ используют централизованные API_ROUTES, стандартизированы queryKey для React Query, 12 архитектурных тестов проходят успешно (100%), система достигла enterprise-grade стандартов
+- 3 июля 2025. Достижение 100% централизации API маршрутов: удалены дублирующие API_ENDPOINTS из shared/constants.ts, единственная оставшаяся строка "/api/*" является техническим 404 handler в server/index.ts, централизация полностью завершена
 
 ## Пользовательские предпочтения
 

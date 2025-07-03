@@ -391,6 +391,7 @@
 - 3 июля 2025. Критическое исправление системы обработки ошибок: устранено "проглатывание" исключений в BatchService, добавлен обязательный `throw error` в 5 методах (deleteProducts, deleteSuppliers, deleteContractors, deleteWarehouses, deleteDocuments), обновлена архитектурная документация с правилами проброса ошибок
 - 3 июля 2025. Добавление проверки существования заказов: исправлена уязвимость в OrderService.delete(id) и OrderService.update(id), добавлена обязательная проверка существования ресурса перед операциями мутации, API теперь корректно возвращает 404 для несуществующих заказов, обновлена архитектурная документация с правилом проверки ресурсов
 - 3 июля 2025. Критическое исправление проброса ошибок в OrderService: добавлен обязательный throw error в catch блоки методов deleteMultiple и handleReservationChange, устранена проблема проглатывания ошибок, все исключения теперь корректно пробрасываются в Express error handler
+- 3 июля 2025. Масштабное архитектурное улучшение системы сервисов: исправлены catch блоки без throw error в 6 критических местах (SupplierService, ContractorService, WarehouseService), создан типизированный BaseService с generic types для унификации CRUD операций, расширена система валидации zFields (добавлены zUsername, zPassword, zBarcode, zImageUrl), создана система стандартизированных интерфейсов server/interfaces/serviceInterfaces.ts для enterprise-grade архитектурной согласованности
 
 ## Пользовательские предпочтения
 

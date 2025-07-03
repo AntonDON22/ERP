@@ -84,8 +84,8 @@ export const documents = pgTable("documents", {
 });
 
 export const insertUserSchema = z.object({
-  username: zUsername,
-  password: zPassword,
+  username: z.string().min(1, "Имя пользователя обязательно"),
+  password: z.string().min(1, "Пароль обязателен"),
 });
 
 export const insertProductSchema = z.object({

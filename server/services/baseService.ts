@@ -1,53 +1,174 @@
 import { apiLogger } from "@shared/logger";
 import { storage } from "../storage";
+import { z } from "zod";
 
 /**
- * 🏗️ BaseService - базовый сервис для CRUD операций
+ * 🏗️ BaseService - типизированный базовый сервис для CRUD операций
  * 
  * Унифицирует общую логику работы с данными для всех сервисов
- * Устраняет дублирование кода в supplierService, contractorService, warehouseService
+ * Обеспечивает type safety и стандартизированную обработку ошибок
+ * 
+ * @template T - Тип сущности (Supplier, Contractor, Warehouse)
+ * @template InsertT - Тип данных для создания (InsertSupplier, etc.)
+ * @template UpdateT - Тип данных для обновления (по умолчанию Partial<InsertT>)
  */
-export abstract class BaseService<T, InsertT> {
+export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
   protected abstract entityName: string;
-  protected abstract storageKey: keyof typeof storage;
+  protected abstract pluralName: string;
+  protected abstract storageMethodPrefix: string;
+  
+  // Схемы валидации должны быть определены в наследниках
+  protected abstract insertSchema: z.ZodSchema<InsertT>;
+  protected abstract updateSchema: z.ZodSchema<UpdateT>;
 
   /**
-   * Получить все записи
+   * 📋 Получить все записи с типизацией
    */
   async getAll(): Promise<T[]> {
-    return await (storage[this.storageKey] as any).call(storage);
+    try {
+      const methodName = `get${this.pluralName}`;
+      const result = await (storage as any)[methodName]();
+      
+      apiLogger.info(`Retrieved all ${this.pluralName.toLowerCase()}`, {
+        count: result?.length || 0,
+        entity: this.entityName,
+      });
+      
+      return result || [];
+    } catch (error) {
+      apiLogger.error(`Error getting all ${this.pluralName.toLowerCase()}`, {
+        entity: this.entityName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
-   * Получить запись по ID
+   * 🔍 Получить запись по ID с валидацией
    */
   async getById(id: number): Promise<T | undefined> {
-    const methodName = `get${this.entityName}`;
-    return await (storage as any)[methodName](id);
+    try {
+      this.validateId(id);
+      
+      const methodName = `get${this.entityName}`;
+      const result = await (storage as any)[methodName](id);
+      
+      apiLogger.debug(`Retrieved ${this.entityName.toLowerCase()} by ID`, {
+        id,
+        found: !!result,
+        entity: this.entityName,
+      });
+      
+      return result;
+    } catch (error) {
+      apiLogger.error(`Error getting ${this.entityName.toLowerCase()} by ID`, {
+        id,
+        entity: this.entityName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
-   * Создать новую запись
+   * ✅ Создать новую запись с валидацией
    */
   async create(data: InsertT): Promise<T> {
-    const methodName = `create${this.entityName}`;
-    return await (storage as any)[methodName](data);
+    try {
+      const validatedData = this.insertSchema.parse(data);
+      
+      const methodName = `create${this.entityName}`;
+      const result = await (storage as any)[methodName](validatedData);
+      
+      apiLogger.info(`Created new ${this.entityName.toLowerCase()}`, {
+        id: (result as any)?.id,
+        entity: this.entityName,
+      });
+      
+      return result;
+    } catch (error) {
+      apiLogger.error(`Error creating ${this.entityName.toLowerCase()}`, {
+        data,
+        entity: this.entityName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
-   * Обновить запись
+   * 🔄 Обновить запись с валидацией
    */
-  async update(id: number, data: Partial<InsertT>): Promise<T | undefined> {
-    const methodName = `update${this.entityName}`;
-    return await (storage as any)[methodName](id, data);
+  async update(id: number, data: UpdateT): Promise<T | undefined> {
+    try {
+      this.validateId(id);
+      const validatedData = this.updateSchema.parse(data);
+      
+      const methodName = `update${this.entityName}`;
+      const result = await (storage as any)[methodName](id, validatedData);
+      
+      if (!result) {
+        apiLogger.warn(`${this.entityName} not found for update`, {
+          id,
+          entity: this.entityName,
+        });
+        return undefined;
+      }
+      
+      apiLogger.info(`Updated ${this.entityName.toLowerCase()}`, {
+        id,
+        entity: this.entityName,
+      });
+      
+      return result;
+    } catch (error) {
+      apiLogger.error(`Error updating ${this.entityName.toLowerCase()}`, {
+        id,
+        data,
+        entity: this.entityName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
-   * Удалить запись
+   * 🗑️ Удалить запись с проверкой существования
    */
   async delete(id: number): Promise<boolean> {
-    const methodName = `delete${this.entityName}`;
-    return await (storage as any)[methodName](id);
+    try {
+      this.validateId(id);
+      
+      // Проверка существования перед удалением
+      const existing = await this.getById(id);
+      if (!existing) {
+        apiLogger.warn(`${this.entityName} not found for deletion`, {
+          id,
+          entity: this.entityName,
+        });
+        return false;
+      }
+      
+      const methodName = `delete${this.entityName}`;
+      const result = await (storage as any)[methodName](id);
+      
+      if (result) {
+        apiLogger.info(`Deleted ${this.entityName.toLowerCase()}`, {
+          id,
+          entity: this.entityName,
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      apiLogger.error(`Error deleting ${this.entityName.toLowerCase()}`, {
+        id,
+        entity: this.entityName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
   }
 
   /**
@@ -117,7 +238,67 @@ export abstract class BaseService<T, InsertT> {
   }
 
   /**
-   * Валидация данных для импорта (должна быть реализована в наследниках)
+   * 🔧 Валидация ID параметров
+   */
+  protected validateId(id: number): void {
+    if (!id || id <= 0 || !Number.isInteger(id)) {
+      throw new Error(`Invalid ID: ${id}. ID must be a positive integer.`);
+    }
+    
+    if (id > 2147483647) {
+      throw new Error(`ID too large: ${id}. Maximum value is 2147483647.`);
+    }
+  }
+
+  /**
+   * 🔧 Валидация массива ID для batch операций
+   */
+  protected validateIds(ids: number[]): void {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error("IDs array must be non-empty array");
+    }
+    
+    if (ids.length > 100) {
+      throw new Error("Too many IDs. Maximum 100 items per batch operation");
+    }
+    
+    for (const id of ids) {
+      this.validateId(id);
+    }
+  }
+
+  /**
+   * 📊 Получить статистику операций (для мониторинга)
+   */
+  protected getOperationStats(operation: string, startTime: number, success: boolean): object {
+    return {
+      entity: this.entityName,
+      operation,
+      duration: Date.now() - startTime,
+      success,
+      timestamp: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * 🎯 Стандартизированная обработка ошибок
+   */
+  protected handleError(operation: string, error: unknown, context: object = {}): never {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    apiLogger.error(`${this.entityName} ${operation} failed`, {
+      entity: this.entityName,
+      operation,
+      error: errorMessage,
+      ...context,
+    });
+    
+    // Перебрасываем ошибку для правильного HTTP статуса
+    throw error;
+  }
+
+  /**
+   * 📦 Валидация данных для импорта (должна быть реализована в наследниках)
    */
   protected abstract validateImportData(data: any): Promise<InsertT>;
 }

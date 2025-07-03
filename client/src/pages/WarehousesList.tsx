@@ -1,9 +1,14 @@
-import { useMemo } from "react";
+import { useMemo, useState, Suspense, lazy } from "react";
 import DataTable, { ColumnConfig, ExcelExportConfig } from "../components/DataTable";
 import { Warehouse } from "@shared/schema";
 import { useWarehouses, useDeleteWarehouses, useImportWarehouses } from "@/hooks/api";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { useTablePerformanceAudit } from "@/hooks/usePerformanceAudit";
+import { Button } from "@/components/ui/button";
+
+// Ленивая загрузка виртуализированной таблицы
+const VirtualizedDataTable = lazy(() => import("@/components/VirtualizedDataTable"));
 
 const columns: ColumnConfig<Warehouse>[] = [
   {
@@ -41,6 +46,10 @@ export default function WarehousesList() {
   const importWarehouses = useImportWarehouses();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const [useVirtualization, setUseVirtualization] = useState(warehouses.length > 20);
+
+  // Аудит производительности таблицы
+  const performanceAudit = useTablePerformanceAudit(warehouses, "WarehousesList");
 
   const memoizedColumns = useMemo(() => columns, []);
   const memoizedExcelConfig = useMemo(() => excelConfig, []);

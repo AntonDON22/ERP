@@ -165,10 +165,12 @@ export default function ProductsList() {
           <h3 className="text-sm font-medium text-gray-700">
             Режим отображения: {useVirtualization ? "Виртуализированная таблица" : "Обычная таблица"}
           </h3>
-          <p className="text-xs text-gray-500 mt-1">
-            Товаров: {products.length} | Ререндеров: {performanceAudit.renderCount} | 
-            Последний рендер: {performanceAudit.lastRenderTime.toFixed(1)}мс
-          </p>
+          <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-1">
+            <span>Товаров: {products.length}</span>
+            <span>Ререндеров: {performanceAudit.renderCount}</span>
+            <span>Последний рендер: {performanceAudit.lastRenderTime.toFixed(1)}мс</span>
+            <span>Средний рендер: {performanceAudit.averageRenderTime.toFixed(1)}мс</span>
+          </div>
         </div>
         
         <div className="flex gap-2">
@@ -185,13 +187,6 @@ export default function ProductsList() {
             onClick={() => setUseVirtualization(true)}
           >
             Виртуализация
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => performanceAudit.logSummary()}
-          >
-            Отчет
           </Button>
         </div>
       </div>

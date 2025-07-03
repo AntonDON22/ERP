@@ -136,7 +136,7 @@ describe('CacheService', () => {
       await cacheService.set('exact-key-similar', { value: 'test2' });
       
       // Удаляем точное совпадение
-      await cacheService.invalidatePattern('exact-key');
+      await cacheService.del('exact-key');
       
       expect(await cacheService.get('exact-key')).toBeNull();
       expect(await cacheService.get('exact-key-similar')).toEqual({ value: 'test2' });

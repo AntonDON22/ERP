@@ -3,6 +3,7 @@ import { contractorService } from "../services/contractorService";
 import { paginationService } from "../services/paginationService";
 import { z } from "zod";
 import { logger } from "../../shared/logger";
+import { longCache } from "../middleware/cacheMiddleware";
 
 const router = Router();
 const apiLogger = logger;
@@ -14,7 +15,7 @@ const idParamSchema = z.object({
 });
 
 // GET /api/contractors с поддержкой пагинации
-router.get("/", async (req, res) => {
+router.get("/", longCache, async (req, res) => {
   try {
     const hasPageParam = req.query.page !== undefined;
     

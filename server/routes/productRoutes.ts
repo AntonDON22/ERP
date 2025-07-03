@@ -5,6 +5,7 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger } from "../../shared/logger";
 import { insertProductSchema } from "../../shared/schema";
+import { mediumCache } from "../middleware/cacheMiddleware";
 
 const router = Router();
 const productService = new ProductService();
@@ -25,7 +26,7 @@ const getProductSchema = z.object({
 });
 
 // GET /api/products с поддержкой пагинации
-router.get("/", async (req, res) => {
+router.get("/", mediumCache, async (req, res) => {
   try {
     // Проверяем наличие параметров пагинации
     const hasPageParam = req.query.page !== undefined;

@@ -30,7 +30,7 @@ export class BatchService {
         idsCount: ids.length,
       });
       endOperation();
-      return false;
+      throw error;
     }
   }
 
@@ -54,7 +54,7 @@ export class BatchService {
         idsCount: ids.length,
       });
       endOperation();
-      return false;
+      throw error;
     }
   }
 
@@ -78,7 +78,7 @@ export class BatchService {
         idsCount: ids.length,
       });
       endOperation();
-      return false;
+      throw error;
     }
   }
 
@@ -102,7 +102,7 @@ export class BatchService {
         idsCount: ids.length,
       });
       endOperation();
-      return false;
+      throw error;
     }
   }
 
@@ -126,7 +126,7 @@ export class BatchService {
         idsCount: ids.length,
       });
       endOperation();
-      return false;
+      throw error;
     }
   }
 

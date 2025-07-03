@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts, useUpdateDocument } from "@/hooks/api";
+import { useProducts, useUpdateDocument, useDeleteDocument } from "@/hooks/api";
 import { useWarehouses } from "@/hooks/api";
 
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -76,6 +76,7 @@ export default function Document({ config, documentData }: DocumentProps) {
   const { toast } = useToast();
   const mutation = config.mutationHook();
   const updateMutation = useUpdateDocument();
+  const deleteMutation = useDeleteDocument();
 
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
@@ -126,6 +127,30 @@ export default function Document({ config, documentData }: DocumentProps) {
       form.reset(formData);
     }
   }, [documentData, form]);
+
+  // Функция удаления документа
+  const handleDelete = async () => {
+    if (!documentData?.id) return;
+
+    if (!confirm("Вы уверены, что хотите удалить этот документ?")) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync(documentData.id);
+      toast({
+        title: "Документ удален",
+        description: "Документ был успешно удален",
+      });
+      setLocation(config.backUrl);
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить документ",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Обработчик сохранения
   const handleSave = async (data: FormDocument) => {
@@ -248,7 +273,16 @@ export default function Document({ config, documentData }: DocumentProps) {
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Назад
               </Button>
-
+              {documentData?.id && (
+                <Button
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Удалить
+                </Button>
+              )}
               <Button
                 form="document-form"
                 type="submit"

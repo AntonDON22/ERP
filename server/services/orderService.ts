@@ -183,10 +183,11 @@ export class OrderService extends BaseService<Order, InsertOrder> {
     items?: CreateOrderItem[],
     isReserved?: boolean
   ): Promise<Order | undefined> {
+    const instance = OrderService.getInstance();
     const validatedData = insertOrderSchema.partial().parse(orderData);
 
     // Проверяем существование заказа перед обновлением
-    const currentOrder = await storage.getOrder(id);
+    const currentOrder = await instance.storage.getOrder(id);
     if (!currentOrder) {
       throw new Error(`Заказ с ID ${id} не найден`);
     }
@@ -213,7 +214,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
       return await OrderService.handleReservationChange(id, validatedData, newReserved, currentOrder);
     } else {
       // Простое обновление заказа без изменения позиций и резервирования
-      const result = await storage.updateOrder(id, validatedData);
+      const result = await instance.storage.updateOrder(id, validatedData);
 
       // Инвалидация кеша остатков после обновления заказа
       if (result) {
@@ -304,8 +305,8 @@ export class OrderService extends BaseService<Order, InsertOrder> {
         }
       }
 
-      // Обновляем заказ с новым статусом резервирования
-      const updatedOrder = await storage.updateOrder(orderId, {
+      // Обновляем заказ с новым статусом резервирования  
+      const updatedOrder = await OrderService.getInstance().storage.updateOrder(orderId, {
         ...orderData,
         isReserved: newReserved,
       });
@@ -334,7 +335,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
   ): Promise<Order | undefined> {
     try {
       // 1. Проверяем что заказ существует
-      const currentOrder = await storage.getOrder(orderId);
+      const currentOrder = await OrderService.getInstance().storage.getOrder(orderId);
       apiLogger.info("Current order retrieved", { orderId, found: !!currentOrder });
       if (!currentOrder) {
         apiLogger.warn("Order not found for update", { orderId });
@@ -342,7 +343,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
       }
 
       // 2. Обновляем основные данные заказа
-      const updatedOrder = await storage.updateOrder(orderId, { ...orderData, isReserved });
+      const updatedOrder = await OrderService.getInstance().storage.updateOrder(orderId, { ...orderData, isReserved });
       if (!updatedOrder) {
         return undefined;
       }

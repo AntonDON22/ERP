@@ -147,6 +147,7 @@ export const zPriceOptional = zPrice.optional();
 export const zQuantityOptional = zQuantity.optional();
 export const zPercentOptional = zPercent.optional();
 export const zWeightOptional = zWeight.optional();
+export const zIdOptional = zId.optional();
 
 /**
  * Схема для названий сущностей (документы, заказы, продукты)

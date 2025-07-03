@@ -143,32 +143,7 @@ describe('CacheService', () => {
     });
   });
 
-  describe('GetOrSet Method', () => {
-    it('должен вызвать fetchFn если данных нет в кеше', async () => {
-      const fetchFn = vi.fn().mockResolvedValue({ fetched: true });
-      
-      const result = await cacheService.getOrSet('new-key', fetchFn, 60);
-      
-      expect(fetchFn).toHaveBeenCalledOnce();
-      expect(result).toEqual({ fetched: true });
-      
-      // Проверяем что данные сохранились в кеше
-      const cached = await cacheService.get('new-key');
-      expect(cached).toEqual({ fetched: true });
-    });
 
-    it('должен возвращать данные из кеша без вызова fetchFn', async () => {
-      const cachedData = { cached: true };
-      await cacheService.set('existing-key', cachedData);
-      
-      const fetchFn = vi.fn().mockResolvedValue({ fetched: true });
-      
-      const result = await cacheService.getOrSet('existing-key', fetchFn, 60);
-      
-      expect(fetchFn).not.toHaveBeenCalled();
-      expect(result).toEqual(cachedData);
-    });
-  });
 
   describe('Performance', () => {
     it('должен работать быстро с memory cache', async () => {

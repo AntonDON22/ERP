@@ -207,24 +207,7 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
     });
   }
 
-  /**
-   * 📄 Пагинированное получение записей (базовая реализация)
-   */
-  async getAllPaginated(params: any): Promise<T[]> {
-    try {
-      const allRecords = await this.getAll();
-      const startIndex = params.offset || 0;
-      const endIndex = startIndex + (params.limit || 50);
-      return allRecords.slice(startIndex, endIndex);
-    } catch (error) {
-      apiLogger.error(`Error getting paginated ${this.entityName.toLowerCase()}`, {
-        entity: this.entityName,
-        params,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      throw error;
-    }
-  }
+
 
   /**
    * 🗑️ Удалить запись с проверкой существования

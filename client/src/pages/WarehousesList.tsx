@@ -21,7 +21,7 @@ const columns: ColumnConfig<Warehouse>[] = [
     sortable: true,
     copyable: true,
     multiline: true,
-    format: (value) => value || "Не указан",
+    format: (value: unknown) => String(value || "Не указан"),
   },
 ];
 
@@ -61,7 +61,7 @@ export default function WarehousesList() {
     }
   };
 
-  const handleImport = async (data: any[]) => {
+  const handleImport = async (data: unknown[]) => {
     try {
       await importWarehouses.mutateAsync(data);
       toast({
@@ -84,7 +84,7 @@ export default function WarehousesList() {
   return (
     <DataTable
       data={warehouses}
-      columns={memoizedColumns as any}
+      columns={memoizedColumns as ColumnConfig<unknown>[]}
       isLoading={isLoading}
       entityName="склад"
       entityNamePlural="складов"

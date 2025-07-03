@@ -21,8 +21,8 @@ const contractorFields: FormField[] = [
 export default function CreateContractor() {
   const createContractorMutation = useCreateContractor();
 
-  const handleSubmit = async (data: any) => {
-    await createContractorMutation.mutateAsync(data);
+  const handleSubmit = async (data: Record<string, unknown>) => {
+    await createContractorMutation.mutateAsync(data as { name: string; website?: string });
   };
 
   return (

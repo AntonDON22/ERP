@@ -30,7 +30,7 @@ export default function EditDocument() {
   const adaptedDocument = {
     ...document,
     warehouseId: document.warehouseId ?? undefined,
-  } as any; // Временный cast для совместимости типов
+  };
 
   return <Document config={editConfig} documentData={adaptedDocument} />;
 }

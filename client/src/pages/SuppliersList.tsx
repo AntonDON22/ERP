@@ -42,7 +42,7 @@ export default function SuppliersList() {
     await deleteSuppliersMutation.mutateAsync(ids);
   };
 
-  const handleImport = async (data: any[]) => {
+  const handleImport = async (data: unknown[]) => {
     await importSuppliersMutation.mutateAsync(data);
   };
 
@@ -53,7 +53,7 @@ export default function SuppliersList() {
   return (
     <DataTable
       data={suppliers}
-      columns={memoizedColumns as any}
+      columns={memoizedColumns as ColumnConfig<unknown>[]}
       isLoading={isLoading}
       entityName="поставщик"
       entityNamePlural="Поставщики"

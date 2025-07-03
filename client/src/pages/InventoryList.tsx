@@ -34,14 +34,14 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
     label: "Остаток",
     minWidth: 100,
     sortable: true,
-    format: (value: number) => value?.toString() || "0",
+    format: (value: unknown) => Number(value)?.toString() || "0",
   },
   {
     key: "reserved",
     label: "Резерв",
     minWidth: 100,
     sortable: true,
-    format: (value: number) => value?.toString() || "0",
+    format: (value: unknown) => Number(value)?.toString() || "0",
   },
   {
     key: "available",
@@ -63,7 +63,7 @@ export default function InventoryList() {
     <div className="space-y-6">
       <DataTable
         data={inventory}
-        columns={memoizedColumns as any}
+        columns={memoizedColumns as ColumnConfig<unknown>[]}
         isLoading={isLoading || warehousesLoading}
         entityName="товар"
         entityNamePlural="товары"

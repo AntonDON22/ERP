@@ -43,21 +43,29 @@ const createValidationSchema = (fields: FormField[]) => {
   const schemaFields: Record<string, z.ZodTypeAny> = {};
 
   fields.forEach((field) => {
-    let validator: z.ZodTypeAny = z.string();
-
-    if (field.required !== false) {
-      validator = validator.min(1, `${field.label} обязательно для заполнения`);
-    }
-
+    // ✅ ИСПРАВЛЕНО: Создание валидатора без изменения типа
     if (field.type === "email") {
-      validator = validator.email("Введите корректный email");
+      let emailValidator = z.string();
+      if (field.required !== false) {
+        emailValidator = emailValidator.min(1, `${field.label} обязательно для заполнения`);
+      }
+      schemaFields[field.name] = emailValidator.email("Введите корректный email");
+    } else if (field.type === "url") {
+      let urlValidator = z.string();
+      if (field.required !== false) {
+        urlValidator = urlValidator.min(1, `${field.label} обязательно для заполнения`);
+      }
+      schemaFields[field.name] = z.union([
+        urlValidator.url("Введите корректный URL"),
+        z.literal("")
+      ]);
+    } else {
+      let stringValidator = z.string();
+      if (field.required !== false) {
+        stringValidator = stringValidator.min(1, `${field.label} обязательно для заполнения`);
+      }
+      schemaFields[field.name] = stringValidator;
     }
-
-    if (field.type === "url") {
-      validator = validator.url("Введите корректный URL").or(z.literal(""));
-    }
-
-    schemaFields[field.name] = validator;
   });
 
   return z.object(schemaFields);

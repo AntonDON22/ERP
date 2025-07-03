@@ -214,27 +214,31 @@ export class TransactionService {
         service: "transaction"
       });
 
-      // 1. Создаем заказ
-      const [createdOrder] = await tx.insert(orders).values(orderData).returning();
+      // 1. Создаем заказ с типизированными данными
+      const orderValues = orderData as typeof orders.$inferInsert;
+      const [createdOrder] = await tx.insert(orders).values(orderValues).returning();
 
       let totalAmount = 0;
 
       // 2. Создаем позиции заказа
       for (const item of items) {
+        const itemRecord = item as Record<string, unknown>;
         await tx.insert(orderItemsTable).values({
-          ...item,
+          productId: Number(itemRecord.productId),
+          quantity: String(itemRecord.quantity),
+          price: String(itemRecord.price),
           orderId: createdOrder.id,
         });
 
-        totalAmount += parseFloat(item.quantity) * parseFloat(item.price);
+        totalAmount += Number(itemRecord.quantity) * Number(itemRecord.price);
 
         // 3. Если заказ резервируется, создаем резервы
         if (isReserved) {
           await tx.insert(reserves).values({
             orderId: createdOrder.id,
-            productId: item.productId,
-            quantity: item.quantity,
-            warehouseId: orderData.warehouseId,
+            productId: Number(itemRecord.productId),
+            quantity: String(itemRecord.quantity),
+            warehouseId: Number(orderValues.warehouseId),
             createdAt: getMoscowTime(),
           });
           // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log

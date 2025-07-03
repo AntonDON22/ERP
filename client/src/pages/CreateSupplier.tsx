@@ -21,8 +21,8 @@ const supplierFields: FormField[] = [
 export default function CreateSupplier() {
   const createSupplierMutation = useCreateSupplier();
 
-  const handleSubmit = async (data: any) => {
-    await createSupplierMutation.mutateAsync(data);
+  const handleSubmit = async (data: Record<string, unknown>) => {
+    await createSupplierMutation.mutateAsync(data as { name: string; website?: string });
   };
 
   return (

@@ -29,8 +29,12 @@ export interface DocumentTypeConfig {
   submitLabel: string;
   successMessage: string;
   backUrl: string;
-  // ✅ ИСПРАВЛЕНО: Типизация вместо any для mutationHook
-  mutationHook: () => { mutate: (data: unknown) => void; isPending: boolean };
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для mutationHook с mutateAsync
+  mutationHook: () => { 
+    mutate: (data: unknown) => void; 
+    mutateAsync: (data: unknown) => Promise<unknown>;
+    isPending: boolean; 
+  };
 }
 
 // Данные существующего документа для редактирования
@@ -169,7 +173,8 @@ export default function Document({ config, documentData }: DocumentProps) {
 
     // Тройная защита от дублирования
     if (isSubmitting) {
-      if (process.env.NODE_ENV === "development") {
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.debug
+      if (process.env.NODE_ENV === 'development') {
         console.debug("[Document]", "Blocked duplicate submission - isSubmitting", {
           submissionId: currentSubmissionId,
         });
@@ -178,7 +183,8 @@ export default function Document({ config, documentData }: DocumentProps) {
     }
 
     if (mutation.isPending) {
-      if (process.env.NODE_ENV === "development") {
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.debug
+      if (process.env.NODE_ENV === 'development') {
         console.debug("[Document]", "Blocked duplicate submission - mutation pending", {
           submissionId: currentSubmissionId,
         });
@@ -229,11 +235,17 @@ export default function Document({ config, documentData }: DocumentProps) {
         });
       } else {
         // Создание нового документа
-        console.log(`📄 Creating new document`);
+        // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+        if (process.env.NODE_ENV === 'development') {
+          console.debug(`📄 Creating new document`);
+        }
         await mutation.mutateAsync(documentToSave);
       }
 
-      console.log(`✅ Submission #${currentSubmissionId} completed successfully`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(`✅ Submission #${currentSubmissionId} completed successfully`);
+      }
       toast({ title: config.successMessage });
       setLocation(config.backUrl);
     } catch (error) {
@@ -373,9 +385,9 @@ export default function Document({ config, documentData }: DocumentProps) {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {fields.map((field: any, index: number) => (
+              {fields.map((field, index: number) => (
                 <div
-                  key={field.id}
+                  key={index}
                   className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 border rounded-lg"
                 >
                   <div className="md:col-span-3">

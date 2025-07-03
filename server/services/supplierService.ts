@@ -86,13 +86,12 @@ export class SupplierService extends BaseService<Supplier, InsertSupplier> {
     const results = [];
     for (const supplierData of suppliers) {
       try {
-        const validatedData = {
-          name: supplierData.name || supplierData.Название || "Без названия",
-          website: String(supplierData.website || supplierData.Вебсайт || ""),
-        };
-
-        // Проверяем наличие ID для обновления
-        const id = supplierData.ID || supplierData.id;
+        // ✅ ИСПРАВЛЕНО: Валидируем импортированные данные через схему
+        const validatedData = await this.validateImportData(supplierData);
+        
+        // Получаем ID если есть для обновления
+        const supplierRecord = supplierData as Record<string, unknown>;
+        const id = supplierRecord.ID || supplierRecord.id;
         let supplier;
 
         if (id && Number.isInteger(Number(id))) {

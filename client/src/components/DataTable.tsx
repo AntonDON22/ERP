@@ -144,7 +144,7 @@ function DataTable<T = unknown>({
   warehouseFilter,
 }: DataTableProps<T>) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<any>("name");
+  const [sortField, setSortField] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [selectedItems, setSelectedItems] = useState<Set<number>>(new Set());
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
@@ -321,18 +321,21 @@ function DataTable<T = unknown>({
     // Применяем поиск
     if (debouncedSearchQuery.trim()) {
       const query = debouncedSearchQuery.toLowerCase();
-      filtered = data.filter((item: any) =>
+      filtered = data.filter((item) =>
         searchFields.some((field) => {
-          const value = item[field];
+          const fieldKey = String(field);
+          const value = (item as Record<string, unknown>)[fieldKey];
           return value && String(value).toLowerCase().includes(query);
         })
       );
     }
 
     // Применяем сортировку
-    return [...filtered].sort((a: any, b: any) => {
-      const aValue = a[sortField];
-      const bValue = b[sortField];
+    return [...filtered].sort((a, b) => {
+      const aRecord = a as Record<string, unknown>;
+      const bRecord = b as Record<string, unknown>;
+      const aValue = aRecord[sortField as string];
+      const bValue = bRecord[sortField as string];
 
       if (aValue === null || aValue === undefined) return 1;
       if (bValue === null || bValue === undefined) return -1;
@@ -351,7 +354,7 @@ function DataTable<T = unknown>({
   const handleSelectAll = useCallback(
     (checked: boolean) => {
       if (checked) {
-        setSelectedItems(new Set(filteredAndSortedData.map((item: any) => item.id)));
+        setSelectedItems(new Set(filteredAndSortedData.map((item) => (item as { id: number }).id)));
       } else {
         setSelectedItems(new Set());
       }
@@ -374,10 +377,11 @@ function DataTable<T = unknown>({
   // Функция сортировки
   const handleSort = useCallback(
     (field: keyof T) => {
-      if (sortField === field) {
+      const fieldString = String(field);
+      if (sortField === fieldString) {
         setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
       } else {
-        setSortField(field);
+        setSortField(String(fieldString));
         setSortDirection("asc");
       }
     },
@@ -409,14 +413,14 @@ function DataTable<T = unknown>({
     if (!excelConfig) return;
 
     const exportData = filteredAndSortedData.map((item) => {
-      const exportItem: Record<string, any> = {};
+      const exportItem: Record<string, unknown> = {};
 
       // Добавляем ID как первую колонку
-      exportItem["ID"] = (item as any).id;
+      exportItem["ID"] = (item as { id: number }).id;
 
       // Добавляем остальные колонки
       columns.forEach((column) => {
-        const value = (item as any)[column.key];
+        const value = (item as Record<string | number | symbol, unknown>)[column.key];
         const formattedValue = column.format ? column.format(value) : value;
         exportItem[excelConfig.headers[String(column.key)] || String(column.label)] =
           formattedValue || "";
@@ -684,11 +688,11 @@ function DataTable<T = unknown>({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAndSortedData.map((item: any) => (
+                {filteredAndSortedData.map((item) => (
                   <tr
-                    key={item.id}
+                    key={(item as { id: number }).id}
                     className={`hover:bg-gray-50 transition-colors ${
-                      selectedItems.has(item.id) ? "bg-blue-50" : ""
+                      selectedItems.has((item as { id: number }).id) ? "bg-blue-50" : ""
                     } ${onRowClick ? "cursor-pointer" : ""}`}
                     onClick={(e) => {
                       // Не обрабатываем клик если это чекбокс или его контейнер
@@ -716,15 +720,15 @@ function DataTable<T = unknown>({
                         }}
                       >
                         <Checkbox
-                          checked={selectedItems.has(item.id)}
+                          checked={selectedItems.has((item as { id: number }).id)}
                           onCheckedChange={(checked) =>
-                            handleSelectItem(item.id, checked as boolean)
+                            handleSelectItem((item as { id: number }).id, checked as boolean)
                           }
                         />
                       </td>
                     )}
                     {visibleColumns.map((column) => {
-                      const value = (item as any)[column.key];
+                      const value = (item as Record<string | number | symbol, unknown>)[column.key];
                       const formattedValue = column.format ? column.format(value) : value;
                       const columnKey = String(column.key);
                       const defaultWidth = column.minWidth || 150;

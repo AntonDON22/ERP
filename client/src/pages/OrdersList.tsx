@@ -28,9 +28,9 @@ const columns: ColumnConfig<Order>[] = [
     minWidth: 150,
     sortable: true,
     copyable: true,
-    format: (value: any) => {
-      if (!value) return "";
-      const date = new Date(value);
+    format: (value: unknown) => {
+      if (!value || (typeof value === 'object' && !(value instanceof Date) && Object.keys(value).length === 0)) return "";
+      const date = new Date(value as string | number | Date);
       return date.toLocaleString("ru-RU", {
         timeZone: "Europe/Moscow",
         year: "numeric",
@@ -48,9 +48,9 @@ const columns: ColumnConfig<Order>[] = [
     minWidth: 150,
     sortable: true,
     copyable: true,
-    format: (value: any) => {
-      if (!value) return "—";
-      const date = new Date(value);
+    format: (value: unknown) => {
+      if (!value || (typeof value === 'object' && !(value instanceof Date) && Object.keys(value).length === 0)) return "—";
+      const date = new Date(value as string | number | Date);
       return date.toLocaleString("ru-RU", {
         timeZone: "Europe/Moscow",
         year: "numeric",
@@ -86,13 +86,13 @@ export default function OrdersList() {
   return (
     <DataTable
       data={orders}
-      columns={memoizedColumns as any}
+      columns={memoizedColumns as ColumnConfig<unknown>[]}
       isLoading={isLoading}
       entityName="заказ"
       entityNamePlural="заказы"
       searchFields={["name", "status"]}
       onDelete={handleDelete}
-      onRowClick={handleRowClick as any}
+      onRowClick={(item) => handleRowClick(item as Order)}
       onCreate={handleCreate}
     />
   );

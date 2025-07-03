@@ -21,8 +21,8 @@ const warehouseFields: FormField[] = [
 export default function CreateWarehouse() {
   const createWarehouseMutation = useCreateWarehouse();
 
-  const handleSubmit = async (data: any) => {
-    await createWarehouseMutation.mutateAsync(data);
+  const handleSubmit = async (data: Record<string, unknown>) => {
+    await createWarehouseMutation.mutateAsync(data as { name: string; address?: string });
   };
 
   return (

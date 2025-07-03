@@ -79,7 +79,7 @@ export function useCreateReceiptDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: any) => apiRequest(API_ROUTES.DOCUMENTS.CREATE, "POST", data),
+    mutationFn: (data: unknown) => apiRequest(API_ROUTES.DOCUMENTS.CREATE, "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [API_ROUTES.DOCUMENTS.LIST] });
       queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.LIST] });

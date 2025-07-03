@@ -112,6 +112,7 @@ export interface IStorage {
     offset?: number;
   }): Promise<Log[]>;
   getLogModules(): Promise<string[]>;
+  clearAllLogs(): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -395,6 +396,10 @@ export class MemStorage implements IStorage {
 
   async deleteOrder(id: number): Promise<boolean> {
     throw new Error("Orders not supported in MemStorage");
+  }
+
+  async clearAllLogs(): Promise<number> {
+    return 0; // MemStorage doesn't support logs
   }
 }
 
@@ -1184,6 +1189,17 @@ export class DatabaseStorage implements IStorage {
       return result.map((row) => row.module);
     } catch (error) {
       console.error("Error fetching log modules:", error);
+      throw error;
+    }
+  }
+
+  async clearAllLogs(): Promise<number> {
+    try {
+      const result = await db.delete(logs);
+      console.log(`[DB] Cleared ${result.rowCount || 0} log entries`);
+      return result.rowCount || 0;
+    } catch (error) {
+      console.error("Error clearing logs:", error);
       throw error;
     }
   }

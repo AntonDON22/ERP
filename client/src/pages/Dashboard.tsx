@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
@@ -21,6 +21,7 @@ import {
   Copy,
   Check,
   ChevronLeft,
+  Trash,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,6 +34,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Update {
   type: "feature" | "fix" | "improvement" | "database";
@@ -95,6 +98,9 @@ export default function Dashboard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [copiedStates, setCopiedStates] = useState<Record<string, boolean>>({});
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // История изменений
   const { data: changelog, isLoading: changelogLoading } = useQuery<DayData[]>({
@@ -123,6 +129,34 @@ export default function Dashboard() {
   } = useQuery<PerformanceMetrics>({
     queryKey: ["/api/metrics"],
     refetchInterval: 10000, // Обновляем каждые 10 секунд
+  });
+
+  // Мутация для удаления всех логов
+  const clearLogsMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch("/api/logs", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/logs"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/logs/modules"] });
+      toast({
+        title: "Логи очищены",
+        description: data.message || "Все логи успешно удалены",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось очистить логи",
+        variant: "destructive",
+      });
+    },
   });
 
   const toggleSection = (date: string) => {
@@ -282,6 +316,12 @@ export default function Dashboard() {
     refetchMetrics();
   };
 
+  const handleClearLogs = () => {
+    if (window.confirm("Вы уверены, что хотите удалить все логи? Это действие нельзя отменить.")) {
+      clearLogsMutation.mutate();
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-6">
       <div className="text-center sm:text-left">
@@ -393,10 +433,21 @@ export default function Dashboard() {
                   <Activity className="w-5 h-5" />
                   Системные логи
                 </CardTitle>
-                <Button onClick={handleRefresh} variant="outline" size="sm" disabled={logsLoading}>
-                  <RefreshCw className={`w-4 h-4 mr-2 ${logsLoading ? "animate-spin" : ""}`} />
-                  Обновить
-                </Button>
+                <div className="flex gap-2">
+                  <Button onClick={handleRefresh} variant="outline" size="sm" disabled={logsLoading}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${logsLoading ? "animate-spin" : ""}`} />
+                    Обновить
+                  </Button>
+                  <Button 
+                    onClick={handleClearLogs} 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={clearLogsMutation.isPending}
+                  >
+                    <Trash className={`w-4 h-4 mr-2 ${clearLogsMutation.isPending ? "animate-spin" : ""}`} />
+                    Очистить все
+                  </Button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">

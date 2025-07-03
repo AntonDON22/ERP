@@ -57,4 +57,20 @@ router.get("/modules", async (req: Request, res: Response) => {
   }
 });
 
+// DELETE /api/logs - удалить все логи
+router.delete("/", async (req: Request, res: Response) => {
+  try {
+    const deletedCount = await storage.clearAllLogs();
+    
+    res.json({ 
+      success: true, 
+      message: `Удалено ${deletedCount} записей логов`,
+      deletedCount 
+    });
+  } catch (error) {
+    console.error("Error clearing logs:", error);
+    res.status(500).json({ error: "Failed to clear logs" });
+  }
+});
+
 export default router;

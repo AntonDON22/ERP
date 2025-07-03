@@ -11,7 +11,7 @@ export function useWarehouses() {
 
 export function useWarehouse(id: number) {
   return useQuery<Warehouse>({
-    queryKey: [API_ROUTES.WAREHOUSES.LIST, id],
+    queryKey: [API_ROUTES.WAREHOUSES.GET(id)],
     enabled: !!id,
   });
 }

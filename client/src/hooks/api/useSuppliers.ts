@@ -11,7 +11,7 @@ export function useSuppliers() {
 
 export function useSupplier(id: number) {
   return useQuery<Supplier>({
-    queryKey: [API_ROUTES.SUPPLIERS.LIST, id],
+    queryKey: [API_ROUTES.SUPPLIERS.GET(id)],
     enabled: !!id,
   });
 }

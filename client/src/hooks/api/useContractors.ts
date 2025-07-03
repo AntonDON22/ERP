@@ -11,7 +11,7 @@ export function useContractors() {
 
 export function useContractor(id: number) {
   return useQuery<Contractor>({
-    queryKey: [API_ROUTES.CONTRACTORS.LIST, id],
+    queryKey: [API_ROUTES.CONTRACTORS.GET(id)],
     enabled: !!id,
   });
 }

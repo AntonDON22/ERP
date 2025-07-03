@@ -11,7 +11,7 @@ export function useProducts() {
 
 export function useProduct(id: number) {
   return useQuery<Product>({
-    queryKey: [API_ROUTES.PRODUCTS.LIST, id],
+    queryKey: [API_ROUTES.PRODUCTS.GET(id)],
     enabled: !!id,
   });
 }

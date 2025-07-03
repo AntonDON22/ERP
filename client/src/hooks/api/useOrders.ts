@@ -21,7 +21,7 @@ export function useOrders() {
 
 export function useOrder(id: number) {
   return useQuery<OrderWithItems>({
-    queryKey: [API_ROUTES.ORDERS.LIST, id],
+    queryKey: [API_ROUTES.ORDERS.GET(id)],
     enabled: !!id,
   });
 }

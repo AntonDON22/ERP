@@ -26,7 +26,7 @@ export function useDocuments() {
 
 export function useDocument(id: number) {
   return useQuery<DocumentWithItems>({
-    queryKey: [API_ROUTES.DOCUMENTS.LIST, id],
+    queryKey: [API_ROUTES.DOCUMENTS.GET(id)],
     enabled: !!id,
   });
 }

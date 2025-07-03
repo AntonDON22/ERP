@@ -94,7 +94,7 @@ export default function DocumentsList() {
   const columns = useMemo(() => createColumns(warehouses), [warehouses]);
 
   const handleCreate = () => {
-    setLocation("/documents/create-receipt");
+    setLocation("/documents/create");
   };
 
   const handleRowClick = (document: DocumentRecord) => {

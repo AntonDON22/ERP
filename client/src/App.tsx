@@ -63,7 +63,7 @@ function App() {
                 <Route path="/warehouses" component={WarehousesList} />
                 <Route path="/warehouses/create" component={CreateWarehouse} />
                 <Route path="/documents" component={DocumentsList} />
-                <Route path="/documents/create-receipt" component={CreateReceiptDocument} />
+                <Route path="/documents/create" component={CreateReceiptDocument} />
                 <Route path="/documents/:id" component={EditDocument} />
                 <Route path="/inventory" component={InventoryList} />
                 <Route path="/orders" component={OrdersList} />

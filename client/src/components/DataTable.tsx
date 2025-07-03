@@ -108,7 +108,7 @@ const CopyableCell = ({
   const isCopied = copiedStates[key];
 
   return (
-    <div className="flex items-start gap-2 group">
+    <div className="flex items-start gap-2 groupoverflow-x-auto ">
       <span className={multiline ? "flex-1 break-words" : "truncate"}>{value}</span>
       <button
         onClick={() => onCopy(value, type)}
@@ -542,7 +542,7 @@ function DataTable<T = unknown>({
                 variant="default"
                 size="sm"
                 onClick={onCreate}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2text-xs sm:text-sm"
               >
                 <Plus className="w-4 h-4" />
                 Создать
@@ -554,7 +554,7 @@ function DataTable<T = unknown>({
                 variant="destructive"
                 size="sm"
                 onClick={handleDelete}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2text-xs sm:text-sm"
               >
                 <Trash2 className="w-4 h-4" />
                 {deleteLabel} ({selectedItems.size})
@@ -566,7 +566,7 @@ function DataTable<T = unknown>({
                 variant="outline"
                 size="sm"
                 onClick={handleExport}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2text-xs sm:text-sm"
               >
                 <Download className="w-4 h-4" />
                 Excel
@@ -602,7 +602,7 @@ function DataTable<T = unknown>({
           <div className="flex justify-end p-3 border-b border-gray-200">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <Button variant="outline" size="sm" className="flex items-center gap-2text-xs sm:text-sm">
                   <Settings className="w-4 h-4" />
                   Столбцы
                 </Button>
@@ -638,7 +638,7 @@ function DataTable<T = unknown>({
           </div>
 
           <ResponsiveTableWrapper className="border-0 shadow-none bg-transparent">
-            <table key={forceRender} ref={tableRef} className="w-full table-fixed">
+            <table key={forceRender} ref={tableRef} className="w-full table-fixed overflow-x-auto">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
                   {!hideSelectionColumn && (

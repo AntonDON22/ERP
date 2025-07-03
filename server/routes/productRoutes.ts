@@ -24,11 +24,27 @@ const getProductSchema = z.object({
     .refine((val) => !isNaN(val), "ID должен быть числом"),
 });
 
-// GET /api/products (временно без пагинации)
+// GET /api/products с поддержкой пагинации
 router.get("/", async (req, res) => {
   try {
-    const products = await productService.getAll();
-    res.json(products);
+    // Проверяем наличие параметров пагинации
+    const hasPageParam = req.query.page !== undefined;
+    
+    if (hasPageParam) {
+      // Используем пагинацию
+      const params = paginationService.parseParams(req.query);
+      const normalizedParams = paginationService.normalizeParams(params);
+      const products = await productService.getAllPaginated(normalizedParams);
+      const total = await productService.getCount();
+      const result = paginationService.createResult(products, total, normalizedParams);
+      
+      paginationService.logUsage("/api/products", normalizedParams, total);
+      res.json(result);
+    } else {
+      // Без пагинации для обратной совместимости
+      const products = await productService.getAll();
+      res.json(products);
+    }
   } catch (error) {
     apiLogger.error("Failed to get products", {
       error: error instanceof Error ? error.message : String(error),
@@ -167,4 +183,4 @@ router.post("/import", async (req, res) => {
   }
 });
 
-export default router;
+export { router as productRoutes };

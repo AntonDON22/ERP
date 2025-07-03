@@ -1,22 +1,36 @@
 import { Router } from "express";
-import { ContractorService } from "../services/contractorService";
+import { contractorService } from "../services/contractorService";
+import { paginationService } from "../services/paginationService";
 import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
-import { apiLogger } from "../../shared/logger";
+import { logger } from "../../shared/logger";
 
 const router = Router();
-const contractorService = new ContractorService();
+const apiLogger = logger;
 
-// Валидация для удаления контрагентов
-const deleteContractorsSchema = z.object({
-  contractorIds: z.array(z.number()).min(1, "Укажите хотя бы одного контрагента для удаления"),
+const idParamSchema = z.object({
+  id: z.string()
+    .transform((val) => parseInt(val))
+    .refine((val) => !isNaN(val), "ID должен быть числом"),
 });
 
-// GET /api/contractors
+// GET /api/contractors с поддержкой пагинации
 router.get("/", async (req, res) => {
   try {
-    const contractors = await contractorService.getAll();
-    res.json(contractors);
+    const hasPageParam = req.query.page !== undefined;
+    
+    if (hasPageParam) {
+      const params = paginationService.parseParams(req.query);
+      const normalizedParams = paginationService.normalizeParams(params);
+      const contractors = await contractorService.getAllPaginated(normalizedParams);
+      const total = await contractorService.getCount();
+      const result = paginationService.createResult(contractors, total, normalizedParams);
+      
+      paginationService.logUsage("/api/contractors", normalizedParams, total);
+      res.json(result);
+    } else {
+      const contractors = await contractorService.getAll();
+      res.json(contractors);
+    }
   } catch (error) {
     apiLogger.error("Failed to get contractors", {
       error: error instanceof Error ? error.message : String(error),
@@ -28,20 +42,17 @@ router.get("/", async (req, res) => {
 // GET /api/contractors/:id
 router.get("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID контрагента" });
-    }
-
-    const contractor = await contractorService.getById(id);
+    const { id } = req.params as { id: string };
+    const contractor = await contractorService.getById(parseInt(id));
+    
     if (!contractor) {
       return res.status(404).json({ error: "Контрагент не найден" });
     }
-
+    
     res.json(contractor);
   } catch (error) {
     apiLogger.error("Failed to get contractor", {
-      contractorId: req.params.id,
+      id: req.params.id,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ error: "Ошибка получения контрагента" });
@@ -65,20 +76,17 @@ router.post("/", async (req, res) => {
 // PUT /api/contractors/:id
 router.put("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID контрагента" });
-    }
-
-    const contractor = await contractorService.update(id, req.body);
+    const { id } = req.params as { id: string };
+    const contractor = await contractorService.update(parseInt(id), req.body);
+    
     if (!contractor) {
       return res.status(404).json({ error: "Контрагент не найден" });
     }
-
+    
     res.json(contractor);
   } catch (error) {
     apiLogger.error("Failed to update contractor", {
-      contractorId: req.params.id,
+      id: req.params.id,
       body: req.body,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -89,20 +97,17 @@ router.put("/:id", async (req, res) => {
 // DELETE /api/contractors/:id
 router.delete("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID контрагента" });
-    }
-
-    const success = await contractorService.delete(id);
+    const { id } = req.params as { id: string };
+    const success = await contractorService.delete(parseInt(id));
+    
     if (!success) {
       return res.status(404).json({ error: "Контрагент не найден" });
     }
-
+    
     res.json({ success: true });
   } catch (error) {
     apiLogger.error("Failed to delete contractor", {
-      contractorId: req.params.id,
+      id: req.params.id,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ error: "Ошибка удаления контрагента" });
@@ -112,21 +117,15 @@ router.delete("/:id", async (req, res) => {
 // POST /api/contractors/delete-multiple
 router.post("/delete-multiple", async (req, res) => {
   try {
-    const validatedData = deleteContractorsSchema.parse(req.body);
-    const results = await contractorService.deleteMultiple(validatedData.contractorIds);
-    res.json(results);
+    const count = await contractorService.deleteMultiple(req.body.ids);
+    res.json({ success: true, count });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({ error: validationError.message });
-    }
-
     apiLogger.error("Failed to delete multiple contractors", {
-      body: req.body,
+      ids: req.body.ids,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ error: "Ошибка удаления контрагентов" });
   }
 });
 
-export default router;
+export { router as contractorRoutes };

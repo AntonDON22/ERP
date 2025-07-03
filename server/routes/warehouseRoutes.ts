@@ -1,22 +1,36 @@
 import { Router } from "express";
-import { WarehouseService } from "../services/warehouseService";
+import { warehouseService } from "../services/warehouseService";
+import { paginationService } from "../services/paginationService";
 import { z } from "zod";
-import { fromZodError } from "zod-validation-error";
-import { apiLogger } from "../../shared/logger";
+import { logger } from "../../shared/logger";
 
 const router = Router();
-const warehouseService = new WarehouseService();
+const apiLogger = logger;
 
-// Валидация для удаления складов
-const deleteWarehousesSchema = z.object({
-  warehouseIds: z.array(z.number()).min(1, "Укажите хотя бы один склад для удаления"),
+const idParamSchema = z.object({
+  id: z.string()
+    .transform((val) => parseInt(val))
+    .refine((val) => !isNaN(val), "ID должен быть числом"),
 });
 
-// GET /api/warehouses
+// GET /api/warehouses с поддержкой пагинации
 router.get("/", async (req, res) => {
   try {
-    const warehouses = await warehouseService.getAll();
-    res.json(warehouses);
+    const hasPageParam = req.query.page !== undefined;
+    
+    if (hasPageParam) {
+      const params = paginationService.parseParams(req.query);
+      const normalizedParams = paginationService.normalizeParams(params);
+      const warehouses = await warehouseService.getAllPaginated(normalizedParams);
+      const total = await warehouseService.getCount();
+      const result = paginationService.createResult(warehouses, total, normalizedParams);
+      
+      paginationService.logUsage("/api/warehouses", normalizedParams, total);
+      res.json(result);
+    } else {
+      const warehouses = await warehouseService.getAll();
+      res.json(warehouses);
+    }
   } catch (error) {
     apiLogger.error("Failed to get warehouses", {
       error: error instanceof Error ? error.message : String(error),
@@ -28,20 +42,17 @@ router.get("/", async (req, res) => {
 // GET /api/warehouses/:id
 router.get("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID склада" });
-    }
-
-    const warehouse = await warehouseService.getById(id);
+    const { id } = req.params as { id: string };
+    const warehouse = await warehouseService.getById(parseInt(id));
+    
     if (!warehouse) {
       return res.status(404).json({ error: "Склад не найден" });
     }
-
+    
     res.json(warehouse);
   } catch (error) {
     apiLogger.error("Failed to get warehouse", {
-      warehouseId: req.params.id,
+      id: req.params.id,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ error: "Ошибка получения склада" });
@@ -65,20 +76,17 @@ router.post("/", async (req, res) => {
 // PUT /api/warehouses/:id
 router.put("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID склада" });
-    }
-
-    const warehouse = await warehouseService.update(id, req.body);
+    const { id } = req.params as { id: string };
+    const warehouse = await warehouseService.update(parseInt(id), req.body);
+    
     if (!warehouse) {
       return res.status(404).json({ error: "Склад не найден" });
     }
-
+    
     res.json(warehouse);
   } catch (error) {
     apiLogger.error("Failed to update warehouse", {
-      warehouseId: req.params.id,
+      id: req.params.id,
       body: req.body,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -89,20 +97,17 @@ router.put("/:id", async (req, res) => {
 // DELETE /api/warehouses/:id
 router.delete("/:id", async (req, res) => {
   try {
-    const id = parseInt(req.params.id);
-    if (isNaN(id)) {
-      return res.status(400).json({ error: "Некорректный ID склада" });
-    }
-
-    const success = await warehouseService.delete(id);
+    const { id } = req.params as { id: string };
+    const success = await warehouseService.delete(parseInt(id));
+    
     if (!success) {
       return res.status(404).json({ error: "Склад не найден" });
     }
-
+    
     res.json({ success: true });
   } catch (error) {
     apiLogger.error("Failed to delete warehouse", {
-      warehouseId: req.params.id,
+      id: req.params.id,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ error: "Ошибка удаления склада" });
@@ -112,21 +117,15 @@ router.delete("/:id", async (req, res) => {
 // POST /api/warehouses/delete-multiple
 router.post("/delete-multiple", async (req, res) => {
   try {
-    const validatedData = deleteWarehousesSchema.parse(req.body);
-    const results = await warehouseService.deleteMultiple(validatedData.warehouseIds);
-    res.json(results);
+    const count = await warehouseService.deleteMultiple(req.body.ids);
+    res.json({ success: true, count });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      const validationError = fromZodError(error);
-      return res.status(400).json({ error: validationError.message });
-    }
-
     apiLogger.error("Failed to delete multiple warehouses", {
-      body: req.body,
+      ids: req.body.ids,
       error: error instanceof Error ? error.message : String(error),
     });
     res.status(500).json({ error: "Ошибка удаления складов" });
   }
 });
 
-export default router;
+export { router as warehouseRoutes };

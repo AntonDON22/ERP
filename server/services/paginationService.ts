@@ -47,6 +47,26 @@ export class PaginationService {
   /**
    * Нормализует параметры пагинации
    */
+  /**
+   * Парсит параметры запроса в стандартизированный формат
+   */
+  parseParams(query: any): PaginationParams {
+    const page = Math.max(1, parseInt(String(query.page || 1)));
+    const limit = Math.min(
+      this.MAX_LIMIT,
+      Math.max(1, parseInt(String(query.limit || this.DEFAULT_LIMIT)))
+    );
+    const offset = (page - 1) * limit;
+
+    return {
+      page,
+      limit,
+      offset,
+      sort: this.isSafeSortField(String(query.sort || "id")) ? String(query.sort || "id") : "id",
+      order: query.order === "desc" ? "desc" : "asc",
+    };
+  }
+
   // ✅ ИСПРАВЛЕНО: Типизация вместо any
   normalizeParams(params: Partial<PaginationParams>): Required<PaginationParams> {
     const page = Math.max(1, parseInt(String(params.page) || String(this.DEFAULT_PAGE)));
@@ -69,6 +89,13 @@ export class PaginationService {
     }
 
     return { page, limit, offset, sort, order };
+  }
+
+  /**
+   * Проверяет безопасность поля для сортировки
+   */
+  private isSafeSortField(field: string): boolean {
+    return this.SAFE_SORT_FIELDS.has(field);
   }
 
   /**

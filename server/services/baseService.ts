@@ -141,6 +141,92 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
   }
 
   /**
+   * 📊 Получить общее количество записей
+   */
+  async getCount(): Promise<number> {
+    try {
+      const allRecords = await this.getAll();
+      return allRecords.length;
+    } catch (error) {
+      apiLogger.error(`Error getting ${this.entityName.toLowerCase()} count`, {
+        entity: this.entityName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * 📄 Получить записи с пагинацией
+   */
+  async getAllPaginated(params: any): Promise<T[]> {
+    try {
+      // Получаем все записи через BaseService
+      const allRecords = await this.getAll();
+
+      // Применяем сортировку
+      const sortedRecords = this.sortRecords(
+        allRecords,
+        params.sort || 'id',
+        params.order || 'asc'
+      );
+
+      // Применяем пагинацию в памяти
+      const startIndex = params.offset || 0;
+      const endIndex = startIndex + (params.limit || 20);
+      const data = sortedRecords.slice(startIndex, endIndex);
+
+      return data;
+    } catch (error) {
+      apiLogger.error(`Error getting paginated ${this.entityName.toLowerCase()}`, {
+        entity: this.entityName,
+        params,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * 🔄 Сортировка записей
+   */
+  protected sortRecords(records: T[], sortField: string, order: 'asc' | 'desc'): T[] {
+    return records.sort((a, b) => {
+      const aValue = (a as any)[sortField];
+      const bValue = (b as any)[sortField];
+      
+      // Обработка null/undefined значений
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return order === 'asc' ? 1 : -1;
+      if (bValue == null) return order === 'asc' ? -1 : 1;
+      
+      // Сравнение значений
+      if (aValue < bValue) return order === 'asc' ? -1 : 1;
+      if (aValue > bValue) return order === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  /**
+   * 📄 Пагинированное получение записей (базовая реализация)
+   */
+  async getAllPaginated(params: any): Promise<T[]> {
+    try {
+      const allRecords = await this.getAll();
+      const startIndex = params.offset || 0;
+      const endIndex = startIndex + (params.limit || 50);
+      return allRecords.slice(startIndex, endIndex);
+    } catch (error) {
+      apiLogger.error(`Error getting paginated ${this.entityName.toLowerCase()}`, {
+        entity: this.entityName,
+        params,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
    * 🗑️ Удалить запись с проверкой существования
    */
   async delete(id: number): Promise<boolean> {

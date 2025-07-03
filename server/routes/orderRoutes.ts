@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { OrderService } from "../services/orderService";
+import { paginationService } from "../services/paginationService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger, logger, getErrorMessage } from "../../shared/logger";
@@ -18,11 +19,25 @@ const deleteOrdersSchema = z.object({
   orderIds: z.array(z.number()).min(1, "Укажите хотя бы один заказ для удаления"),
 });
 
-// GET /api/orders
+// GET /api/orders с поддержкой пагинации
 router.get("/", async (req, res) => {
   try {
-    const orders = await OrderService.getInstance().getAll();
-    res.json(orders);
+    const hasPageParam = req.query.page !== undefined;
+    const orderService = OrderService.getInstance();
+    
+    if (hasPageParam) {
+      const params = paginationService.parseParams(req.query);
+      const normalizedParams = paginationService.normalizeParams(params);
+      const orders = await orderService.getAllPaginated(normalizedParams);
+      const total = await orderService.getCount();
+      const result = paginationService.createResult(orders, total, normalizedParams);
+      
+      paginationService.logUsage("/api/orders", normalizedParams, total);
+      res.json(result);
+    } else {
+      const orders = await orderService.getAll();
+      res.json(orders);
+    }
   } catch (error) {
     apiLogger.error("Failed to get orders", {
       error: error instanceof Error ? error.message : String(error),

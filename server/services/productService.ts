@@ -28,7 +28,7 @@ export class ProductService extends BaseService<Product, InsertProduct> {
   }
 
   // Специализированный метод пагинации для продуктов
-  async getAllPaginated(params: Record<string, unknown>) {
+  async getAllPaginated(params: any) {
     const normalizedParams = paginationService.normalizeParams(params);
 
     // Получаем все продукты через BaseService
@@ -47,7 +47,7 @@ export class ProductService extends BaseService<Product, InsertProduct> {
     const endIndex = startIndex + normalizedParams.limit;
     const data = sortedProducts.slice(startIndex, endIndex);
 
-    return paginationService.createResult(data, total, normalizedParams);
+    return data;
   }
 
   // ✅ ИСПРАВЛЕНО: Типизация вместо any

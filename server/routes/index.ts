@@ -1,8 +1,8 @@
 import { Router } from "express";
-import productRoutes from "./productRoutes";
-import supplierRoutes from "./supplierRoutes";
-import contractorRoutes from "./contractorRoutes";
-import warehouseRoutes from "./warehouseRoutes";
+import { productRoutes } from "./productRoutes";
+import { supplierRoutes } from "./supplierRoutes";
+import { contractorRoutes } from "./contractorRoutes";
+import { warehouseRoutes } from "./warehouseRoutes";
 import inventoryRoutes from "./inventoryRoutes";
 import documentRoutes from "./documentRoutes";
 import orderRoutes from "./orderRoutes";

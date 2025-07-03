@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { DocumentService } from "../services/documentService";
+import { paginationService } from "../services/paginationService";
 import { cacheService } from "../services/cacheService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
@@ -56,11 +57,24 @@ const getDocumentSchema = z.object({
     .refine((val) => !isNaN(val), "ID должен быть числом"),
 });
 
-// GET /api/documents
+// GET /api/documents с поддержкой пагинации
 router.get("/", async (req, res) => {
   try {
-    const documents = await documentService.getAll();
-    res.json(documents);
+    const hasPageParam = req.query.page !== undefined;
+    
+    if (hasPageParam) {
+      const params = paginationService.parseParams(req.query);
+      const normalizedParams = paginationService.normalizeParams(params);
+      const documents = await documentService.getAllPaginated(normalizedParams);
+      const total = await documentService.getCount();
+      const result = paginationService.createResult(documents, total, normalizedParams);
+      
+      paginationService.logUsage("/api/documents", normalizedParams, total);
+      res.json(result);
+    } else {
+      const documents = await documentService.getAll();
+      res.json(documents);
+    }
   } catch (error) {
     apiLogger.error("Failed to get documents", {
       error: error instanceof Error ? error.message : String(error),

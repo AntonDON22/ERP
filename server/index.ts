@@ -1,5 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import rateLimit from "express-rate-limit";
+import cors from "cors";
+import helmet from "helmet";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { logRequests, logErrors } from "./middleware/logging";
@@ -8,6 +10,41 @@ import { cacheWarmupService } from "./services/cacheWarmupService";
 
 const app = express();
 app.set("trust proxy", 1); // Доверяем первому прокси для корректной работы rate limiter
+
+// 🔐 КРИТИЧЕСКИЕ SECURITY MIDDLEWARE
+// CORS configuration для защиты от cross-origin атак
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://yourdomain.com']
+    : ['http://localhost:5173', 'http://localhost:3000', 'http://127.0.0.1:5173'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Security headers для защиты от XSS, clickjacking и других атак
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // unsafe-eval для Vite HMR
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      connectSrc: ["'self'", "ws:", "wss:"], // WebSocket для HMR
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"]
+    }
+  },
+  crossOriginEmbedderPolicy: false, // Отключаем для совместимости с Vite
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -25,7 +62,7 @@ const limiter = rateLimit({
 // Более строгие лимиты для API маршрутов
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 минут
-  max: 500, // максимум 500 API запросов с одного IP за 15 минут
+  max: 300, // Снижено с 500 для усиления безопасности
   message: {
     error: "Слишком много API запросов с вашего IP, попробуйте позже",
   },
@@ -33,8 +70,19 @@ const apiLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Критичные лимиты для операций изменения данных
+const mutationLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 минут
+  max: 30, // Максимум 30 POST/PUT/DELETE за 10 минут
+  message: {
+    error: "Слишком много операций изменения данных, попробуйте позже",
+  },
+  skip: (req) => req.method === 'GET' || req.method === 'OPTIONS',
+});
+
 app.use(limiter);
 app.use("/api", apiLimiter);
+app.use("/api", mutationLimiter);
 
 // Добавляем централизованное логирование для API запросов
 app.use("/api", logRequests);

@@ -3,6 +3,8 @@
  * Отправляет JavaScript ошибки браузера на сервер для централизованного логирования
  */
 
+import { API_ROUTES } from "@shared/apiRoutes";
+
 interface ClientError {
   message: string;
   stack?: string;
@@ -14,7 +16,7 @@ interface ClientError {
 
 async function logClientError(error: ClientError) {
   try {
-    await fetch("/api/client-errors", {
+    await fetch(API_ROUTES.SYSTEM.CLIENT_ERRORS, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

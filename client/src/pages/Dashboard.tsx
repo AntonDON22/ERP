@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { API_ROUTES } from "@shared/apiRoutes";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import {
   ChevronDown,
@@ -104,7 +105,7 @@ export default function Dashboard() {
 
   // История изменений
   const { data: changelog, isLoading: changelogLoading } = useQuery<DayData[]>({
-    queryKey: ["/api/changelog"],
+    queryKey: [API_ROUTES.SYSTEM.CHANGELOG],
   });
 
   // Логи
@@ -113,12 +114,12 @@ export default function Dashboard() {
     isLoading: logsLoading,
     refetch: refetchLogs,
   } = useQuery<LogEntry[]>({
-    queryKey: ["/api/logs"],
+    queryKey: [API_ROUTES.SYSTEM.LOGS.LIST],
     refetchInterval: 30000, // Обновляем каждые 30 секунд
   });
 
   const { data: modules } = useQuery<string[]>({
-    queryKey: ["/api/logs/modules"],
+    queryKey: [API_ROUTES.SYSTEM.LOGS.MODULES],
   });
 
   // Метрики производительности
@@ -127,14 +128,14 @@ export default function Dashboard() {
     isLoading: metricsLoading,
     refetch: refetchMetrics,
   } = useQuery<PerformanceMetrics>({
-    queryKey: ["/api/metrics"],
+    queryKey: [API_ROUTES.SYSTEM.METRICS],
     refetchInterval: 10000, // Обновляем каждые 10 секунд
   });
 
   // Мутация для удаления всех логов
   const clearLogsMutation = useMutation({
     mutationFn: async () => {
-      const response = await fetch("/api/logs", {
+      const response = await fetch(API_ROUTES.SYSTEM.LOGS.CLEAR, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -143,8 +144,8 @@ export default function Dashboard() {
       return response.json();
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/logs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/logs/modules"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SYSTEM.LOGS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SYSTEM.LOGS.MODULES] });
       toast({
         title: "Логи очищены",
         description: data.message || "Все логи успешно удалены",

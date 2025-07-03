@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { API_ROUTES } from "@shared/apiRoutes";
 
 export interface InventoryItem {
   id: number;
@@ -9,17 +10,19 @@ export interface InventoryItem {
 }
 
 export function useInventory(warehouseId?: number) {
-  const queryParams = warehouseId ? `?warehouseId=${warehouseId}` : "";
-
+  const params = warehouseId ? `?warehouseId=${warehouseId}` : "";
+  
   return useQuery<InventoryItem[]>({
-    queryKey: [`/api/inventory${queryParams}`],
+    queryKey: [API_ROUTES.INVENTORY.LIST, warehouseId || "all"],
+    queryFn: () => fetch(API_ROUTES.INVENTORY.LIST + params).then(res => res.json()),
   });
 }
 
 export function useInventoryAvailability(warehouseId?: number) {
-  const queryParams = warehouseId ? `?warehouseId=${warehouseId}` : "";
-
+  const params = warehouseId ? `?warehouseId=${warehouseId}` : "";
+  
   return useQuery<InventoryItem[]>({
-    queryKey: [`/api/inventory/availability${queryParams}`],
+    queryKey: [API_ROUTES.INVENTORY.AVAILABILITY, warehouseId || "all"],
+    queryFn: () => fetch(API_ROUTES.INVENTORY.AVAILABILITY + params).then(res => res.json()),
   });
 }

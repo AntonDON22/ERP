@@ -30,6 +30,7 @@ export const API_ROUTES = {
     UPDATE: (id: number) => `/api/suppliers/${id}` as const,
     DELETE: (id: number) => `/api/suppliers/${id}` as const,
     DELETE_MULTIPLE: "/api/suppliers/delete-multiple" as const,
+    IMPORT: "/api/suppliers/import" as const,
   },
 
   // Контрагенты
@@ -40,6 +41,7 @@ export const API_ROUTES = {
     UPDATE: (id: number) => `/api/contractors/${id}` as const,
     DELETE: (id: number) => `/api/contractors/${id}` as const,
     DELETE_MULTIPLE: "/api/contractors/delete-multiple" as const,
+    IMPORT: "/api/contractors/import" as const,
   },
 
   // Склады
@@ -50,6 +52,7 @@ export const API_ROUTES = {
     UPDATE: (id: number) => `/api/warehouses/${id}` as const,
     DELETE: (id: number) => `/api/warehouses/${id}` as const,
     DELETE_MULTIPLE: "/api/warehouses/delete-multiple" as const,
+    IMPORT: "/api/warehouses/import" as const,
   },
 
   // Документы (ВНИМАНИЕ: Только /create для создания!)
@@ -87,6 +90,7 @@ export const API_ROUTES = {
     },
     METRICS: "/api/metrics" as const,
     CHANGELOG: "/api/changelog" as const,
+    CLIENT_ERRORS: "/api/client-errors" as const,
     CACHE: {
       WARMUP: "/api/cache/warmup" as const,
       STATUS: "/api/cache/status" as const,

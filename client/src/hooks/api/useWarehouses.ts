@@ -1,16 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { API_ROUTES } from "@shared/apiRoutes";
 import type { Warehouse, InsertWarehouse } from "@shared/schema";
 
 export function useWarehouses() {
   return useQuery<Warehouse[]>({
-    queryKey: ["/api/warehouses"],
+    queryKey: [API_ROUTES.WAREHOUSES.LIST],
   });
 }
 
 export function useWarehouse(id: number) {
   return useQuery<Warehouse>({
-    queryKey: ["/api/warehouses", id],
+    queryKey: [API_ROUTES.WAREHOUSES.LIST, id],
     enabled: !!id,
   });
 }
@@ -19,9 +20,9 @@ export function useCreateWarehouse() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: InsertWarehouse) => apiRequest("/api/warehouses", "POST", data),
+    mutationFn: (data: InsertWarehouse) => apiRequest(API_ROUTES.WAREHOUSES.CREATE, "POST", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.WAREHOUSES.LIST] });
     },
   });
 }
@@ -31,10 +32,10 @@ export function useUpdateWarehouse() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<InsertWarehouse> }) =>
-      apiRequest(`/api/warehouses/${id}`, "PUT", data),
+      apiRequest(API_ROUTES.WAREHOUSES.UPDATE(id), "PUT", data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses", id] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.WAREHOUSES.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.WAREHOUSES.LIST, id] });
     },
   });
 }
@@ -43,9 +44,9 @@ export function useDeleteWarehouse() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/warehouses/${id}`, "DELETE"),
+    mutationFn: (id: number) => apiRequest(API_ROUTES.WAREHOUSES.DELETE(id), "DELETE"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.WAREHOUSES.LIST] });
     },
   });
 }
@@ -54,9 +55,9 @@ export function useDeleteWarehouses() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ids: number[]) => apiRequest("/api/warehouses/delete-multiple", "POST", { warehouseIds: ids }),
+    mutationFn: (ids: number[]) => apiRequest(API_ROUTES.WAREHOUSES.DELETE_MULTIPLE, "POST", { warehouseIds: ids }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.WAREHOUSES.LIST] });
     },
   });
 }
@@ -65,9 +66,9 @@ export function useImportWarehouses() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: unknown[]) => apiRequest("/api/warehouses/import", "POST", { warehouses: data }),
+    mutationFn: (data: unknown[]) => apiRequest(API_ROUTES.WAREHOUSES.IMPORT, "POST", { warehouses: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/warehouses"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.WAREHOUSES.LIST] });
     },
   });
 }

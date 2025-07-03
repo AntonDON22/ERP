@@ -1,16 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { API_ROUTES } from "@shared/apiRoutes";
 import type { Contractor, InsertContractor } from "@shared/schema";
 
 export function useContractors() {
   return useQuery<Contractor[]>({
-    queryKey: ["/api/contractors"],
+    queryKey: [API_ROUTES.CONTRACTORS.LIST],
   });
 }
 
 export function useContractor(id: number) {
   return useQuery<Contractor>({
-    queryKey: ["/api/contractors", id],
+    queryKey: [API_ROUTES.CONTRACTORS.LIST, id],
     enabled: !!id,
   });
 }
@@ -19,9 +20,9 @@ export function useCreateContractor() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: InsertContractor) => apiRequest("/api/contractors", "POST", data),
+    mutationFn: (data: InsertContractor) => apiRequest(API_ROUTES.CONTRACTORS.CREATE, "POST", data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.CONTRACTORS.LIST] });
     },
   });
 }
@@ -31,10 +32,10 @@ export function useUpdateContractor() {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: Partial<InsertContractor> }) =>
-      apiRequest(`/api/contractors/${id}`, "PUT", data),
+      apiRequest(API_ROUTES.CONTRACTORS.UPDATE(id), "PUT", data),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors", id] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.CONTRACTORS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.CONTRACTORS.LIST, id] });
     },
   });
 }
@@ -43,9 +44,9 @@ export function useDeleteContractor() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/contractors/${id}`, "DELETE"),
+    mutationFn: (id: number) => apiRequest(API_ROUTES.CONTRACTORS.DELETE(id), "DELETE"),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.CONTRACTORS.LIST] });
     },
   });
 }
@@ -54,9 +55,9 @@ export function useDeleteContractors() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (ids: number[]) => apiRequest("/api/contractors/delete-multiple", "POST", { contractorIds: ids }),
+    mutationFn: (ids: number[]) => apiRequest(API_ROUTES.CONTRACTORS.DELETE_MULTIPLE, "POST", { contractorIds: ids }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.CONTRACTORS.LIST] });
     },
   });
 }
@@ -65,9 +66,9 @@ export function useImportContractors() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: unknown[]) => apiRequest("/api/contractors/import", "POST", { contractors: data }),
+    mutationFn: (data: unknown[]) => apiRequest(API_ROUTES.CONTRACTORS.IMPORT, "POST", { contractors: data }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/contractors"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.CONTRACTORS.LIST] });
     },
   });
 }

@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { API_ROUTES } from "@shared/apiRoutes";
 
 export function usePostDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (documentId: number) => {
-      const response = await fetch(`/api/documents/${documentId}/post`, {
+      const response = await fetch(`${API_ROUTES.DOCUMENTS.UPDATE(documentId)}/post`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -18,9 +19,9 @@ export function usePostDocument() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.DOCUMENTS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.AVAILABILITY] });
     },
   });
 }
@@ -30,7 +31,7 @@ export function useUnpostDocument() {
 
   return useMutation({
     mutationFn: async (documentId: number) => {
-      const response = await fetch(`/api/documents/${documentId}/unpost`, {
+      const response = await fetch(`${API_ROUTES.DOCUMENTS.UPDATE(documentId)}/unpost`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -42,9 +43,9 @@ export function useUnpostDocument() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.DOCUMENTS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.AVAILABILITY] });
     },
   });
 }
@@ -54,7 +55,7 @@ export function useToggleDocumentStatus() {
 
   return useMutation({
     mutationFn: async (documentId: number) => {
-      const response = await fetch(`/api/documents/${documentId}/toggle-status`, {
+      const response = await fetch(`${API_ROUTES.DOCUMENTS.UPDATE(documentId)}/toggle-status`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -66,9 +67,9 @@ export function useToggleDocumentStatus() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/documents"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/availability"] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.DOCUMENTS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.INVENTORY.AVAILABILITY] });
     },
   });
 }

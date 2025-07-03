@@ -29,7 +29,8 @@ export interface DocumentTypeConfig {
   submitLabel: string;
   successMessage: string;
   backUrl: string;
-  mutationHook: () => any;
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для mutationHook
+  mutationHook: () => { mutate: (data: unknown) => void; isPending: boolean };
 }
 
 // Данные существующего документа для редактирования
@@ -110,8 +111,11 @@ export default function Document({ config, documentData }: DocumentProps) {
   // Обновление формы при изменении documentData
   useEffect(() => {
     if (documentData) {
-      console.log("🔄 Document - заполнение формы данными:", documentData);
-      console.log("📦 Document - items из данных:", documentData.items);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === 'development') {
+        console.debug("🔄 Document - заполнение формы данными:", documentData);
+        console.debug("📦 Document - items из данных:", documentData.items);
+      }
       
       const formData = {
         warehouseId: documentData.warehouseId ?? 0,
@@ -123,7 +127,10 @@ export default function Document({ config, documentData }: DocumentProps) {
         })) || [{ productId: 0, quantity: 1, price: 0 }],
       };
       
-      console.log("📋 Document - форма будет заполнена:", formData);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === 'development') {
+        console.debug("📋 Document - форма будет заполнена:", formData);
+      }
       form.reset(formData);
     }
   }, [documentData, form]);
@@ -155,8 +162,8 @@ export default function Document({ config, documentData }: DocumentProps) {
   // Обработчик сохранения
   const handleSave = async (data: FormDocument) => {
     const currentSubmissionId = ++submissionCounter.current;
-    // Structured logging for submission tracking
-    if (process.env.NODE_ENV === "development") {
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.debug
+    if (process.env.NODE_ENV === 'development') {
       console.debug("[Document]", "Starting submission", { submissionId: currentSubmissionId });
     }
 

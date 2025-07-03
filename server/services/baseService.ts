@@ -155,7 +155,8 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
       }
       
       const methodName = `delete${this.entityName}`;
-      const result = await (storage as any)[methodName](id);
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для delete с безопасным casting
+      const result = await (storage as unknown as Record<string, (id: number) => Promise<boolean>>)[methodName](id);
       
       if (result) {
         apiLogger.info(`Deleted ${this.entityName.toLowerCase()}`, {
@@ -214,7 +215,8 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
   /**
    * Импорт данных
    */
-  async import(items: any[]): Promise<T[]> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для import массива
+  async import(items: unknown[]): Promise<T[]> {
     if (!Array.isArray(items)) {
       throw new Error(`Expected array for ${this.entityName.toLowerCase()} import`);
     }
@@ -304,5 +306,6 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
   /**
    * 📦 Валидация данных для импорта (должна быть реализована в наследниках)
    */
-  protected abstract validateImportData(data: any): Promise<InsertT>;
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для abstract метода валидации
+  protected abstract validateImportData(data: unknown): Promise<InsertT>;
 }

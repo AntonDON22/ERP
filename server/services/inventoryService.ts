@@ -75,17 +75,25 @@ export class InventoryService {
       `);
 
       const duration = Date.now() - startTime;
-      console.log(
-        `[DB] getInventory completed in ${duration}ms, returned ${result.rows.length} items`
-      );
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log  
+      logger.debug("getInventory completed", {
+        duration: `${duration}ms`,
+        rowCount: result.rows.length,
+        service: "inventory"
+      });
 
-      return result.rows.map((row: any) => ({
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для SQL результатов
+      return result.rows.map((row: Record<string, unknown>) => ({
         id: row.id as number,
         name: row.name as string,
         quantity: parseFloat(row.quantity as string) || 0,
       }));
     } catch (error) {
-      console.error("[DB] Error in getInventory:", error);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.error
+      logger.error("Error in getInventory", { 
+        error: (error as Error).message,
+        service: "inventory"
+      });
       throw error;
     }
   }
@@ -120,7 +128,11 @@ export class InventoryService {
         available: row.available || 0,
       }));
     } catch (error) {
-      console.error("[MATERIALIZED] Error, falling back to direct query:", error);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.error
+      logger.warn("Materialized view error, falling back to direct query", {
+        error: (error as Error).message,
+        service: "inventory"
+      });
       return this.getInventoryAvailabilityFromDirectQuery();
     }
   }
@@ -133,7 +145,8 @@ export class InventoryService {
   ): Promise<
     Array<{ id: number; name: string; quantity: number; reserved: number; available: number }>
   > {
-    console.log("[DB] Starting inventory availability query...");
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.debug("Starting inventory availability query", { service: "inventory" });
     const startTime = Date.now();
 
     try {
@@ -190,11 +203,15 @@ export class InventoryService {
       }
 
       const duration = Date.now() - startTime;
-      console.log(
-        `[DB] Inventory availability completed in ${duration}ms, returned ${result.rows.length} items`
-      );
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.debug("Inventory availability completed", {
+        duration: `${duration}ms`,
+        rowCount: result.rows.length,
+        service: "inventory"
+      });
 
-      return result.rows.map((row: any) => ({
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для SQL результатов
+      return result.rows.map((row: Record<string, unknown>) => ({
         id: row.id as number,
         name: row.name as string,
         quantity: parseFloat(row.quantity as string) || 0,
@@ -202,7 +219,11 @@ export class InventoryService {
         available: parseFloat(row.available as string) || 0,
       }));
     } catch (error) {
-      console.error("[DB] Error in getInventoryAvailability:", error);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.error
+      logger.error("Error in getInventoryAvailability", {
+        error: (error as Error).message,
+        service: "inventory"
+      });
       throw error;
     }
   }

@@ -14,7 +14,8 @@ export class SupplierService extends BaseService<Supplier, InsertSupplier> {
   protected insertSchema = insertSupplierSchema;
   protected updateSchema = insertSupplierSchema.partial();
 
-  protected async validateImportData(data: any): Promise<InsertSupplier> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для валидации импорта
+  protected async validateImportData(data: unknown): Promise<InsertSupplier> {
     return insertSupplierSchema.parse(data);
   }
   async getAll(): Promise<Supplier[]> {
@@ -76,7 +77,8 @@ export class SupplierService extends BaseService<Supplier, InsertSupplier> {
     return { deletedCount, results };
   }
 
-  async import(suppliers: any[]): Promise<Supplier[]> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для импорта массива
+  async import(suppliers: unknown[]): Promise<Supplier[]> {
     if (!Array.isArray(suppliers)) {
       throw new Error("Ожидается массив поставщиков");
     }

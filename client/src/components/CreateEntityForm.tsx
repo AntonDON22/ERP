@@ -31,7 +31,8 @@ export interface CreateEntityFormProps {
   title: string;
   description?: string;
   fields: FormField[];
-  onSubmit: (data: any) => Promise<void>;
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для onSubmit
+  onSubmit: (data: Record<string, unknown>) => Promise<void>;
   submitLabel?: string;
   cancelPath: string;
   isLoading?: boolean;
@@ -87,7 +88,8 @@ export default function CreateEntityForm({
     ),
   });
 
-  const handleSubmit = async (data: any) => {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для handleSubmit
+  const handleSubmit = async (data: Record<string, unknown>) => {
     try {
       await onSubmit(data);
       toast({

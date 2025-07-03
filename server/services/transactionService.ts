@@ -160,25 +160,40 @@ export class TransactionService {
   // Транзакционное удаление документа с очисткой остатков
   async deleteDocumentWithInventory(documentId: number) {
     return await db.transaction(async (tx) => {
-      console.log(`🔄 Начинаем транзакцию удаления документа ${documentId}`);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("Начинаем транзакцию удаления документа", {
+        documentId,
+        service: "transaction"
+      });
 
       // 1. Удаляем связанные записи из inventory
       const inventoryResult = await tx
         .delete(inventory)
         .where(eq(inventory.documentId, documentId));
-      console.log(`🗑️ Удалено ${inventoryResult.rowCount ?? 0} записей inventory`);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.debug("Удалены записи inventory", {
+        deletedCount: inventoryResult.rowCount ?? 0,
+        service: "transaction"
+      });
 
       // 2. Удаляем связанные записи из document_items
       const itemsResult = await tx
         .delete(documentItems)
         .where(eq(documentItems.documentId, documentId));
-      console.log(`🗑️ Удалено ${itemsResult.rowCount ?? 0} позиций документа`);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.debug("Удалены позиции документа", {
+        deletedCount: itemsResult.rowCount ?? 0,
+        service: "transaction"
+      });
 
       // 3. Удаляем сам документ
       const documentResult = await tx.delete(documents).where(eq(documents.id, documentId));
 
       const success = (documentResult.rowCount ?? 0) > 0;
-      console.log("✅ Транзакция удаления документа завершена");
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("Транзакция удаления документа завершена", {
+        service: "transaction"
+      });
 
       // Инвалидация кеша остатков после успешного удаления
       if (success) {
@@ -191,9 +206,13 @@ export class TransactionService {
   }
 
   // Транзакционная обработка заказов с резервами
-  async processOrderWithReserves(orderData: any, items: any[], isReserved: boolean) {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для параметров
+  async processOrderWithReserves(orderData: Record<string, unknown>, items: Record<string, unknown>[], isReserved: boolean) {
     return await db.transaction(async (tx) => {
-      console.log("🔄 Начинаем транзакцию создания заказа с резервами");
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("Начинаем транзакцию создания заказа с резервами", {
+        service: "transaction"
+      });
 
       // 1. Создаем заказ
       const [createdOrder] = await tx.insert(orders).values(orderData).returning();
@@ -218,7 +237,12 @@ export class TransactionService {
             warehouseId: orderData.warehouseId,
             createdAt: getMoscowTime(),
           });
-          console.log(`📦 Создан резерв для заказа ${createdOrder.id}, товар ${item.productId}`);
+          // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+          logger.debug("Создан резерв для заказа", {
+            orderId: createdOrder.id,
+            productId: item.productId,
+            service: "transaction"
+          });
         }
       }
 
@@ -246,7 +270,10 @@ export class TransactionService {
         .where(eq(orders.id, createdOrder.id))
         .returning();
 
-      console.log("✅ Транзакция создания заказа завершена");
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("Транзакция создания заказа завершена", {
+        service: "transaction"
+      });
 
       // Инвалидация кеша остатков если создавались резервы
       if (isReserved) {
@@ -261,8 +288,9 @@ export class TransactionService {
   }
 
   // Универсальная обработка движений инвентаря (внутри транзакции)
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any для транзакции
   private async processInventoryMovement(
-    tx: any,
+    tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
     movement: {
       productId: number;
       quantity: string;
@@ -302,7 +330,12 @@ export class TransactionService {
     writeoffPrice: string,
     documentId: number
   ) {
-    console.log(`🔄 FIFO-списание для товара ${productId}, количество: ${quantityToWriteoff}`);
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.info("FIFO-списание для товара", {
+      productId,
+      quantityToWriteoff,
+      service: "transaction"
+    });
 
     // Получаем все приходы товара, отсортированные по дате создания (FIFO)
     const stockMovements = await tx
@@ -313,7 +346,12 @@ export class TransactionService {
       )
       .orderBy(sql`${inventory.createdAt} ASC`);
 
-    console.log(`📋 Найдено ${stockMovements.length} приходных движений для товара ${productId}`);
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.debug("Найдены приходные движения для товара", {
+      productId,
+      movementsCount: stockMovements.length,
+      service: "transaction"
+    });
 
     let remainingToWriteoff = quantityToWriteoff;
     const writeoffEntries = [];
@@ -336,7 +374,12 @@ export class TransactionService {
         });
 
         remainingToWriteoff -= quantityToTakeFromThisBatch;
-        console.log(`📤 Списано ${quantityToTakeFromThisBatch} из партии ${stockItem.id}`);
+        // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+        logger.debug("Списано из партии", {
+          batchId: stockItem.id,
+          quantityTaken: quantityToTakeFromThisBatch,
+          service: "transaction"
+        });
       }
     }
 
@@ -347,7 +390,11 @@ export class TransactionService {
 
     // Если остались несписанные товары - создаем запись о списании в минус
     if (remainingToWriteoff > 0) {
-      console.log(`⚠️ Списание в минус: ${remainingToWriteoff} единиц`);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.warn("Списание в минус", {
+        negativeQuantity: remainingToWriteoff,
+        service: "transaction"
+      });
 
       await tx.insert(inventory).values({
         productId: productId,
@@ -359,7 +406,10 @@ export class TransactionService {
       });
     }
 
-    console.log("✅ FIFO-списание завершено");
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.info("FIFO-списание завершено", {
+      service: "transaction"
+    });
   }
 
   // Метод для удаления резервов заказа

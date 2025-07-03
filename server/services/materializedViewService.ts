@@ -61,7 +61,8 @@ export class MaterializedViewService {
    * Возвращает нормализованные данные в унифицированном API формате
    */
   async getInventorySummary(): Promise<NormalizedInventoryItem[]> {
-    console.log("[MATERIALIZED] Starting getInventorySummary query...");
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.debug("Starting getInventorySummary query", { service: "materialized" });
     const startTime = Date.now();
 
     try {
@@ -75,12 +76,15 @@ export class MaterializedViewService {
       `);
 
       const duration = Date.now() - startTime;
-      console.log(
-        `[MATERIALIZED] getInventorySummary completed in ${duration}ms, returned ${result.rows.length} items`
-      );
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.debug("getInventorySummary completed", {
+        duration: `${duration}ms`,
+        rowCount: result.rows.length,
+        service: "materialized"
+      });
 
-      // Применяем централизованную нормализацию данных
-      const rawData = result.rows.map((row: any) => ({
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для SQL результатов
+      const rawData = result.rows.map((row: Record<string, unknown>) => ({
         id: row.id as number,
         name: row.name as string,
         total_quantity: row.total_quantity as string,
@@ -88,7 +92,11 @@ export class MaterializedViewService {
 
       return normalizeInventoryArray(rawData);
     } catch (error) {
-      console.error("[MATERIALIZED] Error in getInventorySummary:", error);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.error
+      logger.error("Error in getInventorySummary", {
+        error: (error as Error).message,
+        service: "materialized"
+      });
       throw error;
     }
   }

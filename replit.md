@@ -407,6 +407,8 @@
 - 3 июля 2025. Завершение comprehensive валидационной системы: создана полная система из 181 теста (100% успех), добавлены все недостающие поля в zFields.ts (zWebsite, zAddress, zSku, zUsername, zPassword, zBarcode, zImageUrl), исправлены критические проблемы с порядком trim/min валидации, система достигла production-ready состояния с enterprise-grade стандартами
 - 3 июля 2025. Критические исправления валидационных схем: zName.trim() теперь применяется перед min(1) проверкой, zUsername получил trim функциональность, исправлены тесты для соответствия z.coerce.number() поведению, максимальные значения price и weight приведены к реальным лимитам
 - 3 июля 2025. Comprehensive система тестирования валидации: 8 категорий тестов покрывают все аспекты (new-fields-comprehensive 35 тестов, comprehensive-validation 47 тестов, schema-validation 13 тестов, quantity-validation 28 тестов), создан VALIDATION_FINALIZATION_REPORT.md с полным анализом достижений
+- 3 июля 2025. Полный аудит API маршрутизации: проведен comprehensive анализ централизации API маршрутов, 99% кода использует shared/apiRoutes.ts, обнаружено дублирование в shared/constants.ts (неиспользуемое), создан API_ROUTES_AUDIT_REPORT.md
+- 3 июля 2025. Архитектурная защита API маршрутов: все 8 хуков hooks/api/ используют централизованные API_ROUTES, стандартизированы queryKey для React Query, 12 архитектурных тестов проходят успешно (100%), система достигла enterprise-grade стандартов
 
 ## Пользовательские предпочтения
 

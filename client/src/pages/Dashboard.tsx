@@ -246,7 +246,10 @@ export default function Dashboard() {
         setCopiedStates((prev) => ({ ...prev, [key]: false }));
       }, 2000);
     } catch (err) {
-      console.error("Ошибка копирования:", err);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.error
+      if (process.env.NODE_ENV === "development") {
+        console.error("Ошибка копирования:", err);
+      }
     }
   };
 

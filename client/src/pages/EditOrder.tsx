@@ -66,8 +66,11 @@ export default function EditOrder() {
   // Обновление формы при изменении orderData
   useEffect(() => {
     if (orderData) {
-      console.log("🔄 EditOrder - заполнение формы данными заказа:", orderData);
-      console.log("📦 EditOrder - items из данных:", orderData.items);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log("🔄 EditOrder - заполнение формы данными заказа:", orderData);
+        console.log("📦 EditOrder - items из данных:", orderData.items);
+      }
       
       // Заполняем форму данными из orderData (который теперь содержит items)
       form.reset({
@@ -114,31 +117,46 @@ export default function EditOrder() {
 
   const handleSave = async (data: FormOrder) => {
     const currentSubmissionId = ++submissionCounter.current;
-    console.log(`🚀 Starting order update #${currentSubmissionId}`);
-    console.log(`📝 Form errors:`, form.formState.errors);
-    console.log(`📝 Form values:`, data);
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🚀 Starting order update #${currentSubmissionId}`);
+      console.log(`📝 Form errors:`, form.formState.errors);
+      console.log(`📝 Form values:`, data);
+    }
 
     // Тройная защита от дублирования
     if (isSubmitting) {
-      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
+      }
       return;
     }
 
     if (updateMutation.isPending) {
-      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
+      }
       return;
     }
 
     // Проверка последовательности ID
     if (currentSubmissionId !== submissionCounter.current) {
-      console.log(
-        `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
-      );
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
+        );
+      }
       return;
     }
 
     setIsSubmitting(true);
-    console.log(`✅ Processing order update #${currentSubmissionId}`);
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+    if (process.env.NODE_ENV === "development") {
+      console.log(`✅ Processing order update #${currentSubmissionId}`);
+    }
 
     try {
       const orderToUpdate = {
@@ -153,17 +171,26 @@ export default function EditOrder() {
         })),
       };
 
-      console.log(`📄 Updating order ${orderId}`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`📄 Updating order ${orderId}`);
+      }
       await updateMutation.mutateAsync({ id: orderId, data: orderToUpdate });
 
-      console.log(`✅ Update #${currentSubmissionId} completed successfully`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`✅ Update #${currentSubmissionId} completed successfully`);
+      }
       toast({
         title: "Заказ обновлен",
         description: "Заказ успешно обновлен",
       });
       setLocation("/orders");
     } catch (error: any) {
-      console.log(`❌ Update #${currentSubmissionId} failed:`, error);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`❌ Update #${currentSubmissionId} failed:`, error);
+      }
       toast({
         title: "Ошибка",
         description: error.message || "Не удалось обновить заказ",
@@ -171,7 +198,10 @@ export default function EditOrder() {
       });
     } finally {
       setIsSubmitting(false);
-      console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+      }
     }
   };
 
@@ -318,7 +348,10 @@ export default function EditOrder() {
       <form
         id="order-form"
         onSubmit={form.handleSubmit(handleSave, (errors) => {
-          console.log("❌ Form validation failed:", errors);
+          // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+          if (process.env.NODE_ENV === "development") {
+            console.log("❌ Form validation failed:", errors);
+          }
           toast({
             title: "Ошибка валидации",
             description: "Обязательно выберите контрагента, склад и добавьте товары",

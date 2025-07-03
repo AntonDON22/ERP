@@ -25,7 +25,10 @@ async function logClientError(error: ClientError) {
     });
   } catch (e) {
     // Если не можем отправить на сервер, пишем в консоль
-    console.error("Failed to log error to server:", e);
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.error
+    if (process.env.NODE_ENV === "development") {
+      console.error("Failed to log error to server:", e);
+    }
   }
 }
 

@@ -144,7 +144,10 @@ export default function CreateOrder() {
       });
     } finally {
       setIsSubmitting(false);
-      console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+      }
     }
   };
 
@@ -259,7 +262,10 @@ export default function CreateOrder() {
       <form
         id="order-form"
         onSubmit={form.handleSubmit(handleSave, (errors) => {
-          console.log("❌ Form validation failed:", errors);
+          // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+          if (process.env.NODE_ENV === "development") {
+            console.log("❌ Form validation failed:", errors);
+          }
           toast({
             title: "Ошибка валидации",
             description: "Обязательно выберите контрагента и склад",

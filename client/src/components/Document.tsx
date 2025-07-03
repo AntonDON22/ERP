@@ -194,14 +194,20 @@ export default function Document({ config, documentData }: DocumentProps) {
 
     // Проверка последовательности ID
     if (currentSubmissionId !== submissionCounter.current) {
-      console.log(
-        `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
-      );
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
+        );
+      }
       return;
     }
 
     setIsSubmitting(true);
-    console.log(`✅ Processing submission #${currentSubmissionId}`);
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+    if (process.env.NODE_ENV === "development") {
+      console.log(`✅ Processing submission #${currentSubmissionId}`);
+    }
 
     try {
       const documentToSave = {
@@ -218,7 +224,10 @@ export default function Document({ config, documentData }: DocumentProps) {
 
       if (documentData) {
         // Редактирование существующего документа
-        console.log(`📝 Updating document #${documentData.id}`);
+        // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+        if (process.env.NODE_ENV === "development") {
+          console.log(`📝 Updating document #${documentData.id}`);
+        }
         await updateMutation.mutateAsync({
           id: documentData.id,
           data: {
@@ -249,7 +258,10 @@ export default function Document({ config, documentData }: DocumentProps) {
       toast({ title: config.successMessage });
       setLocation(config.backUrl);
     } catch (error) {
-      console.error(`❌ Submission #${currentSubmissionId} failed:`, error);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.error
+      if (process.env.NODE_ENV === "development") {
+        console.error(`❌ Submission #${currentSubmissionId} failed:`, error);
+      }
       toast({
         title: "Ошибка",
         description: "Не удалось сохранить документ",
@@ -257,7 +269,10 @@ export default function Document({ config, documentData }: DocumentProps) {
       });
     } finally {
       setIsSubmitting(false);
-      console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+      }
     }
   };
 

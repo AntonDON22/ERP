@@ -58,9 +58,9 @@ npm run dev
 |---------|----------|
 | `npm run dev` | Запуск development сервера |
 | `npm run build` | Сборка для production |
-| `npm test` | Запуск всех тестов |
-| `npm run test:unit` | Unit тесты |
-| `npm run test:integration` | Интеграционные тесты |
+| `npx vitest run` | Запуск всех тестов |
+| `npx vitest run tests/services/` | Unit тесты сервисов |
+| `npx vitest run tests/integration/` | Интеграционные тесты |
 | `npm run lint` | Проверка качества кода |
 
 ## 📊 Ключевые метрики системы
@@ -84,7 +84,7 @@ npm run dev
 
 ```bash
 # Архитектурные проверки
-npm run test:architectural
+npx vitest run tests/architectural/
 
 # Аудит адаптивности  
 ./scripts/run-responsiveness-audit.sh
@@ -193,10 +193,10 @@ ERP System/
 git checkout -b feature/new-functionality
 
 # 2. Разработка с тестами
-npm run test:watch
+npx vitest
 
 # 3. Проверка архитектурных стандартов  
-npm run test:architectural
+npx vitest run tests/architectural/
 
 # 4. Commit с автоматическими проверками
 git commit -m "feat: добавлена новая функциональность"

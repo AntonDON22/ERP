@@ -2,6 +2,7 @@ import { db, pool } from "../db";
 import { products, inventory, reserves } from "@shared/schema";
 import { sql } from "drizzle-orm";
 import { materializedViewService } from "./materializedViewService";
+import { logger } from "../../shared/logger";
 
 export class InventoryService {
   private useMaterializedViews: boolean = true;
@@ -11,7 +12,8 @@ export class InventoryService {
    */
   setUseMaterializedViews(use: boolean): void {
     this.useMaterializedViews = use;
-    console.log(`📊 Режим материализованных представлений: ${use ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН"}`);
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.info(`📊 Режим материализованных представлений: ${use ? "ВКЛЮЧЕН" : "ВЫКЛЮЧЕН"}`);
   }
 
   async getInventory(
@@ -40,7 +42,8 @@ export class InventoryService {
         quantity: row.quantity,
       }));
     } catch (error) {
-      console.error("[MATERIALIZED] Error, falling back to direct query:", error);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.error
+      logger.error("[MATERIALIZED] Error, falling back to direct query:", { error });
       return this.getInventoryFromDirectQuery();
     }
   }
@@ -51,7 +54,8 @@ export class InventoryService {
   private async getInventoryFromDirectQuery(
     warehouseId?: number
   ): Promise<Array<{ id: number; name: string; quantity: number }>> {
-    console.log("[DB] Starting getInventory query...");
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.info("[DB] Starting getInventory query...");
     const startTime = Date.now();
 
     try {

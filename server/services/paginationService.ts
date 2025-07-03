@@ -47,10 +47,11 @@ export class PaginationService {
   /**
    * Нормализует параметры пагинации
    */
-  normalizeParams(params: any): Required<PaginationParams> {
-    const page = Math.max(1, parseInt(params.page || this.DEFAULT_PAGE));
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  normalizeParams(params: Partial<PaginationParams>): Required<PaginationParams> {
+    const page = Math.max(1, parseInt(String(params.page) || String(this.DEFAULT_PAGE)));
     const limit = Math.min(
-      Math.max(1, parseInt(params.limit || this.DEFAULT_LIMIT)),
+      Math.max(1, parseInt(String(params.limit) || String(this.DEFAULT_LIMIT))),
       this.MAX_LIMIT
     );
     const offset = (page - 1) * limit;

@@ -8,6 +8,7 @@ import {
 } from "../../shared/schema";
 import { transactionService } from "./transactionService";
 import { getMoscowDateForDocument } from "../../shared/timeUtils";
+import { logger } from "../../shared/logger";
 import { apiLogger } from "../../shared/logger";
 import { toNumber } from "@shared/utils";
 
@@ -31,7 +32,8 @@ export class DocumentService {
     items?: Array<{ productId: number; quantity: string | number }>
   ): Promise<DocumentRecord | undefined> {
     const validatedData = insertDocumentSchema.partial().parse(data);
-    console.log('🔍 DocumentService.update validatedData:', validatedData);
+    // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+    logger.info('🔍 DocumentService.update validatedData:', { validatedData });
 
     if (items && items.length > 0) {
       // Преобразуем items в правильный формат CreateDocumentItem

@@ -23,30 +23,46 @@ const productsColumns: ColumnConfig<Product>[] = [
     key: "price",
     label: "Цена",
     minWidth: 100,
-    format: (value) => (value ? formatPrice(value) : ""),
+    format: (value: unknown) => {
+      if (typeof value === "string" || typeof value === "number") {
+        return formatPrice(value);
+      }
+      return "";
+    },
     className: "text-right",
   },
   {
     key: "purchasePrice",
     label: "Закупочная цена",
     minWidth: 140,
-    format: (value) => (value ? formatPrice(value) : ""),
+    format: (value: unknown) => {
+      if (typeof value === "string" || typeof value === "number") {
+        return formatPrice(value);
+      }
+      return "";
+    },
     className: "text-right",
   },
   {
     key: "weight",
     label: "Вес",
     minWidth: 80,
-    format: (value) => (value ? formatWeight(value) : ""),
+    format: (value: unknown) => {
+      if (typeof value === "string" || typeof value === "number") {
+        return formatWeight(value);
+      }
+      return "";
+    },
     className: "text-right",
   },
   {
     key: "length",
     label: "Длина",
     minWidth: 80,
-    format: (value) => {
-      if (!value) return "";
+    format: (value: unknown) => {
+      if (!value || (typeof value !== "string" && typeof value !== "number")) return "";
       const num = typeof value === "string" ? parseFloat(value) : value;
+      if (isNaN(num)) return "";
       const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
       return `${formatted} мм`;
     },
@@ -56,9 +72,10 @@ const productsColumns: ColumnConfig<Product>[] = [
     key: "width",
     label: "Ширина",
     minWidth: 80,
-    format: (value) => {
-      if (!value) return "";
+    format: (value: unknown) => {
+      if (!value || (typeof value !== "string" && typeof value !== "number")) return "";
       const num = typeof value === "string" ? parseFloat(value) : value;
+      if (isNaN(num)) return "";
       const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
       return `${formatted} мм`;
     },
@@ -68,9 +85,10 @@ const productsColumns: ColumnConfig<Product>[] = [
     key: "height",
     label: "Высота",
     minWidth: 80,
-    format: (value) => {
-      if (!value) return "";
+    format: (value: unknown) => {
+      if (!value || (typeof value !== "string" && typeof value !== "number")) return "";
       const num = typeof value === "string" ? parseFloat(value) : value;
+      if (isNaN(num)) return "";
       const formatted = num % 1 === 0 ? num.toFixed(0) : num.toString();
       return `${formatted} мм`;
     },
@@ -131,9 +149,9 @@ export default function ProductsList() {
   }
 
   return (
-    <DataTable
+    <DataTable<Product>
       data={products}
-      columns={memoizedColumns as any}
+      columns={memoizedColumns}
       isLoading={isLoading}
       entityName="товар"
       entityNamePlural="Товары"

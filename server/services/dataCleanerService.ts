@@ -1,6 +1,7 @@
-// Утилиты для очистки и валидации данных
+// ✅ ИСПРАВЛЕНО: Утилиты для очистки и валидации данных
 export class DataCleanerService {
-  static cleanNumericValue(value: any): string {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  static cleanNumericValue(value: unknown): string {
     if (value === null || value === undefined || value === "") return "0";
 
     let strValue = String(value).trim();
@@ -66,12 +67,14 @@ export class DataCleanerService {
     }
   }
 
-  static cleanTextValue(value: any): string {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  static cleanTextValue(value: unknown): string {
     if (value === null || value === undefined) return "";
     return String(value).trim();
   }
 
-  static validateNumericFields(data: any): Record<string, string> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  static validateNumericFields(data: Record<string, unknown>): Record<string, string> {
     const errors: Record<string, string> = {};
 
     const fieldMappings = {
@@ -109,7 +112,8 @@ export class DataCleanerService {
     return errors;
   }
 
-  static sanitizeProductData(productData: any): any {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  static sanitizeProductData(productData: Record<string, unknown>): Record<string, string> {
     return {
       name: this.cleanTextValue(productData.name || productData.Название || "Без названия"),
       sku: this.cleanTextValue(productData.sku || productData.Артикул),

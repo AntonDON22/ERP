@@ -110,13 +110,19 @@ export class PerformanceMetricsService {
       endpointMap.set(metric.endpoint, existing);
     });
 
-    // Вычисляем средние значения
-    const result: Record<string, any> = {};
+    // ✅ ИСПРАВЛЕНО: Типизация вместо any
+    const result: Record<string, {
+      totalRequests: number;
+      avgResponseTime: number;
+      cacheHitRate: number;
+      dbQueries: number;
+    }> = {};
     endpointMap.forEach((stats, endpoint) => {
       result[endpoint] = {
-        ...stats,
+        totalRequests: stats.totalRequests,
         avgResponseTime: Math.round(stats.avgResponseTime / stats.totalRequests),
         cacheHitRate: Math.round((stats.cacheHitRate / stats.totalRequests) * 100),
+        dbQueries: stats.totalDbQueries,
       };
     });
 

@@ -7,10 +7,11 @@ import { logger } from "../../shared/logger";
 import { cacheService } from "./cacheService";
 import { storage } from "../storage";
 
+// ✅ ИСПРАВЛЕНО: Типизация вместо any
 interface WarmupConfig {
   key: string;
   ttl: number; // в секундах
-  loader: () => Promise<any>;
+  loader: () => Promise<unknown>;
   description: string;
 }
 
@@ -212,7 +213,9 @@ export class CacheWarmupService {
   > {
     const statuses = await Promise.allSettled(
       this.warmupConfigs.map(async (config) => {
-        const isCached = await cacheService.exists(config.key);
+        // ✅ ИСПРАВЛЕНО: Используем get() для проверки существования
+        const cachedValue = await cacheService.get(config.key);
+        const isCached = cachedValue !== null;
         return {
           key: config.key,
           description: config.description,

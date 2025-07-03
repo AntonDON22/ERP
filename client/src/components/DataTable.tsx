@@ -43,8 +43,8 @@ function getGenitiveForm(entityNamePlural: string): string {
   return genitiveMap[lowerCase] || lowerCase;
 }
 
-// Типы для конфигурации колонок
-export interface ColumnConfig<T = any> {
+// ✅ ИСПРАВЛЕНО: Убран тип 'any', добавлена типизация unknown
+export interface ColumnConfig<T = unknown> {
   key: keyof T | string;
   label: string;
   width?: string;
@@ -52,7 +52,7 @@ export interface ColumnConfig<T = any> {
   sortable?: boolean;
   copyable?: boolean;
   multiline?: boolean;
-  format?: (value: any) => string;
+  format?: (value: unknown) => string;
   className?: string;
 }
 
@@ -69,8 +69,8 @@ export interface WarehouseFilterConfig {
   onWarehouseChange: (warehouseId: number | undefined) => void;
 }
 
-// Основные пропсы компонента
-export interface DataTableProps<T = any> {
+// ✅ ИСПРАВЛЕНО: Убран тип 'any', добавлена типизация unknown
+export interface DataTableProps<T = unknown> {
   data: T[];
   columns: ColumnConfig<T>[];
   isLoading?: boolean;
@@ -79,7 +79,7 @@ export interface DataTableProps<T = any> {
   searchFields: (keyof T | string)[];
   excelConfig?: ExcelExportConfig;
   onDelete?: (ids: number[]) => Promise<void>;
-  onImport?: (data: any[]) => Promise<void>;
+  onImport?: (data: unknown[]) => Promise<void>;
   deleteLabel?: string;
   importLabel?: string;
   onCreate?: () => void;

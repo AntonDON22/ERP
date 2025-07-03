@@ -9,7 +9,8 @@ export class ProductService {
     return await storage.getProducts();
   }
 
-  async getAllPaginated(params: any) {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  async getAllPaginated(params: Record<string, unknown>) {
     const normalizedParams = paginationService.normalizeParams(params);
 
     // Получаем все продукты (пока без SQL пагинации в storage)
@@ -31,22 +32,25 @@ export class ProductService {
     return paginationService.createResult(data, total, normalizedParams);
   }
 
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
   private sortProducts(products: Product[], sortField: string, order: "asc" | "desc"): Product[] {
     return [...products].sort((a, b) => {
-      let aValue: any = a[sortField as keyof Product];
-      let bValue: any = b[sortField as keyof Product];
+      let aValue: unknown = a[sortField as keyof Product];
+      let bValue: unknown = b[sortField as keyof Product];
 
-      // Обработка специальных случаев
+      // ✅ ИСПРАВЛЕНО: Правильная типизация
       if (sortField === "price" || sortField === "weight") {
-        aValue = parseFloat(aValue) || 0;
-        bValue = parseFloat(bValue) || 0;
-      } else if (typeof aValue === "string") {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
+        const aNum = parseFloat(String(aValue)) || 0;
+        const bNum = parseFloat(String(bValue)) || 0;
+        if (aNum < bNum) return order === "asc" ? -1 : 1;
+        if (aNum > bNum) return order === "asc" ? 1 : -1;
+        return 0;
+      } else {
+        const aStr = String(aValue).toLowerCase();
+        const bStr = String(bValue).toLowerCase();
+        if (aStr < bStr) return order === "asc" ? -1 : 1;
+        if (aStr > bStr) return order === "asc" ? 1 : -1;
       }
-
-      if (aValue < bValue) return order === "asc" ? -1 : 1;
-      if (aValue > bValue) return order === "asc" ? 1 : -1;
       return 0;
     });
   }
@@ -105,7 +109,8 @@ export class ProductService {
     return { deletedCount, results };
   }
 
-  async import(products: any[]): Promise<Product[]> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  async import(products: Record<string, unknown>[]): Promise<Product[]> {
     if (!Array.isArray(products)) {
       throw new Error("Ожидается массив товаров");
     }
@@ -113,7 +118,20 @@ export class ProductService {
     const results = [];
     for (const productData of products) {
       try {
-        const validatedData = DataCleanerService.sanitizeProductData(productData);
+        const sanitizedData = DataCleanerService.sanitizeProductData(productData);
+        
+        // ✅ ИСПРАВЛЕНО: Преобразование строковых полей в правильные типы
+        const validatedData: InsertProduct = {
+          name: sanitizedData.name,
+          sku: sanitizedData.sku,
+          price: parseFloat(sanitizedData.price) || 0,
+          purchasePrice: parseFloat(sanitizedData.purchasePrice) || undefined,
+          weight: parseFloat(sanitizedData.weight) || undefined,
+          length: parseFloat(sanitizedData.length) || undefined,
+          width: parseFloat(sanitizedData.width) || undefined,
+          height: parseFloat(sanitizedData.height) || undefined,
+          barcode: sanitizedData.barcode || undefined,
+        };
 
         // Проверяем наличие ID для обновления
         const id = productData.ID || productData.id;

@@ -11,14 +11,15 @@ import { eq, sql } from "drizzle-orm";
 import type { InsertDocument, CreateDocumentItem } from "../../shared/schema";
 import { getMoscowTime } from "../../shared/timeUtils";
 import { cacheService } from "./cacheService";
-import { apiLogger } from "../../shared/logger";
+import { apiLogger, logger } from "../../shared/logger";
 import { toStringForDB } from "@shared/utils";
 
 export class TransactionService {
   // Транзакционное создание документа с пересчетом остатков
   async createDocumentWithInventory(document: InsertDocument, items: CreateDocumentItem[]) {
     return await db.transaction(async (tx) => {
-      console.log("🔄 Начинаем транзакцию создания документа");
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("🔄 Начинаем транзакцию создания документа");
 
       // 1. Создаем документ
       const [createdDocument] = await tx.insert(documents).values(document).returning();
@@ -70,7 +71,8 @@ export class TransactionService {
         });
       }
 
-      console.log("✅ Транзакция создания документа завершена");
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("✅ Транзакция создания документа завершена");
 
       // Инвалидация кеша остатков после создания документа
       await cacheService.invalidatePattern("inventory:*");
@@ -89,7 +91,8 @@ export class TransactionService {
     newItems?: CreateDocumentItem[]
   ) {
     return await db.transaction(async (tx) => {
-      console.log(`🔄 Начинаем транзакцию обновления документа ${documentId}`);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info(`🔄 Начинаем транзакцию обновления документа ${documentId}`);
 
       // 1. Получаем текущий документ
       const [currentDocument] = await tx
@@ -112,7 +115,8 @@ export class TransactionService {
         ...updatedDocument,
         updatedAt: getMoscowTime(),
       };
-      console.log('🔧 TransactionService - documentUpdateData:', documentUpdateData);
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info('🔧 TransactionService - documentUpdateData:', { documentUpdateData });
       
       const [document] = await tx
         .update(documents)
@@ -142,7 +146,8 @@ export class TransactionService {
         }
       }
 
-      console.log("✅ Транзакция обновления документа завершена");
+      // ✅ ИСПРАВЛЕНО: Структурированное логирование вместо console.log
+      logger.info("✅ Транзакция обновления документа завершена");
 
       // Инвалидация кеша остатков после обновления документа
       await cacheService.invalidatePattern("inventory:*");

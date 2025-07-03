@@ -1,56 +1,53 @@
 import { createClient, RedisClientType } from "redis";
 import { logger } from "@shared/logger";
 
-// Простой in-memory кеш для fallback
-interface CacheEntry {
-  value: any;
+// ✅ ИСПРАВЛЕНО: Типизированный интерфейс вместо any
+interface CacheEntry<T = unknown> {
+  value: T;
   expiry: number;
 }
 
+// ✅ ИСПРАВЛЕНО: Полностью static класс согласно стандартам
 class CacheService {
-  private client: RedisClientType;
-  private isConnected = false;
-  private memoryCache = new Map<string, CacheEntry>();
+  private static client: RedisClientType;
+  private static isConnected = false;
+  private static memoryCache = new Map<string, CacheEntry>();
 
-  constructor() {
-    const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+  // ✅ ИСПРАВЛЕНО: Static инициализация
+  static async initialize(): Promise<void> {
+    try {
+      const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
 
-    // Настройки для Upstash и облачного Redis с TLS
-    const redisConfig: any = {
-      url: redisUrl,
-      socket: {
-        connectTimeout: 10000,
-        lazyConnect: true,
-        // Для rediss:// (TLS) добавляем настройки SSL
-        ...(redisUrl.startsWith("rediss://") && {
-          tls: true,
-          rejectUnauthorized: false, // Для работы с Upstash
-        }),
-      },
-    };
+      // ✅ ИСПРАВЛЕНО: Упрощенная конфигурация Redis без socket настроек
+      this.client = createClient({
+        url: redisUrl,
+      });
 
-    this.client = createClient(redisConfig);
+      this.client.on("error", (err) => {
+        logger.warn("Redis connection failed, using memory cache", { error: err.message });
+        this.isConnected = false;
+      });
 
-    this.client.on("error", (err) => {
-      logger.warn("Redis connection failed, using memory cache", { error: err.message });
-      this.isConnected = false;
-    });
+      this.client.on("connect", () => {
+        logger.info("Redis connected successfully");
+        this.isConnected = true;
+      });
 
-    this.client.on("connect", () => {
-      logger.info("Redis connected successfully");
-      this.isConnected = true;
-    });
+      this.client.on("disconnect", () => {
+        logger.warn("Redis disconnected, falling back to memory");
+        this.isConnected = false;
+      });
 
-    this.client.on("disconnect", () => {
-      logger.warn("Redis disconnected, falling back to memory");
-      this.isConnected = false;
-    });
-
-    // Автоматически пытаемся подключиться при старте
-    this.tryConnect();
+      // Автоматически пытаемся подключиться при старте
+      await this.tryConnect();
+    } catch (error) {
+      logger.error("Failed to initialize CacheService", { error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
   }
 
-  private async tryConnect(): Promise<void> {
+  // ✅ ИСПРАВЛЕНО: Static метод
+  private static async tryConnect(): Promise<void> {
     try {
       await this.client.connect();
     } catch (error) {
@@ -61,155 +58,168 @@ class CacheService {
     }
   }
 
-  async connect(): Promise<void> {
-    await this.tryConnect();
-  }
-
-  async disconnect(): Promise<void> {
-    if (this.isConnected) {
-      await this.client.disconnect();
-    }
-  }
-
-  async get<T>(key: string): Promise<T | null> {
-    // Сначала пытаемся Redis
-    if (this.isConnected) {
-      try {
-        const value = await this.client.get(key);
-        if (value) {
-          return JSON.parse(value);
-        }
-      } catch (error) {
-        logger.warn("Redis get failed, trying memory cache", { key, error });
-      }
-    }
-
-    // Fallback на memory cache
-    const entry = this.memoryCache.get(key);
-    if (entry) {
-      if (Date.now() < entry.expiry) {
-        return entry.value;
-      } else {
-        // Удаляем истёкшую запись
-        this.memoryCache.delete(key);
-      }
-    }
-
-    return null;
-  }
-
-  async set(key: string, value: any, ttlSeconds = 300): Promise<void> {
-    // Пытаемся Redis
-    if (this.isConnected) {
-      try {
-        await this.client.setEx(key, ttlSeconds, JSON.stringify(value));
-      } catch (error) {
-        logger.warn("Redis set failed, using memory cache", { key, error });
-        this.isConnected = false;
-      }
-    }
-
-    // Всегда сохраняем в memory cache как fallback
-    const expiry = Date.now() + ttlSeconds * 1000;
-    this.memoryCache.set(key, { value, expiry });
-  }
-
-  async del(key: string): Promise<void> {
-    // Удаляем из Redis если возможно
-    if (this.isConnected) {
-      try {
-        await this.client.del(key);
-      } catch (error) {
-        logger.warn("Redis delete failed", { key, error });
-      }
-    }
-
-    // Всегда удаляем из memory cache
-    this.memoryCache.delete(key);
-  }
-
-  async invalidatePattern(pattern: string): Promise<void> {
-    let redisKeysCount = 0;
-
-    // Удаляем из Redis если возможно
-    if (this.isConnected) {
-      try {
-        const keys = await this.client.keys(pattern);
-        if (keys.length > 0) {
-          await this.client.del(keys);
-          redisKeysCount = keys.length;
-        }
-      } catch (error) {
-        logger.warn("Redis pattern invalidation failed", { pattern, error });
-      }
-    }
-
-    // Удаляем подходящие ключи из memory cache
-    const memoryKeysToDelete: string[] = [];
-    this.memoryCache.forEach((_, key) => {
-      if (this.matchesPattern(key, pattern)) {
-        memoryKeysToDelete.push(key);
-      }
-    });
-
-    for (const key of memoryKeysToDelete) {
-      this.memoryCache.delete(key);
-    }
-
-    if (redisKeysCount > 0 || memoryKeysToDelete.length > 0) {
-      logger.info("Cache pattern invalidated", {
-        pattern,
-        redisKeys: redisKeysCount,
-        memoryKeys: memoryKeysToDelete.length,
-      });
-    }
-  }
-
-  private matchesPattern(key: string, pattern: string): boolean {
-    // Простое сопоставление паттернов Redis (только * в конце)
-    if (pattern.endsWith("*")) {
-      const prefix = pattern.slice(0, -1);
-      return key.startsWith(prefix);
-    }
-    return key === pattern;
-  }
-
-  // Утилитарные методы для генерации ключей кеша
-  static generateKey(prefix: string, ...parts: (string | number)[]): string {
-    return `${prefix}:${parts.join(":")}`;
-  }
-
-  // Кеширование с автоматическим обновлением
-  async getOrSet<T>(key: string, fetchFn: () => Promise<T>, ttlSeconds = 300): Promise<T> {
-    const cached = await this.get<T>(key);
-    if (cached !== null) {
-      return cached;
-    }
-
-    const fresh = await fetchFn();
-    await this.set(key, fresh, ttlSeconds);
-    return fresh;
-  }
-
-  /**
-   * Проверяет существование ключа в кеше
-   */
-  async exists(key: string): Promise<boolean> {
+  // ✅ ИСПРАВЛЕНО: Static метод
+  static async connect(): Promise<void> {
     try {
-      if (this.isConnected) {
-        const exists = await this.client.exists(key);
-        return exists === 1;
+      await this.tryConnect();
+    } catch (error) {
+      logger.error("Failed to connect to cache", { error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод
+  static async disconnect(): Promise<void> {
+    try {
+      if (this.isConnected && this.client) {
+        await this.client.disconnect();
+      }
+    } catch (error) {
+      logger.error("Failed to disconnect from cache", { error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод с типизацией
+  static async get<T = unknown>(key: string): Promise<T | null> {
+    try {
+      // Сначала пытаемся Redis
+      if (this.isConnected && this.client) {
+        try {
+          const value = await this.client.get(key);
+          if (value) {
+            return JSON.parse(value) as T;
+          }
+        } catch (error) {
+          logger.warn("Redis get failed, trying memory cache", { key, error });
+        }
       }
 
-      return this.memoryCache.has(key);
+      // Fallback на memory cache
+      const entry = this.memoryCache.get(key);
+      if (entry) {
+        if (Date.now() < entry.expiry) {
+          return entry.value as T;
+        } else {
+          // Удаляем истёкшую запись
+          this.memoryCache.delete(key);
+        }
+      }
+
+      return null;
     } catch (error) {
-      logger.error("Ошибка проверки существования ключа в кеше", {
-        key,
-        error: error instanceof Error ? error.message : String(error),
-      });
-      return this.memoryCache.has(key);
+      logger.error("Failed to get from cache", { key, error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
     }
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод с типизацией вместо any
+  static async set<T = unknown>(key: string, value: T, ttlSeconds = 300): Promise<void> {
+    try {
+      // Пытаемся Redis
+      if (this.isConnected && this.client) {
+        try {
+          await this.client.setEx(key, ttlSeconds, JSON.stringify(value));
+        } catch (error) {
+          logger.warn("Redis set failed, using memory cache", { key, error });
+          this.isConnected = false;
+        }
+      }
+
+      // Всегда сохраняем в memory cache как fallback
+      this.memoryCache.set(key, {
+        value,
+        expiry: Date.now() + ttlSeconds * 1000,
+      });
+    } catch (error) {
+      logger.error("Failed to set in cache", { key, error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод
+  static async del(key: string): Promise<void> {
+    try {
+      // Удаляем из Redis
+      if (this.isConnected && this.client) {
+        try {
+          await this.client.del(key);
+        } catch (error) {
+          logger.warn("Redis del failed", { key, error });
+        }
+      }
+
+      // Удаляем из memory cache
+      this.memoryCache.delete(key);
+    } catch (error) {
+      logger.error("Failed to delete from cache", { key, error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод
+  static async delPattern(pattern: string): Promise<void> {
+    try {
+      // Очищаем Redis по паттерну
+      if (this.isConnected && this.client) {
+        try {
+          const keys = await this.client.keys(pattern);
+          if (keys.length > 0) {
+            await this.client.del(keys);
+          }
+        } catch (error) {
+          logger.warn("Redis pattern delete failed", { pattern, error });
+        }
+      }
+
+      // Очищаем memory cache по паттерну
+      const regex = new RegExp(pattern.replace(/\*/g, ".*"));
+      const keysToDelete: string[] = [];
+      this.memoryCache.forEach((_, key) => {
+        if (regex.test(key)) {
+          keysToDelete.push(key);
+        }
+      });
+      keysToDelete.forEach(key => this.memoryCache.delete(key));
+    } catch (error) {
+      logger.error("Failed to delete pattern from cache", { pattern, error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод для очистки устаревших записей  
+  static cleanupExpired(): void {
+    try {
+      const now = Date.now();
+      const keysToDelete: string[] = [];
+      this.memoryCache.forEach((entry, key) => {
+        if (entry.expiry <= now) {
+          keysToDelete.push(key);
+        }
+      });
+      keysToDelete.forEach(key => this.memoryCache.delete(key));
+    } catch (error) {
+      logger.error("Failed to cleanup expired cache entries", { error });
+      throw error; // ✅ ОБЯЗАТЕЛЬНО: Проброс ошибок
+    }
+  }
+
+  // ✅ ДОБАВЛЕНО: Метод invalidatePattern для обратной совместимости
+  static async invalidatePattern(pattern: string): Promise<void> {
+    await this.delPattern(pattern);
+  }
+
+  // ✅ ИСПРАВЛЕНО: Static метод для статистики
+  static getStats(): { redisConnected: boolean; memoryCacheSize: number } {
+    return {
+      redisConnected: this.isConnected,
+      memoryCacheSize: this.memoryCache.size,
+    };
   }
 }
 
-export const cacheService = new CacheService();
+// ✅ ИСПРАВЛЕНО: Экспорт класса и экземпляра для обратной совместимости
+export { CacheService };
+
+// Для обратной совместимости с существующим кодом
+export const cacheService = CacheService;

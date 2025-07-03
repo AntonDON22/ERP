@@ -3,7 +3,7 @@ import { sql } from "drizzle-orm";
 import fs from "fs/promises";
 import path from "path";
 import { normalizeInventoryArray, type NormalizedInventoryItem } from "@shared/apiNormalizer";
-import { logger } from "../../shared/logger";
+import { logger, dbLogger } from "../../shared/logger";
 
 export class MaterializedViewService {
   /**
@@ -115,7 +115,7 @@ export class MaterializedViewService {
       last_movement_date: Date | null;
     }>
   > {
-    console.log("[MATERIALIZED] Starting getInventoryByWarehouse query...");
+    dbLogger.info("[MATERIALIZED] Starting getInventoryByWarehouse query", { warehouseId });
     const startTime = Date.now();
 
     try {
@@ -136,13 +136,16 @@ export class MaterializedViewService {
       `);
 
       const duration = Date.now() - startTime;
-      console.log(
-        `[MATERIALIZED] getInventoryByWarehouse completed in ${duration}ms, returned ${result.rows.length} items`
-      );
+      dbLogger.info("[MATERIALIZED] getInventoryByWarehouse completed", { 
+        duration: duration + "ms", 
+        rowCount: result.rows.length 
+      });
 
       return result.rows as any;
     } catch (error) {
-      console.error("[MATERIALIZED] Error in getInventoryByWarehouse:", error);
+      dbLogger.error("[MATERIALIZED] Error in getInventoryByWarehouse", { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       throw error;
     }
   }
@@ -152,7 +155,7 @@ export class MaterializedViewService {
    * Возвращает нормализованные данные в унифицированном API формате
    */
   async getInventoryAvailability(): Promise<NormalizedInventoryItem[]> {
-    console.log("[MATERIALIZED] Starting getInventoryAvailability query...");
+    dbLogger.info("[MATERIALIZED] Starting getInventoryAvailability query");
     const startTime = Date.now();
 
     try {
@@ -168,9 +171,10 @@ export class MaterializedViewService {
       `);
 
       const duration = Date.now() - startTime;
-      console.log(
-        `[MATERIALIZED] getInventoryAvailability completed in ${duration}ms, returned ${result.rows.length} items`
-      );
+      dbLogger.info("[MATERIALIZED] getInventoryAvailability completed", { 
+        duration: duration + "ms", 
+        rowCount: result.rows.length 
+      });
 
       // Применяем централизованную нормализацию данных
       const rawData = result.rows.map((row: any) => ({
@@ -183,7 +187,9 @@ export class MaterializedViewService {
 
       return normalizeInventoryArray(rawData);
     } catch (error) {
-      console.error("[MATERIALIZED] Error in getInventoryAvailability:", error);
+      dbLogger.error("[MATERIALIZED] Error in getInventoryAvailability", { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       throw error;
     }
   }
@@ -211,7 +217,9 @@ export class MaterializedViewService {
 
       return result as any;
     } catch (error) {
-      console.error("Error getting views status:", error);
+      dbLogger.error("Error getting views status", { 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       throw error;
     }
   }
@@ -220,13 +228,16 @@ export class MaterializedViewService {
    * Принудительное обновление конкретного представления
    */
   async refreshSpecificView(viewName: string): Promise<void> {
-    console.log(`🔄 Обновление представления ${viewName}...`);
+    dbLogger.info("Обновление материализованного представления", { viewName });
 
     try {
       await db.execute(sql.raw(`REFRESH MATERIALIZED VIEW CONCURRENTLY ${viewName}`));
-      console.log(`✅ Представление ${viewName} обновлено`);
+      dbLogger.info("Материализованное представление обновлено", { viewName });
     } catch (error) {
-      console.error(`❌ Ошибка при обновлении представления ${viewName}:`, error);
+      dbLogger.error("Ошибка при обновлении представления", { 
+        viewName, 
+        error: error instanceof Error ? error.message : String(error) 
+      });
       throw error;
     }
   }

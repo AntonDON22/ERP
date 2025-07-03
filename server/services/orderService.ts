@@ -25,6 +25,12 @@ export class OrderService {
   }
 
   static async delete(id: number): Promise<boolean> {
+    // Проверяем существование заказа перед удалением
+    const existingOrder = await OrderService.getById(id);
+    if (!existingOrder) {
+      throw new Error(`Заказ с ID ${id} не найден`);
+    }
+
     // Используем storage.deleteOrder который корректно удаляет резервы
     const result = await storage.deleteOrder(id);
 
@@ -145,10 +151,10 @@ export class OrderService {
   ): Promise<Order | undefined> {
     const validatedData = insertOrderSchema.partial().parse(orderData);
 
-    // Получаем текущий заказ для сравнения резервирования
+    // Проверяем существование заказа перед обновлением
     const currentOrder = await storage.getOrder(id);
     if (!currentOrder) {
-      return undefined;
+      throw new Error(`Заказ с ID ${id} не найден`);
     }
 
     // Проверяем нужно ли изменить резервирование

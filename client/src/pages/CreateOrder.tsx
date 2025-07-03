@@ -61,29 +61,44 @@ export default function CreateOrder() {
   // Обработчик сохранения
   const handleSave = async (data: FormOrder) => {
     const currentSubmissionId = ++submissionCounter.current;
-    console.log(`🚀 Starting order submission #${currentSubmissionId}`);
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+    if (process.env.NODE_ENV === "development") {
+      console.log(`🚀 Starting order submission #${currentSubmissionId}`);
+    }
 
     // Тройная защита от дублирования
     if (isSubmitting) {
-      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
+      }
       return;
     }
 
     if (mutation.isPending) {
-      console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
+      }
       return;
     }
 
     // Проверка последовательности ID
     if (currentSubmissionId !== submissionCounter.current) {
-      console.log(
-        `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
-      );
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(
+          `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
+        );
+      }
       return;
     }
 
     setIsSubmitting(true);
-    console.log(`✅ Processing order submission #${currentSubmissionId}`);
+    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+    if (process.env.NODE_ENV === "development") {
+      console.log(`✅ Processing order submission #${currentSubmissionId}`);
+    }
 
     try {
       const totalAmount = data.items.reduce((sum, item) => sum + (item.quantity * item.price), 0);
@@ -102,17 +117,26 @@ export default function CreateOrder() {
         })),
       };
 
-      console.log(`📄 Creating new order`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`📄 Creating new order`);
+      }
       await mutation.mutateAsync(orderToSave);
 
-      console.log(`✅ Submission #${currentSubmissionId} completed successfully`);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`✅ Submission #${currentSubmissionId} completed successfully`);
+      }
       toast({
         title: "Заказ создан",
         description: "Заказ успешно создан",
       });
       setLocation("/orders");
     } catch (error: any) {
-      console.log(`❌ Submission #${currentSubmissionId} failed:`, error);
+      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
+      if (process.env.NODE_ENV === "development") {
+        console.log(`❌ Submission #${currentSubmissionId} failed:`, error);
+      }
       toast({
         title: "Ошибка",
         description: error.message || "Не удалось создать заказ",

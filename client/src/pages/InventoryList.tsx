@@ -48,7 +48,7 @@ const columns: ColumnConfig<InventoryAvailabilityItem>[] = [
     label: "Доступно",
     minWidth: 120,
     sortable: true,
-    format: (value: number) => value?.toString() || "0",
+    format: (value: unknown) => Number(value || 0).toString(),
   },
 ];
 

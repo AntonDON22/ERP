@@ -9,7 +9,7 @@ const editConfig: DocumentTypeConfig = {
   submitLabel: "Сохранить",
   successMessage: "Документ успешно сохранен",
   backUrl: "/documents",
-  mutationHook: useUpdateDocument,
+  mutationHook: useUpdateDocument as any,
 };
 
 export default function EditDocument() {

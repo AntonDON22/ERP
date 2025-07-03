@@ -21,6 +21,9 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
   protected abstract insertSchema: z.ZodSchema<InsertT>;
   protected abstract updateSchema: z.ZodSchema<UpdateT>;
 
+  // Добавляем ссылку на storage для консистентности с OrderService
+  protected storage = storage;
+
   /**
    * 📋 Получить все записи с типизацией
    */

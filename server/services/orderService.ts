@@ -8,6 +8,8 @@ import {
   reserves,
   orderItems,
 } from "../../shared/schema";
+import { z } from "zod";
+import { zId, zOrderStatus, zName, zPrice, zQuantityAllowZero, zNotes, zDate } from "../../shared/zFields";
 import { transactionService } from "./transactionService";
 import { apiLogger } from "../../shared/logger";
 import { cacheService } from "./cacheService";
@@ -15,12 +17,24 @@ import { db } from "../db";
 import { eq } from "drizzle-orm";
 import { BaseService } from "./baseService";
 
+// Совместимая схема для OrderService без optional полей
+const orderServiceInsertSchema = z.object({
+  name: zName,
+  status: zOrderStatus,
+  warehouseId: zId,
+  totalAmount: zQuantityAllowZero,
+  isReserved: z.boolean(),
+  customerId: zId.optional(),
+  notes: zNotes,
+  date: zDate,
+});
+
 export class OrderService extends BaseService<Order, InsertOrder> {
   protected entityName = "Order";
   protected pluralName = "Orders";
   protected storageMethodPrefix = "Order";
-  protected insertSchema = insertOrderSchema;
-  protected updateSchema = insertOrderSchema.partial();
+  protected insertSchema = orderServiceInsertSchema as any;
+  protected updateSchema = orderServiceInsertSchema.partial();
 
   private static instance: OrderService;
 
@@ -72,7 +86,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
 
     for (const id of validIds) {
       try {
-        const success = await OrderService.delete(id);
+        const success = await OrderService.getInstance().delete(id);
         if (success) {
           deletedCount++;
           results.push({ id, status: "deleted" });
@@ -172,7 +186,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
     const validatedData = insertOrderSchema.partial().parse(orderData);
 
     // Проверяем существование заказа перед обновлением
-    const currentOrder = await this.storage.getOrder(id);
+    const currentOrder = await storage.getOrder(id);
     if (!currentOrder) {
       throw new Error(`Заказ с ID ${id} не найден`);
     }
@@ -199,7 +213,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
       return await OrderService.handleReservationChange(id, validatedData, newReserved, currentOrder);
     } else {
       // Простое обновление заказа без изменения позиций и резервирования
-      const result = await this.storage.updateOrder(id, validatedData);
+      const result = await storage.updateOrder(id, validatedData);
 
       // Инвалидация кеша остатков после обновления заказа
       if (result) {

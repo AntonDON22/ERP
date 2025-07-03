@@ -5,18 +5,32 @@ import {
   type DocumentRecord,
   type CreateDocumentItem,
 } from "../../shared/schema";
+import { z } from "zod";
+import { zDocumentName, zId } from "../../shared/zFields";
 import { transactionService } from "./transactionService";
 import { getMoscowDateForDocument } from "../../shared/timeUtils";
 import { logger, apiLogger } from "../../shared/logger";
 import { toNumber } from "@shared/utils";
 import { BaseService } from "./baseService";
 
+// Совместимая схема для DocumentService без optional полей
+const documentServiceInsertSchema = z.object({
+  name: z.string().min(0).max(255, "Название не должно превышать 255 символов").trim(),
+  type: z.enum(["income", "outcome", "return"], {
+    errorMap: () => ({ message: "Тип документа должен быть 'income', 'outcome' или 'return'" }),
+  }),
+  status: z.enum(["draft", "posted"], {
+    errorMap: () => ({ message: "Статус документа должен быть 'draft' или 'posted'" }),
+  }),
+  warehouseId: zId.optional(),
+});
+
 export class DocumentService extends BaseService<DocumentRecord, InsertDocument> {
   protected entityName = "Document";
   protected pluralName = "Documents";
   protected storageMethodPrefix = "Document";
-  protected insertSchema = insertDocumentSchema;
-  protected updateSchema = insertDocumentSchema.partial();
+  protected insertSchema = documentServiceInsertSchema as any;
+  protected updateSchema = documentServiceInsertSchema.partial();
 
   protected async validateImportData(data: unknown): Promise<InsertDocument> {
     return insertDocumentSchema.parse(data);

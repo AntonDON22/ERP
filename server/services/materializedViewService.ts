@@ -62,7 +62,6 @@ export class MaterializedViewService {
         SELECT 
           id,
           name,
-          sku,
           quantity::text as total_quantity
         FROM inventory_summary
         ORDER BY name

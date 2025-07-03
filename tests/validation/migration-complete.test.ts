@@ -96,6 +96,7 @@ describe('Complete Migration Tests', () => {
     it('orderSchema должна использовать централизованный статус', () => {
       const validOrder = {
         warehouseId: 1,
+        customerId: 1, // Добавлено обязательное поле
         status: "В работе",
         items: [{
           productId: 1,

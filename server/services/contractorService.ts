@@ -63,6 +63,7 @@ export class ContractorService {
           error: error instanceof Error ? error.message : String(error),
         });
         results.push({ id, status: "error" });
+        throw error;
       }
     }
 
@@ -105,6 +106,7 @@ export class ContractorService {
           contractorData,
           error: error instanceof Error ? error.message : String(error),
         });
+        throw error;
       }
     }
 

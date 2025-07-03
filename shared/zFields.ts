@@ -227,3 +227,35 @@ export type QuantityCanBeNegative = z.infer<typeof zQuantityCanBeNegative>;
 export type Percent = z.infer<typeof zPercent>;
 export type Weight = z.infer<typeof zWeight>;
 export type Name = z.infer<typeof zName>;
+
+/**
+ * Схема для имен пользователей
+ */
+export const zUsername = z
+  .string()
+  .min(1, "Имя пользователя обязательно")
+  .max(50, "Имя пользователя не должно превышать 50 символов");
+
+/**
+ * Схема для паролей
+ */
+export const zPassword = z
+  .string()
+  .min(1, "Пароль обязателен")
+  .min(4, "Пароль должен содержать минимум 4 символа");
+
+/**
+ * Схема для штрих-кодов
+ */
+export const zBarcode = z
+  .string()
+  .max(50, "Штрих-код не должен превышать 50 символов")
+  .optional();
+
+/**
+ * Схема для URL изображений
+ */
+export const zImageUrl = z
+  .string()
+  .max(500, "URL изображения не должен превышать 500 символов")
+  .optional();

@@ -54,6 +54,7 @@ export class WarehouseService {
           error: error instanceof Error ? error.message : String(error),
         });
         results.push({ id, status: "error" });
+        throw error;
       }
     }
 
@@ -82,6 +83,7 @@ export class WarehouseService {
           warehouseData,
           error: error instanceof Error ? error.message : String(error),
         });
+        throw error;
       }
     }
 

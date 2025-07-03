@@ -1,8 +1,14 @@
 import { storage } from "../storage";
 import { insertSupplierSchema, type InsertSupplier, type Supplier } from "../../shared/schema";
-import { apiLogger } from "../../shared/logger";
+import { BaseService } from "./baseService";
 
-export class SupplierService {
+export class SupplierService extends BaseService<Supplier, InsertSupplier> {
+  protected entityName = "Supplier";
+  protected storageKey = "getSuppliers" as const;
+
+  protected async validateImportData(data: any): Promise<InsertSupplier> {
+    return insertSupplierSchema.parse(data);
+  }
   async getAll(): Promise<Supplier[]> {
     return await storage.getSuppliers();
   }
@@ -55,6 +61,7 @@ export class SupplierService {
           error: error instanceof Error ? error.message : String(error),
         });
         results.push({ id, status: "error" });
+        throw error;
       }
     }
 
@@ -97,6 +104,7 @@ export class SupplierService {
           supplierData,
           error: error instanceof Error ? error.message : String(error),
         });
+        throw error;
       }
     }
 

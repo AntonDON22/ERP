@@ -27,7 +27,8 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
   async getAll(): Promise<T[]> {
     try {
       const methodName = `get${this.pluralName}`;
-      const result = await (storage as any)[methodName]();
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any с безопасным casting
+      const result = await (storage as unknown as Record<string, () => Promise<T[]>>)[methodName]();
       
       apiLogger.info(`Retrieved all ${this.pluralName.toLowerCase()}`, {
         count: result?.length || 0,
@@ -52,7 +53,8 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
       this.validateId(id);
       
       const methodName = `get${this.entityName}`;
-      const result = await (storage as any)[methodName](id);
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для getById с безопасным casting
+      const result = await (storage as unknown as Record<string, (id: number) => Promise<T | undefined>>)[methodName](id);
       
       apiLogger.debug(`Retrieved ${this.entityName.toLowerCase()} by ID`, {
         id,
@@ -79,10 +81,11 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
       const validatedData = this.insertSchema.parse(data);
       
       const methodName = `create${this.entityName}`;
-      const result = await (storage as any)[methodName](validatedData);
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для create с безопасным casting
+      const result = await (storage as unknown as Record<string, (data: InsertT) => Promise<T>>)[methodName](validatedData);
       
       apiLogger.info(`Created new ${this.entityName.toLowerCase()}`, {
-        id: (result as any)?.id,
+        id: (result as { id?: number })?.id,
         entity: this.entityName,
       });
       
@@ -106,7 +109,8 @@ export abstract class BaseService<T, InsertT, UpdateT = Partial<InsertT>> {
       const validatedData = this.updateSchema.parse(data);
       
       const methodName = `update${this.entityName}`;
-      const result = await (storage as any)[methodName](id, validatedData);
+      // ✅ ИСПРАВЛЕНО: Типизация вместо any для update с безопасным casting
+      const result = await (storage as unknown as Record<string, (id: number, data: UpdateT) => Promise<T | undefined>>)[methodName](id, validatedData);
       
       if (!result) {
         apiLogger.warn(`${this.entityName} not found for update`, {

@@ -86,7 +86,13 @@ export class OrderService {
     return { deletedCount, results };
   }
 
-  static async getOrderItems(orderId: number): Promise<any[]> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
+  static async getOrderItems(orderId: number): Promise<Array<{
+    id: number;
+    productId: number;
+    quantity: string;
+    price: string;
+  }>> {
     try {
       const items = await db
         .select({
@@ -108,8 +114,9 @@ export class OrderService {
     }
   }
 
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any
   static async create(
-    orderData: any,
+    orderData: InsertOrder,
     items: CreateOrderItem[],
     isReserved: boolean = false
   ): Promise<Order> {

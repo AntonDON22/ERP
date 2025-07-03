@@ -125,7 +125,8 @@ const CopyableCell = ({
   );
 };
 
-function DataTable<T = any>({
+// ✅ ИСПРАВЛЕНО: Строгая типизация вместо any
+function DataTable<T = unknown>({
   data,
   columns,
   isLoading,

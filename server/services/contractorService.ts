@@ -70,7 +70,15 @@ export class ContractorService {
     return { deletedCount, results };
   }
 
-  async import(contractors: any[]): Promise<Contractor[]> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any - поддержка Excel импорта
+  async import(contractors: Array<{ 
+    name?: string; 
+    Название?: string; 
+    website?: string;
+    Вебсайт?: string;
+    id?: number;
+    ID?: number;
+  }>): Promise<Contractor[]> {
     if (!Array.isArray(contractors)) {
       throw new Error("Ожидается массив контрагентов");
     }

@@ -149,7 +149,7 @@ export default function ProductsList() {
   }
 
   return (
-    <DataTable<Product>
+    <DataTable
       data={products}
       columns={memoizedColumns}
       isLoading={isLoading}

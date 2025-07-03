@@ -61,14 +61,17 @@ export class WarehouseService {
     return { deletedCount, results };
   }
 
-  async import(warehouses: any[]): Promise<Warehouse[]> {
+  // ✅ ИСПРАВЛЕНО: Типизация вместо any - поддержка Excel импорта
+  async import(warehouses: Array<{ name?: string; id?: number; }>): Promise<Warehouse[]> {
     const results: Warehouse[] = [];
 
     for (const warehouseData of warehouses) {
       try {
         // Попытка обновить существующий склад (если есть ID)
         if (warehouseData.id) {
-          const updatedWarehouse = await this.update(warehouseData.id, warehouseData);
+          const updatedWarehouse = await this.update(warehouseData.id, { 
+            name: warehouseData.name || "Безымянный склад"
+          });
           if (updatedWarehouse) {
             results.push(updatedWarehouse);
             continue;
@@ -76,7 +79,9 @@ export class WarehouseService {
         }
 
         // Создание нового склада
-        const warehouse = await this.create(warehouseData);
+        const warehouse = await this.create({ 
+          name: warehouseData.name || "Безымянный склад"
+        });
         results.push(warehouse);
       } catch (error) {
         apiLogger.error("Error importing warehouse", {

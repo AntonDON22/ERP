@@ -2,10 +2,16 @@ import { Router } from "express";
 import { OrderService } from "../services/orderService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { apiLogger } from "../../shared/logger";
+import { apiLogger, logger, getErrorMessage } from "../../shared/logger";
 
 const router = Router();
-const orderService = new OrderService();
+
+// Валидация для параметров ID
+const idParamSchema = z.object({
+  id: z.string().refine((val) => !isNaN(Number(val)), {
+    message: "ID должен быть числом",
+  }).transform((val) => Number(val)),
+});
 
 // Валидация для удаления заказов
 const deleteOrdersSchema = z.object({
@@ -15,7 +21,7 @@ const deleteOrdersSchema = z.object({
 // GET /api/orders
 router.get("/", async (req, res) => {
   try {
-    const orders = await orderService.getAll();
+    const orders = await OrderService.getAll();
     res.json(orders);
   } catch (error) {
     apiLogger.error("Failed to get orders", {
@@ -33,7 +39,7 @@ router.get("/:id", async (req, res) => {
       return res.status(400).json({ error: "Некорректный ID заказа" });
     }
 
-    const order = await orderService.getById(id);
+    const order = await OrderService.getById(id);
     if (!order) {
       return res.status(404).json({ error: "Заказ не найден" });
     }
@@ -56,7 +62,7 @@ router.get("/:id/items", async (req, res) => {
       return res.status(400).json({ error: "Некорректный ID заказа" });
     }
 
-    const orderItems = await orderService.getOrderItems(id);
+    const orderItems = await OrderService.getOrderItems(id);
     res.json(orderItems);
   } catch (error) {
     apiLogger.error("Failed to get order items", {
@@ -71,7 +77,7 @@ router.get("/:id/items", async (req, res) => {
 router.post("/create", async (req, res) => {
   try {
     const { items, isReserved, ...orderData } = req.body;
-    const order = await orderService.create(orderData, items || [], isReserved || false);
+    const order = await OrderService.create(orderData, items || [], isReserved || false);
     res.status(201).json(order);
   } catch (error) {
     apiLogger.error("Failed to create order", {
@@ -93,7 +99,7 @@ router.put("/:id", async (req, res) => {
     const { items, isReserved, ...orderData } = req.body;
     apiLogger.info("Updating order", { orderId: id, orderData, hasItems: !!items, isReserved });
 
-    const order = await orderService.update(id, orderData, items, isReserved);
+    const order = await OrderService.update(id, orderData, items, isReserved);
     if (!order) {
       return res.status(404).json({ error: "Заказ не найден" });
     }
@@ -109,11 +115,28 @@ router.put("/:id", async (req, res) => {
   }
 });
 
+// DELETE /api/orders/:id
+router.delete("/:id", async (req, res) => {
+  try {
+    const idParam = idParamSchema.parse(req.params);
+    const success = await OrderService.delete(idParam.id);
+    
+    if (success) {
+      res.json({ success: true });
+    } else {
+      res.status(404).json({ error: "Заказ не найден" });
+    }
+  } catch (error) {
+    logger.error("Ошибка удаления заказа", { error: getErrorMessage(error) });
+    res.status(500).json({ error: "Ошибка удаления заказа" });
+  }
+});
+
 // POST /api/orders/delete-multiple
 router.post("/delete-multiple", async (req, res) => {
   try {
     const validatedData = deleteOrdersSchema.parse(req.body);
-    const result = await orderService.deleteMultiple(validatedData.orderIds);
+    const result = await OrderService.deleteMultiple(validatedData.orderIds);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -18,7 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { useProducts, useOrder, useUpdateOrder } from "@/hooks/api";
+import { useProducts, useOrder, useUpdateOrder, useDeleteOrder } from "@/hooks/api";
 import { useWarehouses } from "@/hooks/api";
 import { useContractors } from "@/hooks/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -34,6 +34,7 @@ export default function EditOrder() {
   const { toast } = useToast();
   const { data: orderData, isLoading: isLoadingOrder } = useOrder(orderId);
   const updateMutation = useUpdateOrder();
+  const deleteMutation = useDeleteOrder();
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
   const { data: contractors = [] } = useContractors();
@@ -89,6 +90,28 @@ export default function EditOrder() {
 
 
   // Обработчик сохранения
+  // Функция удаления заказа  
+  const handleDelete = async () => {
+    if (!confirm("Вы уверены, что хотите удалить этот заказ?")) {
+      return;
+    }
+
+    try {
+      await deleteMutation.mutateAsync(orderId);
+      toast({
+        title: "Заказ удален",
+        description: "Заказ был успешно удален",
+      });
+      setLocation("/orders");
+    } catch (error) {
+      toast({
+        title: "Ошибка",
+        description: "Не удалось удалить заказ",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleSave = async (data: FormOrder) => {
     const currentSubmissionId = ++submissionCounter.current;
     console.log(`🚀 Starting order update #${currentSubmissionId}`);
@@ -194,9 +217,13 @@ export default function EditOrder() {
           <div className="flex justify-between items-center">
             <CardTitle>{orderData.name}</CardTitle>
             <div className="flex space-x-2">
-              <Button variant="outline" onClick={() => setLocation("/orders")}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Назад
+              <Button
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Удалить
               </Button>
               <Button
                 form="order-form"

@@ -16,15 +16,70 @@ import { db } from "../db";
 import { eq } from "drizzle-orm";
 
 export class OrderService {
-  async getAll(): Promise<Order[]> {
+  static async getAll(): Promise<Order[]> {
     return storage.getOrders();
   }
 
-  async getById(id: number): Promise<Order | undefined> {
+  static async getById(id: number): Promise<Order | undefined> {
     return storage.getOrder(id);
   }
 
-  async getOrderItems(orderId: number): Promise<any[]> {
+  static async delete(id: number): Promise<boolean> {
+    // Используем storage.deleteOrder который корректно удаляет резервы
+    const result = await storage.deleteOrder(id);
+
+    // Инвалидация кеша остатков после удаления заказа с резервами
+    if (result) {
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Inventory cache invalidated after order deletion", { orderId: id });
+    }
+
+    return result;
+  }
+
+  static async deleteMultiple(
+    ids: number[]
+  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      throw new Error("Укажите массив ID заказов для удаления");
+    }
+
+    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
+    if (validIds.length !== ids.length) {
+      throw new Error("Некорректные ID заказов");
+    }
+
+    let deletedCount = 0;
+    const results = [];
+
+    for (const id of validIds) {
+      try {
+        const success = await OrderService.delete(id);
+        if (success) {
+          deletedCount++;
+          results.push({ id, status: "deleted" });
+        } else {
+          results.push({ id, status: "not_found" });
+        }
+      } catch (error) {
+        apiLogger.error(`Error deleting order ${id}`, {
+          orderId: id,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        results.push({ id, status: "error" });
+      }
+    }
+
+    // Дополнительная инвалидация кеша если было удалено несколько заказов
+    if (deletedCount > 0) {
+      await cacheService.invalidatePattern("inventory:*");
+      apiLogger.info("Inventory cache invalidated after multiple order deletion", { deletedCount });
+    }
+
+    return { deletedCount, results };
+  }
+
+  static async getOrderItems(orderId: number): Promise<any[]> {
     try {
       const items = await db
         .select({
@@ -46,7 +101,7 @@ export class OrderService {
     }
   }
 
-  async create(
+  static async create(
     orderData: any,
     items: CreateOrderItem[],
     isReserved: boolean = false
@@ -82,7 +137,7 @@ export class OrderService {
     );
   }
 
-  async update(
+  static async update(
     id: number,
     orderData: Partial<InsertOrder>,
     items?: CreateOrderItem[],
@@ -112,10 +167,10 @@ export class OrderService {
     if (items && items.length > 0) {
       // Если есть позиции, используем полное транзакционное обновление
       apiLogger.info("Starting updateWithItems", { orderId: id, itemsCount: items.length });
-      return await this.updateWithItems(id, validatedData, items, newReserved);
+      return await OrderService.updateWithItems(id, validatedData, items, newReserved);
     } else if (reserveChanged) {
       // Если изменился только статус резервирования (без новых позиций)
-      return await this.handleReservationChange(id, validatedData, newReserved, currentOrder);
+      return await OrderService.handleReservationChange(id, validatedData, newReserved, currentOrder);
     } else {
       // Простое обновление заказа без изменения позиций и резервирования
       const result = await storage.updateOrder(id, validatedData);
@@ -186,7 +241,7 @@ export class OrderService {
   }
 
   // Приватный метод для обновления позиций заказа
-  private async updateOrderItems(orderId: number, items: CreateOrderItem[]): Promise<void> {
+  private static async updateOrderItems(orderId: number, items: CreateOrderItem[]): Promise<void> {
     try {
       apiLogger.info("Starting updateOrderItems", { orderId, itemsCount: items.length, items });
       
@@ -220,7 +275,7 @@ export class OrderService {
   }
 
   // Приватный метод для обновления только статуса резервирования
-  private async handleReservationChange(
+  private static async handleReservationChange(
     orderId: number,
     orderData: Partial<InsertOrder>,
     newReserved: boolean,
@@ -283,7 +338,7 @@ export class OrderService {
   }
 
   // Приватный метод для транзакционного обновления заказа с позициями
-  private async updateWithItems(
+  private static async updateWithItems(
     orderId: number,
     orderData: Partial<InsertOrder>,
     items: CreateOrderItem[],
@@ -305,7 +360,7 @@ export class OrderService {
       }
 
       // 2.5. Обновляем позиции заказа
-      await this.updateOrderItems(orderId, items);
+      await OrderService.updateOrderItems(orderId, items);
       apiLogger.info("Order items updated", { orderId, itemsCount: items.length });
 
       // 3. Обрабатываем резервы

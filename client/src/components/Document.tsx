@@ -192,8 +192,6 @@ export default function Document({ config, documentData }: DocumentProps) {
 
       if (documentData) {
         // Редактирование существующего документа
-        if (process.env.NODE_ENV === "development") {
-        }
         await updateMutation.mutateAsync({
           id: documentData.id,
           data: {
@@ -210,18 +208,12 @@ export default function Document({ config, documentData }: DocumentProps) {
         });
       } else {
         // Создание нового документа
-        if (process.env.NODE_ENV === 'development') {
-        }
         await mutation.mutateAsync(documentToSave);
       }
 
-      if (process.env.NODE_ENV === 'development') {
-      }
       toast({ title: config.successMessage });
       setLocation(config.backUrl);
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-      }
       toast({
         title: "Ошибка",
         description: "Не удалось сохранить документ",
@@ -229,8 +221,6 @@ export default function Document({ config, documentData }: DocumentProps) {
       });
     } finally {
       setIsSubmitting(false);
-      if (process.env.NODE_ENV === "development") {
-      }
     }
   };
 

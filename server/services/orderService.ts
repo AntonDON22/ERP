@@ -22,6 +22,15 @@ export class OrderService extends BaseService<Order, InsertOrder> {
   protected insertSchema = insertOrderSchema;
   protected updateSchema = insertOrderSchema.partial();
 
+  private static instance: OrderService;
+
+  static getInstance(): OrderService {
+    if (!OrderService.instance) {
+      OrderService.instance = new OrderService();
+    }
+    return OrderService.instance;
+  }
+
   protected async validateImportData(data: unknown): Promise<InsertOrder> {
     return insertOrderSchema.parse(data);
   }
@@ -163,7 +172,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
     const validatedData = insertOrderSchema.partial().parse(orderData);
 
     // Проверяем существование заказа перед обновлением
-    const currentOrder = await storage.getOrder(id);
+    const currentOrder = await this.storage.getOrder(id);
     if (!currentOrder) {
       throw new Error(`Заказ с ID ${id} не найден`);
     }
@@ -190,7 +199,7 @@ export class OrderService extends BaseService<Order, InsertOrder> {
       return await OrderService.handleReservationChange(id, validatedData, newReserved, currentOrder);
     } else {
       // Простое обновление заказа без изменения позиций и резервирования
-      const result = await storage.updateOrder(id, validatedData);
+      const result = await this.storage.updateOrder(id, validatedData);
 
       // Инвалидация кеша остатков после обновления заказа
       if (result) {

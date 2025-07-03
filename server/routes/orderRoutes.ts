@@ -21,7 +21,7 @@ const deleteOrdersSchema = z.object({
 // GET /api/orders
 router.get("/", async (req, res) => {
   try {
-    const orders = await OrderService.getAll();
+    const orders = await OrderService.getInstance().getAll();
     res.json(orders);
   } catch (error) {
     apiLogger.error("Failed to get orders", {
@@ -39,7 +39,7 @@ router.get("/:id", async (req, res) => {
       return res.status(400).json({ error: "Некорректный ID заказа" });
     }
 
-    const order = await OrderService.getById(id);
+    const order = await OrderService.getInstance().getById(id);
     if (!order) {
       return res.status(404).json({ error: "Заказ не найден" });
     }
@@ -119,7 +119,7 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const idParam = idParamSchema.parse(req.params);
-    const success = await OrderService.delete(idParam.id);
+    const success = await OrderService.getInstance().delete(idParam.id);
     
     if (success) {
       res.json({ success: true });
@@ -136,7 +136,7 @@ router.delete("/:id", async (req, res) => {
 router.post("/delete-multiple", async (req, res) => {
   try {
     const validatedData = deleteOrdersSchema.parse(req.body);
-    const result = await OrderService.deleteMultiple(validatedData.orderIds);
+    const result = await OrderService.getInstance().deleteMultiple(validatedData.orderIds);
     res.json(result);
   } catch (error) {
     if (error instanceof z.ZodError) {

@@ -1,13 +1,13 @@
 /**
  * 🎨 АРХИТЕКТУРНАЯ ЗАЩИТА: Централизованные UI импорты
- * 
+ *
  * КРИТИЧЕСКОЕ ПРАВИЛО: Все UI компоненты импортируются только отсюда.
  * Запрещено прямое импортирование из @/components/ui/*
- * 
+ *
  * ❌ НЕ ДЕЛАТЬ:
  * import { Button } from "@/components/ui/button"
  * import { Input } from "@/components/ui/input"
- * 
+ *
  * ✅ ПРАВИЛЬНО:
  * import { Button, Input } from "@shared/ui"
  */
@@ -39,7 +39,14 @@ export {
 } from "@/components/ui/form";
 
 // Карточки и макет
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+export {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 export { Separator } from "@/components/ui/separator";
 export { ScrollArea } from "@/components/ui/scroll-area";
 
@@ -100,16 +107,27 @@ export { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/h
 
 // Специализированные компоненты
 export { Calendar } from "@/components/ui/calendar";
-export { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+export {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 export { default as DataTable } from "@/components/DataTable";
-export { Sheet, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+export {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 
 // Расширенные компоненты
-export {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 export {
   Accordion,
   AccordionContent,
@@ -117,7 +135,15 @@ export {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 export { AspectRatio } from "@/components/ui/aspect-ratio";
-export { Menubar, MenubarContent, MenubarItem, MenubarMenu, MenubarSeparator, MenubarShortcut, MenubarTrigger } from "@/components/ui/menubar";
+export {
+  Menubar,
+  MenubarContent,
+  MenubarItem,
+  MenubarMenu,
+  MenubarSeparator,
+  MenubarShortcut,
+  MenubarTrigger,
+} from "@/components/ui/menubar";
 
 // UI Kit компоненты (собственные)
 export { PrimaryButton } from "@/components/ui-kit/PrimaryButton";
@@ -140,7 +166,7 @@ export { cn } from "@/lib/utils";
 
 /**
  * ПРАВИЛА АРХИТЕКТУРЫ:
- * 
+ *
  * 1. Все новые UI компоненты добавляются сюда
  * 2. При создании custom компонента - добавить экспорт
  * 3. ESLint должен блокировать прямые импорты из @/components/ui/*

@@ -1,9 +1,9 @@
 /**
  * 🔒 АРХИТЕКТУРНАЯ ЗАЩИТА: Централизованные API маршруты
- * 
+ *
  * КРИТИЧЕСКОЕ ПРАВИЛО: Все обращения к API должны использовать только эти константы.
  * Запрещено использование прямых строк типа "/api/products" в коде.
- * 
+ *
  * При добавлении нового маршрута:
  * 1. Добавить его сюда
  * 2. Обновить replit.md секцию "API Endpoints"
@@ -119,13 +119,13 @@ export function validateApiRoute(route: string): boolean {
  */
 export function getAllApiRoutes(): string[] {
   const routes: string[] = [];
-  
+
   // Базовые маршруты без параметров
-  Object.values(API_ROUTES).forEach(section => {
+  Object.values(API_ROUTES).forEach((section) => {
     if (typeof section === "string") {
       routes.push(section);
     } else {
-      Object.values(section).forEach(route => {
+      Object.values(section).forEach((route) => {
         if (typeof route === "string") {
           routes.push(route);
         }
@@ -138,12 +138,12 @@ export function getAllApiRoutes(): string[] {
 
 /**
  * АРХИТЕКТУРНЫЕ ПРАВИЛА:
- * 
+ *
  * ❌ НЕ ДЕЛАТЬ:
  * - useQuery({ queryKey: ["/api/products"] })
  * - fetch("/api/documents/receipt")
  * - apiRequest("/api/orders")
- * 
+ *
  * ✅ ПРАВИЛЬНО:
  * - useQuery({ queryKey: [API_ROUTES.PRODUCTS.LIST] })
  * - fetch(API_ROUTES.DOCUMENTS.CREATE)

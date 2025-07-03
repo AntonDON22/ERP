@@ -156,9 +156,9 @@ export const zWeightOptional = zWeight.optional();
  */
 export const zName = z
   .string()
+  .trim()
   .min(1, "Название обязательно")
-  .max(255, "Название не должно превышать 255 символов")
-  .trim();
+  .max(255, "Название не должно превышать 255 символов");
 
 export const zNameOptional = zName.optional();
 
@@ -233,6 +233,7 @@ export type Name = z.infer<typeof zName>;
  */
 export const zUsername = z
   .string()
+  .trim()
   .min(1, "Имя пользователя обязательно")
   .max(50, "Имя пользователя не должно превышать 50 символов");
 
@@ -250,7 +251,9 @@ export const zPassword = z
 export const zBarcode = z
   .string()
   .max(50, "Штрих-код не должен превышать 50 символов")
-  .optional();
+  .optional()
+  .or(z.literal(""))
+  .transform(val => val === "" ? undefined : val);
 
 /**
  * Схема для URL изображений
@@ -258,4 +261,40 @@ export const zBarcode = z
 export const zImageUrl = z
   .string()
   .max(500, "URL изображения не должен превышать 500 символов")
-  .optional();
+  .optional()
+  .or(z.literal(""))
+  .transform(val => val === "" ? undefined : val);
+
+/**
+ * Схема для веб-сайтов
+ */
+export const zWebsite = z
+  .string()
+  .optional()
+  .transform((val) => val?.trim() || undefined)
+  .refine(
+    (val) => !val || val === undefined || val.startsWith("http"),
+    "Вебсайт должен начинаться с http или https"
+  );
+
+/**
+ * Схема для адресов
+ */
+export const zAddress = z
+  .string()
+  .optional()
+  .transform((val) => val?.trim() || undefined)
+  .refine((val) => !val || val.length <= 500, "Адрес не должен превышать 500 символов");
+
+/**
+ * Схема для артикулов товаров (SKU)
+ */
+export const zSku = z
+  .string()
+  .trim()
+  .min(1, "Артикул обязателен")
+  .max(100, "Артикул не должен превышать 100 символов")
+  .regex(
+    /^[A-Za-z0-9_-]+$/,
+    "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
+  );

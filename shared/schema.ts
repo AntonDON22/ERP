@@ -26,6 +26,13 @@ import {
   zDate,
   zOrderStatus,
   zOrderStatusOptional,
+  zUsername,
+  zPassword,
+  zSku,
+  zBarcode,
+  zImageUrl,
+  zWebsite,
+  zAddress,
 } from "./zFields";
 
 // Enum для типов документов
@@ -83,34 +90,24 @@ export const documents = pgTable("documents", {
   // postedAt - не используется в логике системы
 });
 
+// ✅ Мигрировано на централизованные поля zFields.ts
 export const insertUserSchema = z.object({
-  username: z.string().min(1, "Имя пользователя обязательно"),
-  password: z.string().min(1, "Пароль обязателен"),
+  username: zUsername,
+  password: zPassword,
 });
 
+// ✅ Мигрировано на централизованные поля zFields.ts
 export const insertProductSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim(),
-  sku: z
-    .string()
-    .min(1, "Артикул обязателен")
-    .max(100, "Артикул не должен превышать 100 символов")
-    .regex(
-      /^[A-Za-z0-9_-]+$/,
-      "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
-    )
-    .trim(),
-  barcode: z.string().optional(),
+  name: zName,
+  sku: zSku,
+  barcode: zBarcode,
   price: zPrice,
   purchasePrice: zPrice.optional(),
   weight: zWeight.optional(),
   height: zWeight.optional(),
   width: zWeight.optional(),
   length: zWeight.optional(),
-  imageUrl: z.string().optional(),
+  imageUrl: zImageUrl,
 });
 
 // Гибкая схема для импорта Excel
@@ -171,52 +168,22 @@ export const importProductSchema = z.object({
     .transform((val) => (val && val.trim() ? val.trim() : "")),
 });
 
+// ✅ Мигрировано на централизованные поля zFields.ts
 export const insertSupplierSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .refine((val) => val.length > 0, "Название не может быть пустым"),
-  website: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || val.trim() === "" || val.startsWith("http"),
-      "Вебсайт должен начинаться с http или https"
-    )
-    .transform((val) => val?.trim() || undefined),
+  name: zName,
+  website: zWebsite,
 });
 
+// ✅ Мигрировано на централизованные поля zFields.ts
 export const insertContractorSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .refine((val) => val.length > 0, "Название не может быть пустым"),
-  website: z
-    .string()
-    .optional()
-    .refine(
-      (val) => !val || val.trim() === "" || val.startsWith("http"),
-      "Вебсайт должен начинаться с http или https"
-    )
-    .transform((val) => val?.trim() || undefined),
+  name: zName,
+  website: zWebsite,
 });
 
+// ✅ Мигрировано на централизованные поля zFields.ts  
 export const insertWarehouseSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Название обязательно")
-    .max(255, "Название не должно превышать 255 символов")
-    .trim()
-    .refine((val) => val.length > 0, "Название не может быть пустым"),
-  address: z
-    .string()
-    .optional()
-    .transform((val) => val?.trim() || undefined)
-    .refine((val) => !val || val.length <= 500, "Адрес не должен превышать 500 символов"),
+  name: zName,
+  address: zAddress,
 });
 
 export const insertDocumentSchema = z.object({

@@ -69,47 +69,24 @@ export class OrderService extends BaseService<Order, InsertOrder> {
     return result;
   }
 
+  // ✅ ИСПРАВЛЕНО: Убрано дублирование CRUD-логики 
+  // deleteMultiple() наследуется от BaseService
+  // Переопределяем только delete() для специальной логики инвалидации кеша
   async deleteMultiple(
     ids: number[]
   ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
-    if (!Array.isArray(ids) || ids.length === 0) {
-      throw new Error("Укажите массив ID заказов для удаления");
-    }
+    // Используем базовую логику из BaseService
+    const result = await super.deleteMultiple(ids);
 
-    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
-    if (validIds.length !== ids.length) {
-      throw new Error("Некорректные ID заказов");
-    }
-
-    let deletedCount = 0;
-    const results = [];
-
-    for (const id of validIds) {
-      try {
-        const success = await OrderService.getInstance().delete(id);
-        if (success) {
-          deletedCount++;
-          results.push({ id, status: "deleted" });
-        } else {
-          results.push({ id, status: "not_found" });
-        }
-      } catch (error) {
-        apiLogger.error(`Error deleting order ${id}`, {
-          orderId: id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        results.push({ id, status: "error" });
-        throw error;
-      }
-    }
-
-    // Дополнительная инвалидация кеша если было удалено несколько заказов
-    if (deletedCount > 0) {
+    // Добавляем специальную логику инвалидации кеша для заказов
+    if (result.deletedCount > 0) {
       await cacheService.invalidatePattern("inventory:*");
-      apiLogger.info("Inventory cache invalidated after multiple order deletion", { deletedCount });
+      apiLogger.info("Inventory cache invalidated after multiple order deletion", { 
+        deletedCount: result.deletedCount 
+      });
     }
 
-    return { deletedCount, results };
+    return result;
   }
 
   // ✅ ИСПРАВЛЕНО: Типизация вместо any

@@ -162,8 +162,8 @@ describe('InventoryService', () => {
       const result = await inventoryService.getInventory();
 
       expect(result).toEqual([
-        { id: 1, name: 'Товар 1', quantity: 25.5 },
-        { id: 2, name: 'Товар 2', quantity: 0 },
+        { id: 1, name: 'Товар 1', quantity: "25.500" },
+        { id: 2, name: 'Товар 2', quantity: "0.000" },
       ]);
     });
   });

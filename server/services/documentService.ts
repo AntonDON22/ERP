@@ -63,42 +63,9 @@ export class DocumentService extends BaseService<DocumentRecord, InsertDocument>
   }
 
   // Переопределяем метод deleteMultiple для использования транзакционного удаления
-  async deleteMultiple(
-    ids: number[]
-  ): Promise<{ deletedCount: number; results: Array<{ id: number; status: string }> }> {
-    if (!Array.isArray(ids) || ids.length === 0) {
-      throw new Error("Укажите массив ID документов для удаления");
-    }
-
-    const validIds = ids.filter((id) => Number.isInteger(id) && id > 0);
-    if (validIds.length !== ids.length) {
-      throw new Error("Некорректные ID документов");
-    }
-
-    let deletedCount = 0;
-    const results = [];
-
-    for (const id of validIds) {
-      try {
-        const success = await transactionService.deleteDocumentWithInventory(id);
-        if (success) {
-          deletedCount++;
-          results.push({ id, status: "deleted" });
-        } else {
-          results.push({ id, status: "not_found" });
-        }
-      } catch (error) {
-        logger.error(`Error deleting document ${id}`, {
-          documentId: id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        results.push({ id, status: "error" });
-        throw error;
-      }
-    }
-
-    return { deletedCount, results };
-  }
+  // ✅ ИСПРАВЛЕНО: Убрано дублирование CRUD-логики
+  // deleteMultiple() наследуется от BaseService
+  // Переопределяем только delete() для использования transactionService
 
   async createReceipt(
     documentData: InsertDocument,

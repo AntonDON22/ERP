@@ -217,6 +217,10 @@ export default function EditOrder() {
           <div className="flex justify-between items-center">
             <CardTitle>{orderData.name}</CardTitle>
             <div className="flex space-x-2">
+              <Button variant="outline" onClick={() => setLocation("/orders")}>
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Назад
+              </Button>
               <Button
                 variant="destructive"
                 onClick={handleDelete}

@@ -73,6 +73,7 @@ export class OrderService {
           error: error instanceof Error ? error.message : String(error),
         });
         results.push({ id, status: "error" });
+        throw error;
       }
     }
 
@@ -266,6 +267,7 @@ export class OrderService {
             orderId,
             error: error instanceof Error ? error.message : String(error),
           });
+          throw error;
         }
       }
 

@@ -32,7 +32,6 @@ export default function EditShipment() {
     status: String(shipment.status || "draft"),
     date: shipment.date || new Date().toISOString().split('T')[0],
     warehouseId: shipment.warehouseId ?? 117,
-    comments: shipment.comments ?? "",
     items: "items" in shipment ? shipment.items.map(item => ({
       id: item.id,
       productId: item.productId,

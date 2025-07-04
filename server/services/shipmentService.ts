@@ -178,7 +178,6 @@ export class ShipmentService {
         if (shipmentData.status) updateData.status = shipmentData.status;
         if (shipmentData.warehouseId) updateData.warehouseId = shipmentData.warehouseId;
         if (shipmentData.responsibleUserId !== undefined) updateData.responsibleUserId = shipmentData.responsibleUserId;
-        if (shipmentData.comments !== undefined) updateData.comments = shipmentData.comments;
 
         const [updatedShipment] = await tx
           .update(shipments)

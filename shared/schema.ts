@@ -362,7 +362,6 @@ export const shipments = pgTable(
     status: shipmentStatusEnum("status").notNull().default("draft"),
     warehouseId: integer("warehouse_id").notNull(),
     responsibleUserId: integer("responsible_user_id"),
-    comments: text("comments"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },

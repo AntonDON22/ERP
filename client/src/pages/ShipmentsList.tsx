@@ -116,7 +116,7 @@ export default function ShipmentsList() {
       isLoading={isLoading}
       entityName="отгрузка"
       entityNamePlural="отгрузки"
-      searchFields={["orderId", "status", "comments"]}
+      searchFields={["orderId", "status"]}
       onDelete={handleDelete}
       onRowClick={handleEdit}
       onCreate={handleCreate}

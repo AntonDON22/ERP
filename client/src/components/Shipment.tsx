@@ -14,7 +14,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/api";
 import { useUpdateShipment, useDeleteShipment } from "@/hooks/api/useShipments";
@@ -35,7 +34,6 @@ const shipmentSchema = z.object({
   warehouseId: z.number().min(1, "Выберите склад"),
   status: z.enum(["draft", "shipped"]).default("draft"),
   date: z.string().min(1, "Дата обязательна"),
-  comments: z.string().optional(),
   items: z.array(shipmentItemSchema).min(1, "Добавьте хотя бы один товар"),
 });
 
@@ -46,7 +44,6 @@ interface ExistingShipmentData {
   status: string;
   date: string;
   warehouseId: number | null;
-  comments?: string | null;
   items: Array<{
     id: number;
     productId: number;
@@ -98,7 +95,6 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
       warehouseId: shipmentData?.warehouseId ?? 117, // ID существующего склада
       status: (shipmentData?.status as "draft" | "shipped") ?? "draft",
       date: shipmentData?.date ?? new Date().toISOString().split('T')[0],
-      comments: shipmentData?.comments ?? "",
       items: shipmentData?.items?.map((item) => ({
         productId: item.productId,
         quantity: item.quantity,
@@ -120,7 +116,6 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
         warehouseId: shipmentData.warehouseId ?? 117,
         status: (shipmentData.status as "draft" | "shipped") ?? "draft",
         date: shipmentData.date ?? new Date().toISOString().split('T')[0],
-        comments: shipmentData.comments ?? "",
         items: shipmentData.items?.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -182,7 +177,6 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
         status: shipmentStatus,
         date: data.date,
         warehouseId: data.warehouseId,
-        comments: data.comments || "",
         items: data.items.map((item: FormShipmentItem) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -342,15 +336,6 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
               {form.formState.errors.date && (
                 <p className="text-sm text-red-500 mt-1">{form.formState.errors.date.message}</p>
               )}
-            </div>
-            <div>
-              <Label>Комментарии</Label>
-              <Textarea
-                placeholder="Дополнительная информация..."
-                value={form.watch("comments") || ""}
-                onChange={(e) => form.setValue("comments", e.target.value)}
-                rows={2}
-              />
             </div>
           </div>
         </CardContent>

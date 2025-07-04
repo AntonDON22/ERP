@@ -11,6 +11,8 @@ import {
   orders,
   orderItems,
   reserves,
+  shipments,
+  shipmentItems,
   type User,
   type InsertUser,
   type Product,
@@ -30,6 +32,9 @@ import {
   type Order,
   type InsertOrder,
   type OrderItem,
+  type Shipment,
+  type InsertShipment,
+  type ShipmentItem,
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, sql, and, asc, or, isNull, inArray } from "drizzle-orm";
@@ -101,6 +106,13 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrder(id: number, order: Partial<InsertOrder>): Promise<Order | undefined>;
   deleteOrder(id: number): Promise<boolean>;
+
+  // Shipments
+  getShipments(): Promise<Shipment[]>;
+  getShipment(id: number): Promise<Shipment | undefined>;
+  createShipment(shipment: InsertShipment): Promise<Shipment>;
+  updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment | undefined>;
+  deleteShipment(id: number): Promise<boolean>;
 
   // Logs
   getLogs(params: {
@@ -400,6 +412,27 @@ export class MemStorage implements IStorage {
 
   async clearAllLogs(): Promise<number> {
     return 0; // MemStorage doesn't support logs
+  }
+
+  // Shipments
+  async getShipments(): Promise<Shipment[]> {
+    return []; // MemStorage doesn't support shipments
+  }
+
+  async getShipment(id: number): Promise<Shipment | undefined> {
+    return undefined; // MemStorage doesn't support shipments
+  }
+
+  async createShipment(shipment: InsertShipment): Promise<Shipment> {
+    throw new Error("Shipments not supported in MemStorage");
+  }
+
+  async updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment | undefined> {
+    throw new Error("Shipments not supported in MemStorage");
+  }
+
+  async deleteShipment(id: number): Promise<boolean> {
+    throw new Error("Shipments not supported in MemStorage");
   }
 }
 
@@ -1490,6 +1523,200 @@ export class DatabaseStorage implements IStorage {
       return (result.rowCount || 0) > 0;
     } catch (error) {
       dbLogger.error("Error in deleteOrder", { error: getErrorMessage(error), id });
+      throw error;
+    }
+  }
+
+  // Shipments
+  async getShipments(): Promise<Shipment[]> {
+    try {
+      const endOperation = dbLogger.startOperation("getShipments");
+      dbLogger.debug("Database operation started", {
+        operation: "getShipments",
+        module: "storage",
+        queryType: "select"
+      });
+
+      // Получаем все отгрузки
+      const shipmentsResult = await db.select().from(shipments);
+
+      // Получаем все позиции отгрузок для загруженных отгрузок
+      const shipmentIds = shipmentsResult.map(shipment => shipment.id);
+      let allItems: any[] = [];
+      
+      if (shipmentIds.length > 0) {
+        allItems = await db
+          .select()
+          .from(shipmentItems)
+          .where(inArray(shipmentItems.shipmentId, shipmentIds));
+      }
+
+      // Группируем позиции по отгрузкам
+      const itemsByShipment = allItems.reduce((acc, item) => {
+        if (!acc[item.shipmentId]) {
+          acc[item.shipmentId] = [];
+        }
+        acc[item.shipmentId].push({
+          id: item.id,
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        });
+        return acc;
+      }, {} as Record<number, any[]>);
+
+      // Собираем отгрузки с позициями
+      const result = shipmentsResult.map(shipment => ({
+        ...shipment,
+        items: itemsByShipment[shipment.id] || [],
+      })) as any[];
+
+      const duration = endOperation();
+      dbLogger.info("Database operation completed", {
+        operation: "getShipments",
+        module: "storage",
+        duration: `${duration}ms`,
+        resultCount: result.length
+      });
+      return result;
+    } catch (error) {
+      dbLogger.error("Error in getShipments", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  async getShipment(id: number): Promise<Shipment | undefined> {
+    try {
+      // Получаем отгрузку
+      const shipmentResult = await db.select().from(shipments).where(eq(shipments.id, id));
+      if (!shipmentResult[0]) {
+        dbLogger.info("Shipment not found", {
+          operation: "getShipment",
+          module: "storage",
+          shipmentId: id
+        });
+        return undefined;
+      }
+
+      // Получаем позиции отгрузки
+      const itemsResult = await db
+        .select()
+        .from(shipmentItems)
+        .where(eq(shipmentItems.shipmentId, id));
+
+      dbLogger.info("Database operation completed", {
+        operation: "getShipment",
+        module: "storage",
+        shipmentId: id,
+        itemsCount: itemsResult.length
+      });
+
+      // Формируем отгрузку с позициями
+      const shipment = shipmentResult[0];
+      const items = itemsResult.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        price: Number(item.price),
+      }));
+
+      return {
+        ...shipment,
+        items,
+      } as any;
+    } catch (error) {
+      dbLogger.error("Error in getShipment", { error: getErrorMessage(error), id });
+      throw error;
+    }
+  }
+
+  async createShipment(insertShipment: InsertShipment): Promise<Shipment> {
+    try {
+      // Убираем поле items из данных отгрузки так как оно не хранится в таблице
+      const { items, ...shipmentDataWithoutItems } = insertShipment;
+      
+      // Создаем отгрузку с обязательными полями
+      const shipmentData = {
+        orderId: shipmentDataWithoutItems.orderId,
+        warehouseId: shipmentDataWithoutItems.warehouseId,
+        date: shipmentDataWithoutItems.date || new Date().toISOString().split('T')[0],
+        status: shipmentDataWithoutItems.status || "draft" as "draft" | "shipped",
+        responsibleUserId: shipmentDataWithoutItems.responsibleUserId
+      };
+
+      const [newShipment] = await db
+        .insert(shipments)
+        .values(shipmentData)
+        .returning();
+
+      // Создаем позиции отгрузки
+      if (items && items.length > 0) {
+        const shipmentItemsData = items.map(item => ({
+          shipmentId: newShipment.id,
+          productId: item.productId,
+          quantity: item.quantity.toString(),
+          price: item.price.toString()
+        }));
+
+        await db.insert(shipmentItems).values(shipmentItemsData);
+        
+        dbLogger.info("Shipment items created", { 
+          shipmentId: newShipment.id,
+          itemsCount: items.length 
+        });
+      }
+
+      dbLogger.info("Shipment created", { 
+        shipmentId: newShipment.id,
+        orderId: newShipment.orderId,
+        status: newShipment.status 
+      });
+
+      return newShipment;
+    } catch (error) {
+      dbLogger.error("Error in createShipment", { error: getErrorMessage(error), shipment: insertShipment });
+      throw error;
+    }
+  }
+
+  async updateShipment(id: number, updateData: Partial<InsertShipment>): Promise<Shipment | undefined> {
+    try {
+      const [shipment] = await db
+        .update(shipments)
+        .set({
+          ...updateData,
+          updatedAt: getMoscowTime()
+        })
+        .where(eq(shipments.id, id))
+        .returning();
+
+      if (shipment) {
+        dbLogger.info("Shipment updated", { 
+          shipmentId: id,
+          updatedFields: Object.keys(updateData),
+          status: shipment.status 
+        });
+      }
+
+      return shipment || undefined;
+    } catch (error) {
+      dbLogger.error("Error in updateShipment", { error: getErrorMessage(error), id, updateData });
+      throw error;
+    }
+  }
+
+  async deleteShipment(id: number): Promise<boolean> {
+    try {
+      // Удаляем элементы отгрузки
+      await db.delete(shipmentItems).where(eq(shipmentItems.shipmentId, id));
+
+      // Удаляем саму отгрузку
+      const result = await db.delete(shipments).where(eq(shipments.id, id));
+      
+      dbLogger.info("Shipment deleted", { shipmentId: id });
+      return (result.rowCount || 0) > 0;
+    } catch (error) {
+      dbLogger.error("Error in deleteShipment", { error: getErrorMessage(error), id });
       throw error;
     }
   }

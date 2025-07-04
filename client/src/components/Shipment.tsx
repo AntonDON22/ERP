@@ -19,7 +19,7 @@ import { useProducts } from "@/hooks/api";
 import { useCreateShipment, useUpdateShipment, useDeleteShipment } from "@/hooks/api/useShipments";
 import { useWarehouses, useOrders } from "@/hooks/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { Product, Warehouse, Order } from "@shared/schema";
+import { Product, Warehouse, Order, InsertShipment } from "@shared/schema";
 
 // Схема для позиций отгрузки
 const shipmentItemSchema = z.object({
@@ -198,11 +198,12 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
     setIsSubmitting(true);
 
     try {
-      const shipmentToSave = {
+      const shipmentToSave: Partial<InsertShipment> = {
         orderId: data.orderId,
-        status: shipmentStatus,
+        status: shipmentStatus as "draft" | "shipped",
         date: data.date,
         warehouseId: data.warehouseId,
+        comments: "",
         items: data.items.map((item: FormShipmentItem) => ({
           productId: item.productId,
           quantity: item.quantity,

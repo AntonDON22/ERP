@@ -1,6 +1,7 @@
 import { useParams } from "wouter";
 import Shipment, { ShipmentTypeConfig } from "@/components/Shipment";
 import { useUpdateShipment, useShipment } from "@/hooks/api/useShipments";
+import type { ShipmentItem } from "@shared/schema";
 
 const editConfig: ShipmentTypeConfig = {
   title: "Редактирование отгрузки",
@@ -32,7 +33,7 @@ export default function EditShipment() {
     status: String(shipment.status || "draft"),
     date: shipment.date || new Date().toISOString().split('T')[0],
     warehouseId: shipment.warehouseId ?? 117,
-    items: "items" in shipment ? shipment.items.map(item => ({
+    items: "items" in shipment && Array.isArray(shipment.items) ? shipment.items.map((item: ShipmentItem) => ({
       id: item.id,
       productId: item.productId,
       quantity: Number(item.quantity || 0),

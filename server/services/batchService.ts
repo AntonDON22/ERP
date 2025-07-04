@@ -1,5 +1,5 @@
 import { db } from "../db";
-import { products, suppliers, contractors, warehouses, documents } from "@shared/schema";
+import { products, suppliers, contractors, warehouses, documents, shipments } from "@shared/schema";
 import { inArray } from "drizzle-orm";
 import { dbLogger, getErrorMessage } from "@shared/logger";
 import { BATCH_SIZES } from "@shared/constants";
@@ -183,6 +183,34 @@ export class BatchService {
       if (onProgress) {
         onProgress(currentBatch, totalBatches);
       }
+    }
+  }
+
+  /**
+   * 🚢 Массовое удаление отгрузок
+   */
+  static async deleteShipments(ids: number[]): Promise<number> {
+    if (ids.length === 0) return 0;
+
+    const endOperation = dbLogger.startOperation("batchDeleteShipments");
+    try {
+      let deletedCount = 0;
+      
+      // Разделяем на batch'и для предотвращения timeout'ов
+      for (let i = 0; i < ids.length; i += BATCH_SIZES.MEDIUM) {
+        const batch = ids.slice(i, i + BATCH_SIZES.MEDIUM);
+        const result = await db.delete(shipments).where(inArray(shipments.id, batch));
+        deletedCount += result.rowCount || 0;
+      }
+
+      endOperation();
+      return deletedCount;
+    } catch (error) {
+      dbLogger.error("Error in batch delete shipments", {
+        error: getErrorMessage(error),
+        idsCount: ids.length,
+      });
+      throw error;
     }
   }
 }

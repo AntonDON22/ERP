@@ -26,6 +26,8 @@ import {
   zDate,
   zOrderStatus,
   zOrderStatusOptional,
+  zShipmentStatus,
+  zShipmentStatusOptional,
   zUsername,
   zPassword,
   zSku,
@@ -33,6 +35,7 @@ import {
   zImageUrl,
   zWebsite,
   zAddress,
+  shipmentIdsSchema,
 } from "./zFields";
 
 // Enum для типов документов
@@ -385,9 +388,7 @@ export const shipmentItems = pgTable("shipment_items", {
 export const createShipmentSchema = z.object({
   orderId: zId,
   date: zDate,
-  status: z.enum(["draft", "shipped"], {
-    errorMap: () => ({ message: "Статус отгрузки должен быть 'draft' или 'shipped'" }),
-  }).optional().default("draft"),
+  status: zShipmentStatus.optional().default("draft"),
   warehouseId: zId,
   responsibleUserId: zId.optional(),
   comments: zNotes,
@@ -406,6 +407,7 @@ export const insertShipmentItemSchema = z.object({
 
 export type CreateShipmentItem = z.infer<typeof insertShipmentItemSchema>;
 export type InsertShipment = z.infer<typeof createShipmentSchema>;
+export type CreateShipmentRequest = InsertShipment;
 export type Shipment = typeof shipments.$inferSelect;
 export type ShipmentItem = typeof shipmentItems.$inferSelect;
 
@@ -475,3 +477,6 @@ export const insertLogSchema = z.object({
 
 export type InsertLog = z.infer<typeof insertLogSchema>;
 export type Log = typeof logs.$inferSelect;
+
+// Экспорт схем валидации отгрузок
+export { shipmentIdsSchema };

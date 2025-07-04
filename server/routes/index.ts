@@ -6,7 +6,7 @@ import { warehouseRoutes } from "./warehouseRoutes";
 import inventoryRoutes from "./inventoryRoutes";
 import documentRoutes from "./documentRoutes";
 import orderRoutes from "./orderRoutes";
-import { shipmentRoutes } from "./shipmentRoutes";
+import shipmentRoutes from "./shipmentRoutes";
 import logRoutes from "./logRoutes";
 import { PerformanceMetricsService } from "../services/performanceMetricsService";
 import { mediumCache } from "../middleware/cacheMiddleware";

@@ -204,6 +204,15 @@ export const zOrderStatus = z.enum(["Новый", "В работе", "Выпол
 export const zOrderStatusOptional = zOrderStatus.optional();
 
 /**
+ * Статус отгрузки - только допустимые значения
+ */
+export const zShipmentStatus = z.enum(["draft", "shipped"], {
+  errorMap: () => ({ message: "Статус отгрузки должен быть 'draft' или 'shipped'" }),
+});
+
+export const zShipmentStatusOptional = zShipmentStatus.optional();
+
+/**
  * ID в строковом формате (для URL параметров)
  * Автоматически преобразует строку в число после валидации
  */
@@ -278,6 +287,8 @@ export const zWebsite = z
     "Вебсайт должен начинаться с http или https"
   );
 
+
+
 /**
  * Схема для адресов
  */
@@ -299,3 +310,10 @@ export const zSku = z
     /^[A-Za-z0-9_-]+$/,
     "Артикул может содержать только буквы, цифры, дефисы и подчеркивания"
   );
+
+/**
+ * Схемы валидации массивов ID для множественного удаления отгрузок
+ */
+export const shipmentIdsSchema = z.object({
+  ids: z.array(zId).min(1, "Необходимо выбрать хотя бы одну отгрузку для удаления"),
+});

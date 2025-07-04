@@ -119,3 +119,7 @@ export const orderIdsSchema = z.object({
 export const warehouseIdsSchema = z.object({
   warehouseIds: z.array(zId).min(1, "Укажите хотя бы один ID склада"), // ✅ Мигрировано
 });
+
+export const shipmentIdsSchema = z.object({
+  shipmentIds: z.array(zId).min(1, "Укажите хотя бы один ID отгрузки"), // ✅ Мигрировано
+});

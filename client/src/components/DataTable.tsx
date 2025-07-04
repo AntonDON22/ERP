@@ -28,6 +28,11 @@ import { useDebounce } from "../hooks/useDebounce";
 
 // Функция для склонения в родительный падеж
 function getGenitiveForm(entityNamePlural: string): string {
+  // Защита от undefined/null
+  if (!entityNamePlural || typeof entityNamePlural !== 'string') {
+    return 'записей';
+  }
+  
   const lowerCase = entityNamePlural.toLowerCase();
 
   // Словарь склонений
@@ -38,6 +43,7 @@ function getGenitiveForm(entityNamePlural: string): string {
     склады: "складов",
     документы: "документов",
     заказы: "заказов",
+    отгрузки: "отгрузок",
   };
 
   return genitiveMap[lowerCase] || lowerCase;

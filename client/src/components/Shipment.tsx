@@ -108,6 +108,32 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
     name: "items",
   });
 
+  // Функция для автоматического заполнения полей из заказа
+  const fillFromOrder = (orderId: number) => {
+    const selectedOrder = orders.find(order => order.id === orderId);
+    if (selectedOrder) {
+      // Заполняем склад (только если он есть)
+      if (selectedOrder.warehouseId) {
+        form.setValue("warehouseId", selectedOrder.warehouseId as number);
+      }
+      
+      // Заполняем товары из позиций заказа
+      if (selectedOrder.items && selectedOrder.items.length > 0) {
+        // Очищаем текущие позиции
+        fields.forEach((_, index) => remove(index));
+        
+        // Добавляем позиции из заказа
+        selectedOrder.items.forEach(item => {
+          append({
+            productId: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+          });
+        });
+      }
+    }
+  };
+
   // Обновление формы при изменении shipmentData
   useEffect(() => {
     if (shipmentData) {
@@ -273,7 +299,11 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
               <Label>Заказ</Label>
               <Select
                 value={form.watch("orderId")?.toString() || "0"}
-                onValueChange={(value) => form.setValue("orderId", parseInt(value))}
+                onValueChange={(value) => {
+                  const orderId = parseInt(value);
+                  form.setValue("orderId", orderId);
+                  fillFromOrder(orderId);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Выберите заказ" />

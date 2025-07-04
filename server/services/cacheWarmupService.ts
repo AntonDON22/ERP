@@ -69,6 +69,28 @@ export class CacheWarmupService {
       },
       description: "Доступность товаров",
     },
+    {
+      key: "http:/api/shipments:{}",
+      ttl: 300, // 5 минут для отгрузок
+      loader: async () => {
+        // Отгрузки используют ShipmentService, не storage
+        const { ShipmentService } = await import("../services/shipmentService");
+        return ShipmentService.getAll();
+      },
+      description: "Список отгрузок",
+    },
+    {
+      key: "http:/api/orders:{}",
+      ttl: 300, // 5 минут для заказов  
+      loader: () => storage.getOrders(),
+      description: "Список заказов",
+    },
+    {
+      key: "http:/api/documents:{}",
+      ttl: 300, // 5 минут для документов
+      loader: () => storage.getDocuments(),
+      description: "Список документов",
+    },
   ];
 
   /**

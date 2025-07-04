@@ -2,11 +2,12 @@ import { Router } from "express";
 import { ShipmentService } from "../services/shipmentService";
 import { getErrorMessage } from "@shared/utils";
 import { logger } from "@shared/logger";
+import { mediumCache } from "../middleware/cacheMiddleware";
 
 const router = Router();
 
-// Получить все отгрузки
-router.get("/", async (req, res) => {
+// Получить все отгрузки (с кешированием)
+router.get("/", mediumCache, async (req, res) => {
   try {
     const shipments = await ShipmentService.getAll();
     res.json(shipments);

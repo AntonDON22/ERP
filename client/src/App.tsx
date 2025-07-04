@@ -25,6 +25,8 @@ const CreateSupplier = lazy(() => import("@/pages/CreateSupplier"));
 const CreateContractor = lazy(() => import("@/pages/CreateContractor"));
 const CreateWarehouse = lazy(() => import("@/pages/CreateWarehouse"));
 const ShipmentsList = lazy(() => import("@/pages/ShipmentsList"));
+const CreateShipment = lazy(() => import("@/pages/CreateShipment"));
+const EditShipment = lazy(() => import("@/pages/EditShipment"));
 const ResponsiveTest = lazy(() => import("@/pages/ResponsiveTest"));
 
 // Компонент загрузки
@@ -71,6 +73,8 @@ function App() {
                 <Route path="/orders/create" component={CreateOrder} />
                 <Route path="/orders/:id" component={EditOrder} />
                 <Route path="/shipments" component={ShipmentsList} />
+                <Route path="/shipments/create" component={CreateShipment} />
+                <Route path="/shipments/:id" component={EditShipment} />
                 <Route path="/responsive-test" component={ResponsiveTest} />
               </Switch>
             </Suspense>

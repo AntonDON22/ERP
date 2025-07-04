@@ -84,6 +84,16 @@ export const API_ROUTES = {
     },
   },
 
+  // Отгрузки (независимые от заказов)
+  SHIPMENTS: {
+    LIST: "/api/shipments" as const,
+    CREATE: "/api/shipments" as const,
+    GET: (id: number) => `/api/shipments/${id}` as const,
+    UPDATE: (id: number) => `/api/shipments/${id}` as const,
+    DELETE: (id: number) => `/api/shipments/${id}` as const,
+    DELETE_MULTIPLE: "/api/shipments/delete-multiple" as const,
+  },
+
   // Остатки
   INVENTORY: {
     LIST: "/api/inventory" as const,

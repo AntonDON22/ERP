@@ -20,9 +20,240 @@ interface CreateShipmentData {
   warehouseId: number;
   responsibleUserId?: number;
   comments?: string;
+  items?: Array<{
+    productId: number;
+    quantity: number;
+    price: number;
+  }>;
 }
 
 export class ShipmentService {
+  /**
+   * Получить все отгрузки
+   */
+  static async getAll(): Promise<ShipmentWithItems[]> {
+    try {
+      logger.info("Получение всех отгрузок", {});
+
+      const shipmentsList = await db
+        .select()
+        .from(shipments);
+
+      const shipmentsWithItems: ShipmentWithItems[] = [];
+      
+      for (const shipment of shipmentsList) {
+        const items = await db
+          .select()
+          .from(shipmentItems)
+          .where(eq(shipmentItems.shipmentId, shipment.id));
+        
+        shipmentsWithItems.push({ ...shipment, items });
+      }
+
+      logger.info("Все отгрузки получены", { count: shipmentsWithItems.length });
+      return shipmentsWithItems;
+    } catch (error) {
+      logger.error("Ошибка получения всех отгрузок", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Получить отгрузку по ID
+   */
+  static async getById(shipmentId: number): Promise<ShipmentWithItems | undefined> {
+    try {
+      logger.info("Получение отгрузки по ID", { shipmentId });
+
+      const [shipment] = await db
+        .select()
+        .from(shipments)
+        .where(eq(shipments.id, shipmentId));
+
+      if (!shipment) {
+        return undefined;
+      }
+
+      const items = await db
+        .select()
+        .from(shipmentItems)
+        .where(eq(shipmentItems.shipmentId, shipmentId));
+
+      logger.info("Отгрузка получена по ID", { shipmentId, itemsCount: items.length });
+      return { ...shipment, items };
+    } catch (error) {
+      logger.error("Ошибка получения отгрузки по ID", { shipmentId, error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Создать отгрузку
+   */
+  static async create(shipmentData: CreateShipmentData): Promise<ShipmentWithItems> {
+    try {
+      const now = getMoscowTime();
+      
+      logger.info("Создание отгрузки", { shipmentData });
+
+      const result = await db.transaction(async (tx) => {
+        const insertData: {
+          orderId: number;
+          date: string;
+          warehouseId: number;
+          status?: "draft" | "prepared" | "shipped" | "delivered" | "cancelled";
+          responsibleUserId?: number | null;
+          comments?: string | null;
+        } = {
+          orderId: shipmentData.orderId,
+          date: shipmentData.date,
+          warehouseId: shipmentData.warehouseId,
+        };
+
+        if (shipmentData.status) {
+          insertData.status = shipmentData.status;
+        }
+        if (shipmentData.responsibleUserId) {
+          insertData.responsibleUserId = shipmentData.responsibleUserId;
+        }
+        if (shipmentData.comments) {
+          insertData.comments = shipmentData.comments;
+        }
+
+        const [newShipment] = await tx
+          .insert(shipments)
+          .values(insertData)
+          .returning();
+
+        // Сохранение позиций отгрузки
+        const savedItems = [];
+        if (shipmentData.items && shipmentData.items.length > 0) {
+          for (const item of shipmentData.items) {
+            const [savedItem] = await tx
+              .insert(shipmentItems)
+              .values({
+                shipmentId: newShipment.id,
+                productId: item.productId,
+                quantity: String(item.quantity),
+                price: String(item.price),
+              })
+              .returning();
+            savedItems.push(savedItem);
+          }
+        }
+
+        logger.info("Отгрузка создана", { shipmentId: newShipment.id, itemsCount: savedItems.length });
+
+        return { ...newShipment, items: savedItems };
+      });
+
+      return result;
+    } catch (error) {
+      logger.error("Ошибка создания отгрузки", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Обновить отгрузку
+   */
+  static async update(shipmentId: number, shipmentData: Partial<CreateShipmentData>): Promise<ShipmentWithItems | undefined> {
+    try {
+      logger.info("Обновление отгрузки", { shipmentId, shipmentData });
+
+      const result = await db.transaction(async (tx) => {
+        const updateData: any = {
+          updatedAt: getMoscowTime(),
+        };
+
+        if (shipmentData.date) updateData.date = shipmentData.date;
+        if (shipmentData.status) updateData.status = shipmentData.status;
+        if (shipmentData.warehouseId) updateData.warehouseId = shipmentData.warehouseId;
+        if (shipmentData.responsibleUserId !== undefined) updateData.responsibleUserId = shipmentData.responsibleUserId;
+        if (shipmentData.comments !== undefined) updateData.comments = shipmentData.comments;
+
+        const [updatedShipment] = await tx
+          .update(shipments)
+          .set(updateData)
+          .where(eq(shipments.id, shipmentId))
+          .returning();
+
+        if (!updatedShipment) {
+          return undefined;
+        }
+
+        const items = await tx
+          .select()
+          .from(shipmentItems)
+          .where(eq(shipmentItems.shipmentId, shipmentId));
+
+        logger.info("Отгрузка обновлена", { shipmentId });
+
+        return { ...updatedShipment, items };
+      });
+
+      return result;
+    } catch (error) {
+      logger.error("Ошибка обновления отгрузки", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Удалить отгрузку
+   */
+  static async delete(shipmentId: number): Promise<boolean> {
+    try {
+      logger.info("Удаление отгрузки", { shipmentId });
+
+      const result = await db.transaction(async (tx) => {
+        // Сначала удаляем позиции отгрузки
+        await tx
+          .delete(shipmentItems)
+          .where(eq(shipmentItems.shipmentId, shipmentId));
+
+        // Затем удаляем саму отгрузку
+        const deletedRows = await tx
+          .delete(shipments)
+          .where(eq(shipments.id, shipmentId));
+
+        return (deletedRows.rowCount ?? 0) > 0;
+      });
+
+      if (result) {
+        logger.info("Отгрузка удалена", { shipmentId });
+      } else {
+        logger.warn("Отгрузка не найдена для удаления", { shipmentId });
+      }
+
+      return result;
+    } catch (error) {
+      logger.error("Ошибка удаления отгрузки", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Множественное удаление отгрузок
+   */
+  static async deleteMultiple(ids: number[]): Promise<number> {
+    try {
+      logger.info("Множественное удаление отгрузок", { ids });
+
+      let count = 0;
+      for (const id of ids) {
+        const success = await this.delete(id);
+        if (success) count++;
+      }
+
+      logger.info("Множественное удаление отгрузок завершено", { count });
+      return count;
+    } catch (error) {
+      logger.error("Ошибка множественного удаления отгрузок", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
   /**
    * Получить все отгрузки для заказа
    */

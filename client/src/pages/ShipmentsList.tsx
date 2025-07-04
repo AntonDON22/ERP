@@ -1,12 +1,12 @@
 import { useMemo } from "react";
 import DataTable from "@/components/DataTable";
-import { useAllShipments, useDeleteShipment } from "@/hooks/api/useShipments";
+import { useShipments, useDeleteShipment } from "@/hooks/api/useShipments";
 import { useOrders, useWarehouses } from "@/hooks/api";
 import { useLocation } from "wouter";
 
 export default function ShipmentsList() {
   const [, setLocation] = useLocation();
-  const { data: shipments = [], isLoading } = useAllShipments();
+  const { data: shipments = [], isLoading } = useShipments();
   const { data: orders = [] } = useOrders();
   const { data: warehouses = [] } = useWarehouses();
   const deleteShipmentMutation = useDeleteShipment();
@@ -104,13 +104,7 @@ export default function ShipmentsList() {
 
   const handleDelete = async (selectedIds: number[]) => {
     for (const id of selectedIds) {
-      const shipment = shipments.find((s: any) => s.id === id);
-      if (shipment) {
-        await deleteShipmentMutation.mutateAsync({ 
-          orderId: shipment.orderId, 
-          shipmentId: id 
-        });
-      }
+      await deleteShipmentMutation.mutateAsync(id);
     }
   };
 

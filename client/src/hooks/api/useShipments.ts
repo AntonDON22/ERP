@@ -2,23 +2,11 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { getErrorMessage } from "@shared/utils";
+import { API_ROUTES } from "@shared/apiRoutes";
+import type { Shipment, ShipmentItem } from "@shared/schema";
 
-export interface ShipmentItem {
-  productId: number;
-  quantity: number;
-  price: number;
-}
-
-export interface Shipment {
-  id: number;
-  orderId: number;
-  warehouseId: number;
-  status: "draft" | "prepared" | "shipped" | "delivered" | "cancelled";
-  date: string;
-  comments: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  responsibleUserId: number | null;
+export interface ShipmentWithItems extends Shipment {
+  items: ShipmentItem[];
 }
 
 export interface CreateShipmentData {
@@ -26,39 +14,56 @@ export interface CreateShipmentData {
   date: string;
   warehouseId: number;
   comments?: string;
-  items: ShipmentItem[];
+  items: {
+    productId: number;
+    quantity: number;
+    price: number;
+  }[];
 }
 
 export interface UpdateShipmentData {
   status?: string;
   comments?: string;
-  items?: ShipmentItem[];
+  items?: {
+    productId: number;
+    quantity: number;
+    price: number;
+  }[];
 }
 
-export function useShipments(orderId: number) {
-  return useQuery({
-    queryKey: ["shipments", orderId],
-    queryFn: () => apiRequest(`/api/orders/${orderId}/shipments`),
+// Получение всех отгрузок
+export function useShipments() {
+  return useQuery<ShipmentWithItems[]>({
+    queryKey: [API_ROUTES.SHIPMENTS.LIST],
+    queryFn: async () => {
+      const response = await apiRequest(API_ROUTES.SHIPMENTS.LIST);
+      return response.json();
+    },
   });
 }
 
-export function useShipment(orderId: number, shipmentId: number) {
-  return useQuery({
-    queryKey: ["shipments", orderId, shipmentId],
-    queryFn: () => apiRequest(`/api/orders/${orderId}/shipments/${shipmentId}`),
+// Получение одной отгрузки
+export function useShipment(shipmentId: number) {
+  return useQuery<ShipmentWithItems>({
+    queryKey: [API_ROUTES.SHIPMENTS.GET(shipmentId)],
+    queryFn: async () => {
+      const response = await apiRequest(API_ROUTES.SHIPMENTS.GET(shipmentId));
+      return response.json();
+    },
+    enabled: !!shipmentId,
   });
 }
 
+// Создание отгрузки
 export function useCreateShipment() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
     mutationFn: (data: CreateShipmentData) => 
-      apiRequest(`/api/orders/${data.orderId}/shipments`, "POST", data),
-    onSuccess: (data: any, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["shipments", variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+      apiRequest(API_ROUTES.SHIPMENTS.CREATE, "POST", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.LIST] });
       toast({
         title: "Отгрузка создана",
         description: "Отгрузка успешно создана",
@@ -74,16 +79,17 @@ export function useCreateShipment() {
   });
 }
 
+// Обновление отгрузки
 export function useUpdateShipment() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ orderId, shipmentId, data }: { orderId: number; shipmentId: number; data: UpdateShipmentData }) => 
-      apiRequest(`/api/orders/${orderId}/shipments/${shipmentId}`, "PUT", data),
-    onSuccess: (data: any, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["shipments", variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+    mutationFn: ({ id, data }: { id: number; data: UpdateShipmentData }) => 
+      apiRequest(API_ROUTES.SHIPMENTS.UPDATE(id), "PUT", data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.LIST] });
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.GET(variables.id)] });
       toast({
         title: "Отгрузка обновлена",
         description: "Отгрузка успешно обновлена",
@@ -99,16 +105,16 @@ export function useUpdateShipment() {
   });
 }
 
+// Удаление отгрузки
 export function useDeleteShipment() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ orderId, shipmentId }: { orderId: number; shipmentId: number }) => 
-      apiRequest(`/api/orders/${orderId}/shipments/${shipmentId}`, "DELETE"),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["shipments", variables.orderId] });
-      queryClient.invalidateQueries({ queryKey: ["shipments"] });
+    mutationFn: (id: number) => 
+      apiRequest(API_ROUTES.SHIPMENTS.DELETE(id), "DELETE"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.LIST] });
       toast({
         title: "Отгрузка удалена",
         description: "Отгрузка успешно удалена",

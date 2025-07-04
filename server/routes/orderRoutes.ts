@@ -4,7 +4,7 @@ import { paginationService } from "../services/paginationService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger, logger, getErrorMessage } from "../../shared/logger";
-import shipmentRoutes from "./shipmentRoutes";
+import { shipmentRoutes } from "./shipmentRoutes";
 
 const router = Router();
 

@@ -4,6 +4,7 @@ import {
   shipments, 
   shipmentItems, 
   orders,
+  orderItems,
   reserves,
   type Shipment, 
   type ShipmentItem
@@ -11,6 +12,8 @@ import {
 import { logger, getErrorMessage } from "@shared/logger";
 import { getMoscowTime } from "@shared/timeUtils";
 import { transactionService } from "./transactionService";
+import { storage } from "../storage";
+import type { OrderWithItems } from "@shared/types";
 
 export interface ShipmentWithItems extends Shipment {
   items: ShipmentItem[];
@@ -153,6 +156,9 @@ export class ShipmentService {
       // КРИТИЧЕСКИ ВАЖНО: Снятие резерва заказа при создании отгрузки
       if (result) {
         await this.releaseOrderReserve(result.orderId);
+        
+        // КРИТИЧЕСКИ ВАЖНО: Автоматическое списание товаров при создании отгрузки
+        await ShipmentService.autoWriteoffOnShipment(result.orderId);
       }
 
       return result;
@@ -261,6 +267,23 @@ export class ShipmentService {
       logger.info("Удаление отгрузки", { shipmentId });
 
       const result = await db.transaction(async (tx) => {
+        // Получаем отгрузку перед удалением
+        const [shipment] = await tx
+          .select()
+          .from(shipments)
+          .where(eq(shipments.id, shipmentId));
+
+        if (!shipment) {
+          logger.warn("Отгрузка не найдена для удаления", { shipmentId });
+          return false;
+        }
+
+        // Восстанавливаем резерв заказа
+        await ShipmentService.restoreOrderReserve(shipment.orderId);
+
+        // Отменяем автоматическое списание
+        await ShipmentService.cancelAutoWriteoff(shipment.orderId);
+
         // Сначала удаляем позиции отгрузки
         await tx
           .delete(shipmentItems)
@@ -518,6 +541,158 @@ export class ShipmentService {
 
     } catch (error) {
       logger.error("Ошибка снятия резерва заказа", { 
+        orderId, 
+        error: getErrorMessage(error) 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Автоматическое списание товаров при создании отгрузки
+   * Создает документ списания на основе позиций заказа
+   */
+  private static async autoWriteoffOnShipment(orderId: number): Promise<void> {
+    try {
+      logger.info("Автоматическое списание товаров при создании отгрузки", { orderId });
+
+      // Получаем данные заказа напрямую из БД
+      const orderResult = await db.select().from(orders).where(eq(orders.id, orderId));
+      if (!orderResult[0]) {
+        logger.warn("Заказ не найден для списания", { orderId });
+        return;
+      }
+
+      // Получаем позиции заказа
+      const itemsResult = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId));
+
+      if (itemsResult.length === 0) {
+        logger.warn("Заказ не содержит товаров для списания", { orderId });
+        return;
+      }
+
+      const order = orderResult[0];
+
+      // Создаем документ списания через TransactionService
+      await transactionService.createDocumentWithInventory(
+        {
+          name: `Списание по отгрузке заказа ${orderId}`,
+          type: "outcome",
+          status: "posted",
+          warehouseId: order.warehouseId || 117, // используем склад заказа
+        },
+        itemsResult.map(item => ({
+          productId: item.productId,
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+        }))
+      );
+
+      logger.info("Автоматическое списание товаров выполнено успешно", { orderId });
+
+    } catch (error) {
+      logger.error("Ошибка автоматического списания товаров", { 
+        orderId, 
+        error: getErrorMessage(error) 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Восстановление резерва заказа при удалении отгрузки
+   */
+  private static async restoreOrderReserve(orderId: number): Promise<void> {
+    try {
+      logger.info("Восстановление резерва заказа при удалении отгрузки", { orderId });
+
+      // Получаем информацию о заказе для склада
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (!order) {
+        logger.warn("Заказ не найден для восстановления резерва", { orderId });
+        return;
+      }
+
+      // Устанавливаем isReserved = true для заказа
+      await db
+        .update(orders)
+        .set({ 
+          isReserved: true,
+          updatedAt: getMoscowTime()
+        })
+        .where(eq(orders.id, orderId));
+
+      // Восстанавливаем резервы через TransactionService
+      await transactionService.createReservesForOrder(orderId, order.warehouseId || 117);
+
+      logger.info("Резерв заказа восстановлен при удалении отгрузки", { orderId });
+    } catch (error) {
+      logger.error("Ошибка восстановления резерва заказа", { 
+        orderId, 
+        error: getErrorMessage(error) 
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Отмена автоматического списания при удалении отгрузки
+   */
+  private static async cancelAutoWriteoff(orderId: number): Promise<void> {
+    try {
+      logger.info("Отмена автоматического списания при удалении отгрузки", { orderId });
+
+      // Получаем позиции заказа для восстановления остатков
+      const itemsResult = await db
+        .select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId));
+
+      if (itemsResult.length === 0) {
+        logger.warn("Позиции заказа не найдены для отмены списания", { orderId });
+        return;
+      }
+
+      // Получаем информацию о заказе для склада
+      const [order] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (!order) {
+        logger.warn("Заказ не найден для отмены списания", { orderId });
+        return;
+      }
+
+      // Создаем документ оприходования для отмены списания
+      const documentData = {
+        name: `Восстановление товаров заказа ${orderId}`,
+        type: "income" as const,
+        status: "posted" as const,
+        warehouseId: order.warehouseId || 117,
+      };
+
+      const items = itemsResult.map(item => ({
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        price: Number(item.price),
+      }));
+
+      // Создаем приходный документ для восстановления остатков
+      await transactionService.createDocumentWithInventory(documentData, items);
+
+      logger.info("Автоматическое списание отменено успешно", { orderId });
+    } catch (error) {
+      logger.error("Ошибка отмены автоматического списания", { 
         orderId, 
         error: getErrorMessage(error) 
       });

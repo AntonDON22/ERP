@@ -18,9 +18,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/api";
 import { useUpdateShipment, useDeleteShipment } from "@/hooks/api/useShipments";
-import { useWarehouses } from "@/hooks/api";
+import { useWarehouses, useOrders } from "@/hooks/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
-import { Product, Warehouse } from "@shared/schema";
+import { Product, Warehouse, Order } from "@shared/schema";
 
 // Схема для позиций отгрузки
 const shipmentItemSchema = z.object({
@@ -31,6 +31,7 @@ const shipmentItemSchema = z.object({
 
 // Схема для формы отгрузки
 const shipmentSchema = z.object({
+  orderId: z.number().min(1, "Выберите заказ"),
   warehouseId: z.number().min(1, "Выберите склад"),
   status: z.enum(["draft", "prepared", "shipped", "delivered", "cancelled"]).default("draft"),
   date: z.string().min(1, "Дата обязательна"),
@@ -41,6 +42,7 @@ const shipmentSchema = z.object({
 // Типы данных существующей отгрузки
 interface ExistingShipmentData {
   id: number;
+  orderId: number;
   status: string;
   date: string;
   warehouseId: number | null;
@@ -79,6 +81,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
 
   const { data: products = [] } = useProducts();
   const { data: warehouses = [] } = useWarehouses();
+  const { data: orders = [] } = useOrders();
 
   // Состояние для статуса отгрузки
   const [shipmentStatus, setShipmentStatus] = useState(shipmentData?.status || "draft");
@@ -91,6 +94,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
   const form = useForm<FormShipment>({
     resolver: zodResolver(shipmentSchema),
     defaultValues: {
+      orderId: shipmentData?.orderId ?? 84, // ID существующего заказа
       warehouseId: shipmentData?.warehouseId ?? 117, // ID существующего склада
       status: (shipmentData?.status as "draft" | "prepared" | "shipped" | "delivered" | "cancelled") ?? "draft",
       date: shipmentData?.date ?? new Date().toISOString().split('T')[0],
@@ -99,7 +103,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
         productId: item.productId,
         quantity: item.quantity,
         price: item.price,
-      })) || [{ productId: 1, quantity: 1, price: 0 }], // ID существующего товара
+      })) || [{ productId: 436, quantity: 1, price: 0 }], // ID существующего товара
     },
   });
 
@@ -112,6 +116,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
   useEffect(() => {
     if (shipmentData) {
       const formData = {
+        orderId: shipmentData.orderId ?? 84,
         warehouseId: shipmentData.warehouseId ?? 117,
         status: (shipmentData.status as "draft" | "prepared" | "shipped" | "delivered" | "cancelled") ?? "draft",
         date: shipmentData.date ?? new Date().toISOString().split('T')[0],
@@ -120,7 +125,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
           productId: item.productId,
           quantity: item.quantity,
           price: item.price,
-        })) || [{ productId: 1, quantity: 1, price: 0 }],
+        })) || [{ productId: 436, quantity: 1, price: 0 }],
       };
       
       form.reset(formData);
@@ -173,6 +178,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
 
     try {
       const shipmentToSave = {
+        orderId: data.orderId,
         status: shipmentStatus,
         date: data.date,
         warehouseId: data.warehouseId,
@@ -272,6 +278,24 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <Label>Заказ</Label>
+              <Select
+                value={form.watch("orderId")?.toString() || "0"}
+                onValueChange={(value) => form.setValue("orderId", parseInt(value))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Выберите заказ" />
+                </SelectTrigger>
+                <SelectContent>
+                  {orders.map((order: Order) => (
+                    <SelectItem key={order.id} value={order.id.toString()}>
+                      {order.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label>Склад</Label>
               <Select

@@ -28,6 +28,7 @@ export default function EditShipment() {
   // Адаптер для совместимости типов
   const adaptedShipment = {
     id: shipment.id,
+    orderId: shipment.orderId ?? 1,
     status: String(shipment.status || "draft"),
     date: shipment.date || new Date().toISOString().split('T')[0],
     warehouseId: shipment.warehouseId ?? 117,

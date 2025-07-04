@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { clientLogger } from "@/lib/clientLogger";
 
 /**
  * 🔍 ХУК ДЛЯ АУДИТА ПРОИЗВОДИТЕЛЬНОСТИ REACT КОМПОНЕНТОВ
@@ -67,17 +68,17 @@ export function usePerformanceAudit(
 
     // Логирование медленных рендеров
     if (logSlowRenders && renderTime > slowRenderThreshold) {
-      console.warn(
-        `🐌 Slow render detected in ${componentName}:`,
-        `${renderTime.toFixed(2)}ms (threshold: ${slowRenderThreshold}ms)`
+      clientLogger.warn("performance", 
+        `🐌 Slow render detected in ${componentName}: ${renderTime.toFixed(2)}ms (threshold: ${slowRenderThreshold}ms)`,
+        { componentName, renderTime, threshold: slowRenderThreshold }
       );
     }
 
     // Логирование ререндеров
     if (logRerenders && !isFirstRenderRef.current) {
-      console.log(
-        `🔄 Re-render #${metrics.renderCount} in ${componentName}:`,
-        `${renderTime.toFixed(2)}ms`
+      clientLogger.debug("performance", 
+        `🔄 Re-render #${metrics.renderCount} in ${componentName}: ${renderTime.toFixed(2)}ms`,
+        { componentName, renderCount: metrics.renderCount, renderTime }
       );
     }
 
@@ -108,17 +109,18 @@ export function usePerformanceAudit(
 
     // Логирование изменений пропсов
     if (logPropChanges && changedProps.length > 0) {
-      console.log(
-        `📝 Props changed in ${componentName}:`,
-        changedProps,
-        'Changed props:', changedProps.reduce((acc, prop) => {
-          const cleanProp = prop.startsWith('-') ? prop.slice(1) : prop;
-          acc[prop] = {
-            from: previousProps[cleanProp],
-            to: props[cleanProp]
-          };
-          return acc;
-        }, {} as Record<string, any>)
+      const changedPropsData = changedProps.reduce((acc, prop) => {
+        const cleanProp = prop.startsWith('-') ? prop.slice(1) : prop;
+        acc[prop] = {
+          from: previousProps[cleanProp],
+          to: props[cleanProp]
+        };
+        return acc;
+      }, {} as Record<string, any>);
+      
+      clientLogger.debug("performance", 
+        `📝 Props changed in ${componentName}`, 
+        { changedProps, changedPropsData }
       );
     }
 
@@ -153,23 +155,24 @@ export function usePerformanceAudit(
   // Функция для логирования сводки
   const logSummary = useCallback(() => {
     const metrics = metricsRef.current;
-    console.group(`📊 Performance Summary for ${componentName}`);
-    console.log(`Render count: ${metrics.renderCount}`);
-    console.log(`Last render time: ${metrics.lastRenderTime.toFixed(2)}ms`);
-    console.log(`Average render time: ${metrics.averageRenderTime.toFixed(2)}ms`);
-    console.log(`Total render time: ${metrics.totalRenderTime.toFixed(2)}ms`);
     
-    if (Object.keys(metrics.propChanges).length > 0) {
-      console.log('Prop changes frequency:', metrics.propChanges);
-    }
+    const summary = {
+      renderCount: metrics.renderCount,
+      lastRenderTime: `${metrics.lastRenderTime.toFixed(2)}ms`,
+      averageRenderTime: `${metrics.averageRenderTime.toFixed(2)}ms`,
+      totalRenderTime: `${metrics.totalRenderTime.toFixed(2)}ms`,
+      propChanges: metrics.propChanges
+    };
+    
+    clientLogger.debug("performance", `Performance Summary for ${componentName}`, summary);
 
     // Предупреждения о производительности
     if (metrics.averageRenderTime > slowRenderThreshold) {
-      console.warn(`⚠️ Average render time exceeds threshold (${slowRenderThreshold}ms)`);
+      clientLogger.warn("performance", `Average render time exceeds threshold (${slowRenderThreshold}ms)`);
     }
 
     if (metrics.renderCount > 50) {
-      console.warn(`⚠️ High render count detected (${metrics.renderCount} renders)`);
+      clientLogger.warn("performance", `High render count detected (${metrics.renderCount} renders)`);
     }
 
     const frequentlyChangingProps = Object.entries(metrics.propChanges)
@@ -177,10 +180,8 @@ export function usePerformanceAudit(
       .map(([prop]) => prop);
 
     if (frequentlyChangingProps.length > 0) {
-      console.warn(`⚠️ Frequently changing props:`, frequentlyChangingProps);
+      clientLogger.warn("performance", "Frequently changing props:", frequentlyChangingProps);
     }
-
-    console.groupEnd();
   }, [componentName, slowRenderThreshold]);
 
   return {

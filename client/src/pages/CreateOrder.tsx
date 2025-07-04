@@ -18,6 +18,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts, useCreateOrder } from "@/hooks/api";
+import { 
+  logFormOperation, 
+  logBlockDuplicate, 
+  logOperationSuccess, 
+  logOperationError, 
+  logValidationError 
+} from "@/lib/clientLogger";
 import { useWarehouses } from "@/hooks/api";
 import { useContractors } from "@/hooks/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -61,43 +68,28 @@ export default function CreateOrder() {
   // Обработчик сохранения
   const handleSave = async (data: FormOrder) => {
     const currentSubmissionId = ++submissionCounter.current;
-    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
-    if (process.env.NODE_ENV === "development") {
-      console.log(`🚀 Starting order submission #${currentSubmissionId}`);
-    }
+    logFormOperation("CreateOrder", `Starting order submission #${currentSubmissionId}`);
 
     // Тройная защита от дублирования
     if (isSubmitting) {
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
-      if (process.env.NODE_ENV === "development") {
-        console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - isSubmitting = true`);
-      }
+      logBlockDuplicate("CreateOrder", currentSubmissionId, "isSubmitting = true");
       return;
     }
 
     if (mutation.isPending) {
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
-      if (process.env.NODE_ENV === "development") {
-        console.log(`❌ Blocked duplicate submission #${currentSubmissionId} - mutation pending`);
-      }
+      logBlockDuplicate("CreateOrder", currentSubmissionId, "mutation pending");
       return;
     }
 
     // Проверка последовательности ID
     if (currentSubmissionId !== submissionCounter.current) {
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
-      if (process.env.NODE_ENV === "development") {
-        console.log(
-          `❌ Blocked submission #${currentSubmissionId} - not current (${submissionCounter.current})`
-        );
-      }
+      logBlockDuplicate("CreateOrder", currentSubmissionId, `not current (${submissionCounter.current})`);
       return;
     }
 
     setIsSubmitting(true);
-    // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
     if (process.env.NODE_ENV === "development") {
-      console.log(`✅ Processing order submission #${currentSubmissionId}`);
+      logFormOperation("CreateOrder", `Processing order submission #${currentSubmissionId}`);
     }
 
     try {
@@ -115,17 +107,10 @@ export default function CreateOrder() {
           quantity: item.quantity,
           price: item.price,
         })),
-      };
-
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
-      if (process.env.NODE_ENV === "development") {
-        console.log(`📄 Creating new order`);
-      }
+      };;
       await mutation.mutateAsync(orderToSave);
-
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
       if (process.env.NODE_ENV === "development") {
-        console.log(`✅ Submission #${currentSubmissionId} completed successfully`);
+        logOperationSuccess("CreateOrder", `Submission #${currentSubmissionId} completed`);
       }
       toast({
         title: "Заказ создан",
@@ -133,9 +118,8 @@ export default function CreateOrder() {
       });
       setLocation("/orders");
     } catch (error: any) {
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
       if (process.env.NODE_ENV === "development") {
-        console.log(`❌ Submission #${currentSubmissionId} failed:`, error);
+        logOperationError("CreateOrder", `Submission #${currentSubmissionId}`, error);
       }
       toast({
         title: "Ошибка",
@@ -144,9 +128,8 @@ export default function CreateOrder() {
       });
     } finally {
       setIsSubmitting(false);
-      // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
       if (process.env.NODE_ENV === "development") {
-        console.log(`🔓 Released submission lock for #${currentSubmissionId}`);
+        logFormOperation("CreateOrder", `Released submission lock for #${currentSubmissionId}`);
       }
     }
   };
@@ -261,11 +244,7 @@ export default function CreateOrder() {
 
       <form
         id="order-form"
-        onSubmit={form.handleSubmit(handleSave, (errors) => {
-          // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.log
-          if (process.env.NODE_ENV === "development") {
-            console.log("❌ Form validation failed:", errors);
-          }
+        onSubmit={form.handleSubmit(handleSave, (errors) => {;
           toast({
             title: "Ошибка валидации",
             description: "Обязательно выберите контрагента и склад",

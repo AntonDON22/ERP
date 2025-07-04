@@ -1,4 +1,11 @@
 import { useState, useMemo } from "react";
+import { 
+  logFormOperation, 
+  logBlockDuplicate, 
+  logOperationSuccess, 
+  logOperationError, 
+  logValidationError 
+} from "@/lib/clientLogger";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { API_ROUTES } from "@shared/apiRoutes";
@@ -248,7 +255,7 @@ export default function Dashboard() {
     } catch (err) {
       // ✅ ИСПРАВЛЕНО: Условное логирование вместо console.error
       if (process.env.NODE_ENV === "development") {
-        console.error("Ошибка копирования:", err);
+        logOperationError("Dashboard", "Копирование в буфер обмена", err);
       }
     }
   };

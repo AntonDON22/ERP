@@ -9,7 +9,7 @@ const router = Router({ mergeParams: true }); // Включаем парамет
 /**
  * GET /api/orders/:orderId/shipments - Получить все отгрузки заказа
  */
-router.get("/", async (req, res, next) => {
+router.get("/", async (req: any, res: any, next: any) => {
   try {
     const orderId = parseInt(req.params.orderId);
     
@@ -27,44 +27,8 @@ router.get("/", async (req, res, next) => {
     });
 
     res.json(shipments);
-  } catch (error) {
-    logger.error("API: Ошибка получения отгрузок заказа", { 
-      orderId: req.params.orderId, 
-      error: error.message 
-    });
-    next(error);
-  }
-});
-
-/**
- * GET /api/orders/:orderId/shipments/:shipmentId - Получить отгрузку
- */
-router.get("/:shipmentId", async (req, res, next) => {
-  try {
-    const orderId = parseInt(req.params.orderId);
-    const shipmentId = parseInt(req.params.shipmentId);
-    
-    if (isNaN(orderId) || isNaN(shipmentId)) {
-      return res.status(400).json({ error: "Некорректные параметры" });
-    }
-
-    logger.info("API: GET отгрузка", { orderId, shipmentId });
-
-    const shipment = await ShipmentService.getShipmentById(orderId, shipmentId);
-    
-    if (!shipment) {
-      logger.warn("API: Отгрузка не найдена", { orderId, shipmentId });
-      return res.status(404).json({ error: "Отгрузка не найдена" });
-    }
-
-    logger.info("API: Отгрузка получена", { orderId, shipmentId });
-    res.json(shipment);
-  } catch (error) {
-    logger.error("API: Ошибка получения отгрузки", { 
-      orderId: req.params.orderId, 
-      shipmentId: req.params.shipmentId, 
-      error: error.message 
-    });
+  } catch (error: any) {
+    logger.error("Ошибка получения отгрузок заказа", { error });
     next(error);
   }
 });
@@ -72,7 +36,7 @@ router.get("/:shipmentId", async (req, res, next) => {
 /**
  * POST /api/orders/:orderId/shipments - Создать отгрузку
  */
-router.post("/", validateBody(createShipmentSchema), async (req, res, next) => {
+router.post("/", validateBody(createShipmentSchema), async (req: any, res: any, next: any) => {
   try {
     const orderId = parseInt(req.params.orderId);
     
@@ -80,32 +44,49 @@ router.post("/", validateBody(createShipmentSchema), async (req, res, next) => {
       return res.status(400).json({ error: "Некорректный ID заказа" });
     }
 
-    // Проверяем что orderId в параметрах совпадает с orderId в теле запроса
-    if (req.body.orderId && req.body.orderId !== orderId) {
-      return res.status(400).json({ error: "ID заказа в URL и теле запроса не совпадают" });
-    }
-
     const shipmentData = { ...req.body, orderId };
 
-    logger.info("API: POST создание отгрузки", { 
-      orderId, 
-      itemsCount: shipmentData.items?.length || 0 
-    });
+    logger.info("API: POST создание отгрузки", { orderId, shipmentData });
 
-    const shipment = await ShipmentService.createShipment(shipmentData);
+    const newShipment = await ShipmentService.createShipment(shipmentData);
     
     logger.info("API: Отгрузка создана", { 
       orderId, 
-      shipmentId: shipment.id, 
-      status: shipment.status 
+      shipmentId: newShipment.id 
     });
 
-    res.status(201).json(shipment);
-  } catch (error) {
-    logger.error("API: Ошибка создания отгрузки", { 
-      orderId: req.params.orderId, 
-      error: error.message 
-    });
+    res.status(201).json(newShipment);
+  } catch (error: any) {
+    logger.error("Ошибка создания отгрузки", { error });
+    next(error);
+  }
+});
+
+/**
+ * GET /api/orders/:orderId/shipments/:shipmentId - Получить отгрузку
+ */
+router.get("/:shipmentId", async (req: any, res: any, next: any) => {
+  try {
+    const orderId = parseInt(req.params.orderId);
+    const shipmentId = parseInt(req.params.shipmentId);
+    
+    if (isNaN(orderId) || isNaN(shipmentId)) {
+      return res.status(400).json({ error: "Некорректные ID" });
+    }
+
+    logger.info("API: GET отгрузка", { orderId, shipmentId });
+
+    const shipment = await ShipmentService.getShipmentById(orderId, shipmentId);
+    
+    if (!shipment) {
+      return res.status(404).json({ error: "Отгрузка не найдена" });
+    }
+
+    logger.info("API: Отгрузка получена", { orderId, shipmentId });
+
+    res.json(shipment);
+  } catch (error: any) {
+    logger.error("Ошибка получения отгрузки", { error });
     next(error);
   }
 });
@@ -113,38 +94,34 @@ router.post("/", validateBody(createShipmentSchema), async (req, res, next) => {
 /**
  * PUT /api/orders/:orderId/shipments/:shipmentId - Обновить статус отгрузки
  */
-router.put("/:shipmentId", async (req, res, next) => {
+router.put("/:shipmentId", async (req: any, res: any, next: any) => {
   try {
     const orderId = parseInt(req.params.orderId);
     const shipmentId = parseInt(req.params.shipmentId);
     
     if (isNaN(orderId) || isNaN(shipmentId)) {
-      return res.status(400).json({ error: "Некорректные параметры" });
+      return res.status(400).json({ error: "Некорректные ID" });
     }
 
     const { status } = req.body;
-    
-    if (!status) {
-      return res.status(400).json({ error: "Укажите новый статус отгрузки" });
-    }
 
-    const validStatuses = ["draft", "prepared", "shipped", "delivered", "cancelled"];
-    if (!validStatuses.includes(status)) {
-      return res.status(400).json({ 
-        error: `Некорректный статус. Допустимые значения: ${validStatuses.join(", ")}` 
-      });
+    if (!status) {
+      return res.status(400).json({ error: "Статус обязателен" });
     }
 
     logger.info("API: PUT обновление статуса отгрузки", { 
       orderId, 
       shipmentId, 
-      newStatus: status 
+      status 
     });
 
-    const shipment = await ShipmentService.updateShipmentStatus(orderId, shipmentId, status);
-    
-    if (!shipment) {
-      logger.warn("API: Отгрузка не найдена для обновления", { orderId, shipmentId });
+    const updatedShipment = await ShipmentService.updateShipmentStatus(
+      orderId,
+      shipmentId,
+      status
+    );
+
+    if (!updatedShipment) {
       return res.status(404).json({ error: "Отгрузка не найдена" });
     }
 
@@ -154,13 +131,9 @@ router.put("/:shipmentId", async (req, res, next) => {
       newStatus: status 
     });
 
-    res.json(shipment);
-  } catch (error) {
-    logger.error("API: Ошибка обновления отгрузки", { 
-      orderId: req.params.orderId, 
-      shipmentId: req.params.shipmentId, 
-      error: error.message 
-    });
+    res.json(updatedShipment);
+  } catch (error: any) {
+    logger.error("Ошибка обновления статуса отгрузки", { error });
     next(error);
   }
 });
@@ -168,32 +141,28 @@ router.put("/:shipmentId", async (req, res, next) => {
 /**
  * DELETE /api/orders/:orderId/shipments/:shipmentId - Удалить отгрузку
  */
-router.delete("/:shipmentId", async (req, res, next) => {
+router.delete("/:shipmentId", async (req: any, res: any, next: any) => {
   try {
     const orderId = parseInt(req.params.orderId);
     const shipmentId = parseInt(req.params.shipmentId);
     
     if (isNaN(orderId) || isNaN(shipmentId)) {
-      return res.status(400).json({ error: "Некорректные параметры" });
+      return res.status(400).json({ error: "Некорректные ID" });
     }
 
     logger.info("API: DELETE отгрузка", { orderId, shipmentId });
 
     const deleted = await ShipmentService.deleteShipment(orderId, shipmentId);
-    
+
     if (!deleted) {
-      logger.warn("API: Отгрузка не найдена для удаления", { orderId, shipmentId });
       return res.status(404).json({ error: "Отгрузка не найдена" });
     }
 
     logger.info("API: Отгрузка удалена", { orderId, shipmentId });
-    res.json({ success: true, message: "Отгрузка удалена" });
-  } catch (error) {
-    logger.error("API: Ошибка удаления отгрузки", { 
-      orderId: req.params.orderId, 
-      shipmentId: req.params.shipmentId, 
-      error: error.message 
-    });
+
+    res.json({ message: "Отгрузка удалена" });
+  } catch (error: any) {
+    logger.error("Ошибка удаления отгрузки", { error });
     next(error);
   }
 });

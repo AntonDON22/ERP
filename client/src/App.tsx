@@ -74,7 +74,7 @@ function App() {
                 <Route path="/orders/:id" component={EditOrder} />
                 <Route path="/shipments" component={ShipmentsList} />
                 <Route path="/shipments/create" component={CreateShipment} />
-                <Route path="/shipments/:id" component={EditShipment} />
+                <Route path="/shipments/:id/edit" component={EditShipment} />
                 <Route path="/responsive-test" component={ResponsiveTest} />
               </Switch>
             </Suspense>

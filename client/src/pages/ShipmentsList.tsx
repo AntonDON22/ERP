@@ -99,13 +99,17 @@ export default function ShipmentsList() {
   ], [orders, warehouses]);
 
   const handleEdit = (shipment: any) => {
-    setLocation(`/orders/${shipment.orderId}/shipments/${shipment.id}`);
+    setLocation(`/shipments/${shipment.id}/edit`);
   };
 
   const handleDelete = async (selectedIds: number[]) => {
     for (const id of selectedIds) {
       await deleteShipmentMutation.mutateAsync(id);
     }
+  };
+
+  const handleCreate = () => {
+    setLocation("/shipments/create");
   };
 
   return (
@@ -118,6 +122,7 @@ export default function ShipmentsList() {
       searchFields={["orderId", "status", "comments"]}
       onDelete={handleDelete}
       onRowClick={handleEdit}
+      onCreate={handleCreate}
     />
   );
 }

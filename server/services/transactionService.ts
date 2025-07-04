@@ -13,6 +13,7 @@ import { getMoscowTime } from "../../shared/timeUtils";
 import { cacheService } from "./cacheService";
 import { apiLogger, logger } from "../../shared/logger";
 import { toStringForDB } from "@shared/utils";
+import { getErrorMessage } from "../../shared/utils";
 
 export class TransactionService {
   // Транзакционное создание документа с пересчетом остатков
@@ -476,6 +477,64 @@ export class TransactionService {
       productId: item.productId,
       quantity: item.quantity,
     });
+  }
+
+  // Метод для автоматического списания товаров при отгрузке
+  async processShipmentWriteoff(shipmentId: number, shipmentItems: any[]): Promise<void> {
+    const now = getMoscowTime();
+    
+    try {
+      logger.info("Начинаем автоматическое списание товаров при отгрузке", { 
+        shipmentId, 
+        itemsCount: shipmentItems.length 
+      });
+
+      await db.transaction(async (tx) => {
+        // Создаем документ списания для отгрузки  
+        const [writeoffDocument] = await tx.insert(documents).values({
+          name: `Списание по отгрузке ${shipmentId}`,
+          type: "outcome",
+          status: "posted",
+          warehouseId: shipmentItems[0]?.warehouseId || 1, // Используем warehouseId из первого товара
+          createdAt: now,
+          updatedAt: now,
+        }).returning();
+
+        // Добавляем позиции документа списания
+        for (const item of shipmentItems) {
+          await tx.insert(documentItems).values({
+            documentId: writeoffDocument.id,
+            productId: item.productId,
+            quantity: toStringForDB(item.quantity),
+            price: toStringForDB(item.price),
+          });
+
+          // Списываем товар с остатков (принцип FIFO)
+          await this.processWriteoffFIFO(
+            tx,
+            item.productId,
+            Number(item.quantity),
+            toStringForDB(item.price),
+            writeoffDocument.id
+          );
+        }
+
+        logger.info("Автоматическое списание товаров при отгрузке завершено", { 
+          shipmentId, 
+          documentId: writeoffDocument.id 
+        });
+      });
+
+      // Инвалидируем кеш остатков
+      await cacheService.invalidatePattern("inventory:*");
+
+    } catch (error) {
+      logger.error("Ошибка при автоматическом списании товаров при отгрузке", { 
+        shipmentId, 
+        error: getErrorMessage(error) 
+      });
+      throw error;
+    }
   }
 }
 

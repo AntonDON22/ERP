@@ -33,10 +33,7 @@ export default function ShipmentsList() {
       format: (value: any) => {
         const statusNames: Record<string, string> = {
           draft: "Черновик",
-          prepared: "Подготовлено",
           shipped: "Отгружено",
-          delivered: "Доставлено",
-          cancelled: "Отменено",
         };
         return statusNames[value] || value;
       },

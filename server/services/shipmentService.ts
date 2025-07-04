@@ -8,6 +8,7 @@ import {
 } from "@shared/schema";
 import { logger, getErrorMessage } from "@shared/logger";
 import { getMoscowTime } from "@shared/timeUtils";
+import { transactionService } from "./transactionService";
 
 export interface ShipmentWithItems extends Shipment {
   items: ShipmentItem[];
@@ -16,7 +17,7 @@ export interface ShipmentWithItems extends Shipment {
 interface CreateShipmentData {
   orderId: number;
   date: string;
-  status?: "draft" | "prepared" | "shipped" | "delivered" | "cancelled";
+  status?: "draft" | "shipped";
   warehouseId: number;
   responsibleUserId?: number;
   comments?: string;
@@ -101,7 +102,7 @@ export class ShipmentService {
           orderId: number;
           date: string;
           warehouseId: number;
-          status?: "draft" | "prepared" | "shipped" | "delivered" | "cancelled";
+          status?: "draft" | "shipped";
           responsibleUserId?: number | null;
           comments?: string | null;
         } = {
@@ -161,6 +162,13 @@ export class ShipmentService {
     try {
       logger.info("Обновление отгрузки", { shipmentId, shipmentData });
 
+      // Сначала получаем текущее состояние отгрузки
+      const currentShipment = await this.getById(shipmentId);
+      if (!currentShipment) {
+        logger.warn("Отгрузка не найдена для обновления", { shipmentId });
+        return undefined;
+      }
+
       const result = await db.transaction(async (tx) => {
         const updateData: any = {
           updatedAt: getMoscowTime(),
@@ -191,6 +199,39 @@ export class ShipmentService {
 
         return { ...updatedShipment, items };
       });
+
+      // КРИТИЧЕСКИ ВАЖНО: Автоматическое списание товаров при смене статуса на "shipped"
+      if (result && shipmentData.status === "shipped" && currentShipment.status !== "shipped") {
+        logger.info("Статус отгрузки изменен на 'shipped' - запускаем автоматическое списание товаров", { 
+          shipmentId, 
+          oldStatus: currentShipment.status, 
+          newStatus: "shipped" 
+        });
+
+        try {
+          // Подготавливаем данные о товарах для списания с информацией о складе
+          const itemsForWriteoff = result.items.map(item => ({
+            productId: item.productId,
+            quantity: Number(item.quantity),
+            price: Number(item.price),
+            warehouseId: result.warehouseId,
+          }));
+
+          // Автоматически списываем товары с остатков
+          await transactionService.processShipmentWriteoff(shipmentId, itemsForWriteoff);
+          
+          logger.info("Автоматическое списание товаров при отгрузке выполнено успешно", { 
+            shipmentId, 
+            itemsCount: itemsForWriteoff.length 
+          });
+        } catch (writeoffError) {
+          logger.error("Ошибка при автоматическом списании товаров при отгрузке", { 
+            shipmentId, 
+            error: getErrorMessage(writeoffError) 
+          });
+          // Не прерываем выполнение, так как основное обновление отгрузки уже выполнено
+        }
+      }
 
       return result;
     } catch (error) {
@@ -332,7 +373,7 @@ export class ShipmentService {
           orderId: number;
           date: string;
           warehouseId: number;
-          status?: "draft" | "prepared" | "shipped" | "delivered" | "cancelled";
+          status?: "draft" | "shipped";
           responsibleUserId?: number | null;
           comments?: string | null;
         } = {
@@ -374,7 +415,7 @@ export class ShipmentService {
   static async updateShipmentStatus(
     orderId: number,
     shipmentId: number,
-    status: "draft" | "prepared" | "shipped" | "delivered" | "cancelled"
+    status: "draft" | "shipped"
   ): Promise<ShipmentWithItems | undefined> {
     try {
       logger.info("Обновление статуса отгрузки", { orderId, shipmentId, status });
@@ -383,7 +424,7 @@ export class ShipmentService {
         const [updatedShipment] = await tx
           .update(shipments)
           .set({
-            status,
+            status: status as "draft" | "shipped",
             updatedAt: getMoscowTime(),
           })
           .where(and(

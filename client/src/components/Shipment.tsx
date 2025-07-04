@@ -33,7 +33,7 @@ const shipmentItemSchema = z.object({
 const shipmentSchema = z.object({
   orderId: z.number().min(1, "Выберите заказ"),
   warehouseId: z.number().min(1, "Выберите склад"),
-  status: z.enum(["draft", "prepared", "shipped", "delivered", "cancelled"]).default("draft"),
+  status: z.enum(["draft", "shipped"]).default("draft"),
   date: z.string().min(1, "Дата обязательна"),
   comments: z.string().optional(),
   items: z.array(shipmentItemSchema).min(1, "Добавьте хотя бы один товар"),
@@ -96,7 +96,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
     defaultValues: {
       orderId: shipmentData?.orderId ?? 84, // ID существующего заказа
       warehouseId: shipmentData?.warehouseId ?? 117, // ID существующего склада
-      status: (shipmentData?.status as "draft" | "prepared" | "shipped" | "delivered" | "cancelled") ?? "draft",
+      status: (shipmentData?.status as "draft" | "shipped") ?? "draft",
       date: shipmentData?.date ?? new Date().toISOString().split('T')[0],
       comments: shipmentData?.comments ?? "",
       items: shipmentData?.items?.map((item) => ({
@@ -118,7 +118,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
       const formData = {
         orderId: shipmentData.orderId ?? 84,
         warehouseId: shipmentData.warehouseId ?? 117,
-        status: (shipmentData.status as "draft" | "prepared" | "shipped" | "delivered" | "cancelled") ?? "draft",
+        status: (shipmentData.status as "draft" | "shipped") ?? "draft",
         date: shipmentData.date ?? new Date().toISOString().split('T')[0],
         comments: shipmentData.comments ?? "",
         items: shipmentData.items?.map((item) => ({
@@ -239,10 +239,7 @@ export default function Shipment({ config, shipmentData }: ShipmentProps) {
 
   const statusOptions = [
     { value: "draft", label: "Черновик" },
-    { value: "prepared", label: "Подготовлено" },
     { value: "shipped", label: "Отгружено" },
-    { value: "delivered", label: "Доставлено" },
-    { value: "cancelled", label: "Отменено" },
   ];
 
   return (

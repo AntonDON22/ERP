@@ -39,7 +39,7 @@ import {
 export const documentTypeEnum = pgEnum("document_type_enum", ["income", "outcome", "return"]);
 
 // Enum для статусов отгрузок
-export const shipmentStatusEnum = pgEnum("shipment_status_enum", ["draft", "prepared", "shipped", "delivered", "cancelled"]);
+export const shipmentStatusEnum = pgEnum("shipment_status_enum", ["draft", "shipped"]);
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
@@ -386,8 +386,8 @@ export const shipmentItems = pgTable("shipment_items", {
 export const createShipmentSchema = z.object({
   orderId: zId,
   date: zDate,
-  status: z.enum(["draft", "prepared", "shipped", "delivered", "cancelled"], {
-    errorMap: () => ({ message: "Статус отгрузки должен быть 'draft', 'prepared', 'shipped', 'delivered' или 'cancelled'" }),
+  status: z.enum(["draft", "shipped"], {
+    errorMap: () => ({ message: "Статус отгрузки должен быть 'draft' или 'shipped'" }),
   }).optional().default("draft"),
   warehouseId: zId,
   responsibleUserId: zId.optional(),

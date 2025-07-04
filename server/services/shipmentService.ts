@@ -150,6 +150,11 @@ export class ShipmentService {
         return { ...newShipment, items: savedItems };
       });
 
+      // КРИТИЧЕСКИ ВАЖНО: Снятие резерва заказа при создании отгрузки
+      if (result) {
+        await this.releaseOrderReserve(result.orderId);
+      }
+
       return result;
     } catch (error) {
       logger.error("Ошибка создания отгрузки", { error: getErrorMessage(error) });
@@ -506,13 +511,10 @@ export class ShipmentService {
     try {
       logger.info("Снятие резерва заказа при создании отгрузки", { orderId });
 
-      await db.transaction(async (tx) => {
-        // Снимаем резерв с заказа и удаляем резервы используя TransactionService
-        const transactionService = require("./transactionService").transactionService;
-        await transactionService.clearOrderReserves(orderId);
+      // Снимаем резерв с заказа и удаляем резервы используя TransactionService
+      await transactionService.clearOrderReserves(orderId);
 
-        logger.info("Резерв заказа снят успешно", { orderId });
-      });
+      logger.info("Резерв заказа снят успешно", { orderId });
 
     } catch (error) {
       logger.error("Ошибка снятия резерва заказа", { 

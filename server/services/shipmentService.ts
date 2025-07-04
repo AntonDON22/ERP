@@ -1,7 +1,10 @@
 import { storage } from "../storage";
-import { Shipment, InsertShipment } from "../../shared/schema";
+import { Shipment, InsertShipment, orderItems } from "../../shared/schema";
 import { logger } from "../../shared/logger";
 import { BatchService } from "./batchService";
+import { cacheService } from "./cacheService";
+import { db } from "../db";
+import { eq } from "drizzle-orm";
 
 const getErrorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
 
@@ -92,6 +95,50 @@ export class ShipmentService {
           updatedFields: Object.keys(data),
           status: updatedShipment.status 
         });
+        
+        // Обрабатываем изменение статуса отгрузки
+        if (data.status && data.status !== existingShipment.status) {
+          const oldStatus = existingShipment.status;
+          const newStatus = data.status;
+          
+          // При переходе в статус "shipped" - списываем товары
+          if (newStatus === "shipped" && oldStatus === "draft") {
+            logger.info("Processing writeoff for shipment going to shipped status", { 
+              shipmentId: id, 
+              oldStatus, 
+              newStatus 
+            });
+            
+            // Загружаем позиции отгрузки из связанного заказа для списания
+            const shipmentItems = await ShipmentService.getShipmentItems(updatedShipment.orderId);
+            if (shipmentItems.length > 0) {
+              await storage.processShipmentWriteoff(id, shipmentItems);
+            }
+          }
+          
+          // При переходе из статуса "shipped" в "draft" - восстанавливаем товары
+          if (newStatus === "draft" && oldStatus === "shipped") {
+            logger.info("Processing restore for shipment going from shipped to draft", { 
+              shipmentId: id, 
+              oldStatus, 
+              newStatus 
+            });
+            
+            // Загружаем позиции отгрузки из связанного заказа для восстановления
+            const shipmentItems = await ShipmentService.getShipmentItems(updatedShipment.orderId);
+            if (shipmentItems.length > 0) {
+              await storage.processShipmentRestore(id, shipmentItems);
+            }
+          }
+          
+          // Инвалидируем кеш остатков после изменения статуса
+          await cacheService.invalidatePattern("inventory:");
+          logger.info("Inventory cache invalidated after shipment status change", { 
+            shipmentId: id, 
+            oldStatus,
+            newStatus: updatedShipment.status 
+          });
+        }
       }
       
       return updatedShipment;
@@ -102,6 +149,34 @@ export class ShipmentService {
         data 
       });
       throw error;
+    }
+  }
+
+  /**
+   * Получить позиции отгрузки из связанного заказа
+   */
+  private static async getShipmentItems(orderId: number): Promise<any[]> {
+    try {
+      const order = await storage.getOrder(orderId);
+      if (!order) {
+        logger.warn("Order not found for shipment", { orderId });
+        return [];
+      }
+
+      // Загружаем позиции заказа как позиции отгрузки
+      const orderItemsData = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+      
+      return orderItemsData.map(item => ({
+        productId: item.productId,
+        quantity: Number(item.quantity),
+        price: Number(item.price)
+      }));
+    } catch (error) {
+      logger.error("Error getting shipment items", { 
+        error: getErrorMessage(error), 
+        orderId 
+      });
+      return [];
     }
   }
 

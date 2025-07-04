@@ -113,6 +113,8 @@ export interface IStorage {
   createShipment(shipment: InsertShipment): Promise<Shipment>;
   updateShipment(id: number, shipment: Partial<InsertShipment>): Promise<Shipment | undefined>;
   deleteShipment(id: number): Promise<boolean>;
+  processShipmentWriteoff(shipmentId: number, shipmentItems: any[]): Promise<void>;
+  processShipmentRestore(shipmentId: number, shipmentItems: any[]): Promise<void>;
 
   // Logs
   getLogs(params: {
@@ -433,6 +435,14 @@ export class MemStorage implements IStorage {
 
   async deleteShipment(id: number): Promise<boolean> {
     throw new Error("Shipments not supported in MemStorage");
+  }
+
+  async processShipmentWriteoff(shipmentId: number, shipmentItems: any[]): Promise<void> {
+    throw new Error("Shipment operations not supported in MemStorage");
+  }
+
+  async processShipmentRestore(shipmentId: number, shipmentItems: any[]): Promise<void> {
+    throw new Error("Shipment operations not supported in MemStorage");
   }
 }
 
@@ -1199,6 +1209,156 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Метод для списания товаров при отгрузке (без создания документов)
+  async processShipmentWriteoff(
+    shipmentId: number,
+    shipmentItems: any[]
+  ): Promise<void> {
+    try {
+      dbLogger.debug("Shipment writeoff started", {
+        operation: "processShipmentWriteoff",
+        module: "storage",
+        shipmentId,
+        itemsCount: shipmentItems.length
+      });
+
+      await db.transaction(async (tx) => {
+        for (const item of shipmentItems) {
+          const productId = item.productId;
+          const quantityToWriteoff = Number(item.quantity);
+
+          // Получаем все приходы товара в порядке FIFO
+          const availableStock = await tx
+            .select()
+            .from(inventory)
+            .where(and(eq(inventory.productId, productId), eq(inventory.movementType, "IN")))
+            .orderBy(asc(inventory.createdAt));
+
+          let remainingToWriteoff = quantityToWriteoff;
+          const writeoffEntries = [];
+
+          // Списываем из самых старых партий
+          for (const stockItem of availableStock) {
+            if (remainingToWriteoff <= 0) break;
+
+            const availableQuantity = Number(stockItem.quantity);
+            const quantityToTakeFromThisBatch = Math.min(remainingToWriteoff, availableQuantity);
+
+            if (quantityToTakeFromThisBatch > 0) {
+              writeoffEntries.push({
+                documentId: -shipmentId, // Отрицательное значение для отгрузок
+                productId: productId,
+                quantity: toStringForDB(-quantityToTakeFromThisBatch),
+                price: stockItem.price,
+                movementType: "OUT",
+                createdAt: getMoscowTime()
+              });
+
+              remainingToWriteoff -= quantityToTakeFromThisBatch;
+            }
+          }
+
+          // Выполняем batch insert для всех списаний
+          if (writeoffEntries.length > 0) {
+            await tx.insert(inventory).values(writeoffEntries);
+          }
+
+          // Если товара не хватает - создаем запись с отрицательным остатком
+          if (remainingToWriteoff > 0) {
+            await tx.insert(inventory).values({
+              documentId: -shipmentId, // Отрицательное значение для отгрузок
+              productId: productId,
+              quantity: toStringForDB(-remainingToWriteoff),
+              price: toStringForDB(item.price || "0"),
+              movementType: "OUT",
+              createdAt: getMoscowTime(),
+            });
+          }
+
+          dbLogger.debug("Shipment item written off", {
+            operation: "processShipmentWriteoff",
+            module: "storage",
+            shipmentId,
+            productId,
+            quantityWrittenOff: quantityToWriteoff
+          });
+        }
+      });
+
+      dbLogger.info("Shipment writeoff completed", {
+        operation: "processShipmentWriteoff",
+        module: "storage",
+        shipmentId,
+        itemsCount: shipmentItems.length
+      });
+    } catch (error) {
+      dbLogger.error("Error in shipment writeoff", {
+        operation: "processShipmentWriteoff",
+        module: "storage",
+        shipmentId,
+        error: getErrorMessage(error)
+      });
+      throw error;
+    }
+  }
+
+  // Метод для восстановления товаров при отмене отгрузки
+  async processShipmentRestore(shipmentId: number, shipmentItems: any[]): Promise<void> {
+    try {
+      dbLogger.debug("Shipment restore started", {
+        operation: "processShipmentRestore",
+        module: "storage",
+        shipmentId,
+        itemsCount: shipmentItems.length
+      });
+
+      await db.transaction(async (tx) => {
+        for (const item of shipmentItems) {
+          // Удаляем записи списания для этой отгрузки
+          await tx.delete(inventory).where(
+            and(
+              eq(inventory.documentId, -shipmentId), // Отрицательное значение для отгрузок
+              eq(inventory.productId, item.productId)
+            )
+          );
+          
+          // Создаем запись восстановления товара
+          await tx.insert(inventory).values({
+            documentId: -shipmentId, // Отрицательное значение для отгрузок
+            productId: item.productId,
+            quantity: toStringForDB(item.quantity), // Положительное количество = возврат
+            price: toStringForDB(item.price),
+            movementType: "IN",
+            createdAt: getMoscowTime()
+          });
+
+          dbLogger.debug("Shipment item restored", {
+            operation: "processShipmentRestore",
+            module: "storage",
+            shipmentId,
+            productId: item.productId,
+            quantity: item.quantity
+          });
+        }
+      });
+
+      dbLogger.info("Shipment restore completed", {
+        operation: "processShipmentRestore",
+        module: "storage",
+        shipmentId,
+        itemsCount: shipmentItems.length
+      });
+    } catch (error) {
+      dbLogger.error("Error in shipment restore", {
+        operation: "processShipmentRestore",
+        module: "storage",
+        shipmentId,
+        error: getErrorMessage(error)
+      });
+      throw error;
+    }
+  }
+
   // Метод для обработки списания по FIFO
   private async processWriteoffFIFO(
     tx: any,
@@ -1681,24 +1841,40 @@ export class DatabaseStorage implements IStorage {
 
   async updateShipment(id: number, updateData: Partial<InsertShipment>): Promise<Shipment | undefined> {
     try {
-      const [shipment] = await db
-        .update(shipments)
-        .set({
-          ...updateData,
-          updatedAt: getMoscowTime()
-        })
-        .where(eq(shipments.id, id))
-        .returning();
+      return await db.transaction(async (tx) => {
+        // Получаем текущую отгрузку
+        const [currentShipment] = await tx.select().from(shipments).where(eq(shipments.id, id));
+        if (!currentShipment) {
+          return undefined;
+        }
 
-      if (shipment) {
-        dbLogger.info("Shipment updated", { 
-          shipmentId: id,
-          updatedFields: Object.keys(updateData),
-          status: shipment.status 
-        });
-      }
+        // Обновляем отгрузку
+        const [updatedShipment] = await tx
+          .update(shipments)
+          .set({
+            ...updateData,
+            updatedAt: getMoscowTime()
+          })
+          .where(eq(shipments.id, id))
+          .returning();
 
-      return shipment || undefined;
+        if (!updatedShipment) {
+          return undefined;
+        }
+
+        // Обработка статусов отгрузки теперь вынесена в ShipmentService
+        // для лучшего разделения ответственности
+
+        if (updatedShipment) {
+          dbLogger.info("Shipment updated", { 
+            shipmentId: id,
+            updatedFields: Object.keys(updateData),
+            status: updatedShipment.status 
+          });
+        }
+
+        return updatedShipment;
+      });
     } catch (error) {
       dbLogger.error("Error in updateShipment", { error: getErrorMessage(error), id, updateData });
       throw error;

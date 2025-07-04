@@ -2,9 +2,9 @@ import express from "express";
 import { ShipmentService } from "../services/shipmentService";
 import { validateBody, validateParams, idParamSchema, shipmentIdsSchema } from "../middleware/validation";
 import { createInsertSchema } from "drizzle-zod";
-import { shipments } from "../../shared/schema";
+import { shipments, createShipmentSchema } from "../../shared/schema";
 import { logger } from "../../shared/logger";
-import { CacheService } from "../services/cacheService";
+import { cacheService } from "../services/cacheService";
 
 const insertShipmentSchema = createInsertSchema(shipments);
 const getErrorMessage = (error: unknown): string => error instanceof Error ? error.message : String(error);
@@ -70,12 +70,12 @@ router.get("/:id", validateParams(idParamSchema), async (req, res) => {
 /**
  * POST /api/shipments - Создать новую отгрузку
  */
-router.post("/", validateBody(insertShipmentSchema), async (req, res) => {
+router.post("/", validateBody(createShipmentSchema), async (req, res) => {
   try {
     const shipment = await ShipmentService.create(req.body);
     
     // Инвалидируем кеш отгрузок
-    await CacheService.invalidatePattern("shipments:*");
+    await cacheService.invalidatePattern("shipments:*");
     
     logger.info("Shipment created", { 
       shipmentId: shipment.id,
@@ -111,7 +111,7 @@ router.put("/:id", validateParams(idParamSchema), validateBody(insertShipmentSch
     }
 
     // Инвалидируем кеш отгрузок
-    await CacheService.invalidatePattern("shipments:*");
+    await cacheService.invalidatePattern("shipments:*");
 
     logger.info("Shipment updated", { 
       shipmentId: id,
@@ -148,7 +148,7 @@ router.delete("/:id", validateParams(idParamSchema), async (req, res) => {
     }
 
     // Инвалидируем кеш отгрузок
-    await CacheService.invalidatePattern("shipments:*");
+    await cacheService.invalidatePattern("shipments:*");
 
     logger.info("Shipment deleted", { shipmentId: id });
 
@@ -174,7 +174,7 @@ router.post("/delete-multiple", validateBody(shipmentIdsSchema), async (req, res
     const deletedCount = await ShipmentService.deleteMultiple(shipmentIds);
 
     // Инвалидируем кеш отгрузок
-    await CacheService.invalidatePattern("shipments:*");
+    await cacheService.invalidatePattern("shipments:*");
 
     logger.info("Multiple shipments deleted", { 
       requestedCount: shipmentIds.length,

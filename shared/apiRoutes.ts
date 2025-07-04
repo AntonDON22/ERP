@@ -73,6 +73,15 @@ export const API_ROUTES = {
     UPDATE: (id: number) => `/api/orders/${id}` as const,
     DELETE: (id: number) => `/api/orders/${id}` as const,
     DELETE_MULTIPLE: "/api/orders/delete-multiple" as const,
+    
+    // Отгрузки по заказам
+    SHIPMENTS: {
+      LIST: (orderId: number) => `/api/orders/${orderId}/shipments` as const,
+      CREATE: (orderId: number) => `/api/orders/${orderId}/shipments` as const,
+      GET: (orderId: number, shipmentId: number) => `/api/orders/${orderId}/shipments/${shipmentId}` as const,
+      UPDATE: (orderId: number, shipmentId: number) => `/api/orders/${orderId}/shipments/${shipmentId}` as const,
+      DELETE: (orderId: number, shipmentId: number) => `/api/orders/${orderId}/shipments/${shipmentId}` as const,
+    },
   },
 
   // Остатки

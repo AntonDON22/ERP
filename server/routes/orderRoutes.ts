@@ -4,6 +4,7 @@ import { paginationService } from "../services/paginationService";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { apiLogger, logger, getErrorMessage } from "../../shared/logger";
+import shipmentRoutes from "./shipmentRoutes";
 
 const router = Router();
 
@@ -165,5 +166,9 @@ router.post("/delete-multiple", async (req, res) => {
     res.status(500).json({ error: "Ошибка удаления заказов" });
   }
 });
+
+// Подключение вложенного роутера для отгрузок
+// Пример: GET /api/orders/123/shipments
+router.use("/:orderId/shipments", shipmentRoutes);
 
 export default router;

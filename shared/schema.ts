@@ -38,6 +38,9 @@ import {
 // Enum для типов документов
 export const documentTypeEnum = pgEnum("document_type_enum", ["income", "outcome", "return"]);
 
+// Enum для статусов отгрузок
+export const shipmentStatusEnum = pgEnum("shipment_status_enum", ["draft", "prepared", "shipped", "delivered", "cancelled"]);
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
@@ -348,6 +351,65 @@ export const insertOrderItemSchema = z.object({
 export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 export type CreateOrderItem = z.infer<typeof insertOrderItemSchema>;
+
+// Таблица отгрузок
+export const shipments = pgTable(
+  "shipments",
+  {
+    id: serial("id").primaryKey(),
+    orderId: integer("order_id").notNull(),
+    date: text("date").notNull(),
+    status: shipmentStatusEnum("status").notNull().default("draft"),
+    warehouseId: integer("warehouse_id").notNull(),
+    responsibleUserId: integer("responsible_user_id"),
+    comments: text("comments"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    shipmentOrderIdx: index("shipments_order_idx").on(table.orderId),
+    shipmentDateIdx: index("shipments_date_idx").on(table.date),
+    shipmentStatusIdx: index("shipments_status_idx").on(table.status),
+  })
+);
+
+// Таблица позиций отгрузок
+export const shipmentItems = pgTable("shipment_items", {
+  id: serial("id").primaryKey(),
+  shipmentId: integer("shipment_id").notNull(),
+  productId: integer("product_id").notNull(),
+  quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(),
+  price: numeric("price", { precision: 10, scale: 2 }).notNull().default("0"),
+});
+
+// Схемы валидации для отгрузок
+export const createShipmentSchema = z.object({
+  orderId: zId,
+  date: zDate,
+  status: z.enum(["draft", "prepared", "shipped", "delivered", "cancelled"], {
+    errorMap: () => ({ message: "Статус отгрузки должен быть 'draft', 'prepared', 'shipped', 'delivered' или 'cancelled'" }),
+  }).optional().default("draft"),
+  warehouseId: zId,
+  responsibleUserId: zId.optional(),
+  comments: zNotes,
+  items: z.array(z.object({
+    productId: zId,
+    quantity: zQuantity,
+    price: zPrice,
+  })).min(1, "Добавьте хотя бы один товар"),
+});
+
+export const insertShipmentItemSchema = z.object({
+  productId: zId,
+  quantity: zQuantity,
+  price: zPrice,
+});
+
+export type CreateShipmentItem = z.infer<typeof insertShipmentItemSchema>;
+export type InsertShipment = z.infer<typeof createShipmentSchema>;
+export type Shipment = typeof shipments.$inferSelect;
+export type ShipmentItem = typeof shipmentItems.$inferSelect;
+
 export type InsertOrderItem = CreateOrderItem & { orderId?: number };
 export type OrderItem = typeof orderItems.$inferSelect;
 

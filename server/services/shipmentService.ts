@@ -228,20 +228,12 @@ export class ShipmentService {
         });
 
         try {
-          // Подготавливаем данные о товарах для списания с информацией о складе
-          const itemsForWriteoff = result.items.map(item => ({
-            productId: item.productId,
-            quantity: Number(item.quantity),
-            price: Number(item.price),
-            warehouseId: result.warehouseId,
-          }));
-
-          // Автоматически списываем товары с остатков
-          await transactionService.processShipmentWriteoff(shipmentId, itemsForWriteoff);
+          // Автоматически списываем товары через TransactionService
+          await ShipmentService.autoWriteoffOnShipment(result.orderId);
           
           logger.info("Автоматическое списание товаров при отгрузке выполнено успешно", { 
             shipmentId, 
-            itemsCount: itemsForWriteoff.length 
+            orderId: result.orderId 
           });
         } catch (writeoffError) {
           logger.error("Ошибка при автоматическом списании товаров при отгрузке", { 
@@ -249,6 +241,30 @@ export class ShipmentService {
             error: getErrorMessage(writeoffError) 
           });
           // Не прерываем выполнение, так как основное обновление отгрузки уже выполнено
+        }
+      }
+
+      // КРИТИЧЕСКИ ВАЖНО: Отмена списания при переводе отгрузки обратно в черновик  
+      if (shipmentData.status === "draft" && currentShipment.status === "shipped") {
+        logger.info("Статус отгрузки изменен с 'shipped' на 'draft' - отменяем списание товаров", { 
+          shipmentId, 
+          oldStatus: currentShipment.status, 
+          newStatus: "draft" 
+        });
+
+        try {
+          // Создаем приходный документ для отмены списания
+          await ShipmentService.cancelAutoWriteoff(result.orderId);
+          
+          logger.info("Отмена списания товаров при переводе в черновик выполнена успешно", { 
+            shipmentId, 
+            orderId: result.orderId 
+          });
+        } catch (cancelError) {
+          logger.error("Ошибка при отмене списания товаров", { 
+            shipmentId, 
+            error: getErrorMessage(cancelError) 
+          });
         }
       }
 

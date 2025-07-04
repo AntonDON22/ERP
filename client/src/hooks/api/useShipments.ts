@@ -1,79 +1,60 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+/**
+ * 🚢 API ХУКИ ДЛЯ ОТГРУЗОК
+ * 
+ * Централизованные хуки для всех операций с отгрузками
+ */
+
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import { getErrorMessage } from "@shared/utils";
 import { API_ROUTES } from "@shared/apiRoutes";
-import type { Shipment, ShipmentItem } from "@shared/schema";
-
-export interface ShipmentWithItems extends Shipment {
-  items: ShipmentItem[];
-}
-
-export interface CreateShipmentData {
-  orderId: number;
-  date: string;
-  warehouseId: number;
-  comments?: string;
-  items: {
-    productId: number;
-    quantity: number;
-    price: number;
-  }[];
-}
-
-export interface UpdateShipmentData {
-  status?: string;
-  comments?: string;
-  items?: {
-    productId: number;
-    quantity: number;
-    price: number;
-  }[];
-}
+import type {
+  Shipment,
+  CreateShipmentRequest,
+  InsertShipment,
+} from "@shared/schema";
 
 // Получение всех отгрузок
 export function useShipments() {
-  return useQuery<ShipmentWithItems[]>({
+  return useQuery<Shipment[]>({
     queryKey: [API_ROUTES.SHIPMENTS.LIST],
-    queryFn: async () => {
-      const response = await apiRequest(API_ROUTES.SHIPMENTS.LIST);
-      return response.json();
-    },
+    staleTime: 5 * 60 * 1000, // 5 минут
+    gcTime: 10 * 60 * 1000, // 10 минут
   });
 }
 
-// Получение одной отгрузки
-export function useShipment(shipmentId: number) {
-  return useQuery<ShipmentWithItems>({
-    queryKey: [API_ROUTES.SHIPMENTS.GET(shipmentId)],
-    queryFn: async () => {
-      const response = await apiRequest(API_ROUTES.SHIPMENTS.GET(shipmentId));
-      return response.json();
-    },
-    enabled: !!shipmentId,
+// Получение отдельной отгрузки
+export function useShipment(id: number) {
+  return useQuery<Shipment>({
+    queryKey: [API_ROUTES.SHIPMENTS.LIST, id],
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
 // Создание отгрузки
 export function useCreateShipment() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (data: CreateShipmentData) => 
-      apiRequest(API_ROUTES.SHIPMENTS.CREATE, "POST", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.LIST] });
-      toast({
-        title: "Отгрузка создана",
-        description: "Отгрузка успешно создана",
+    mutationFn: async (data: CreateShipmentRequest) => {
+      return await apiRequest(API_ROUTES.SHIPMENTS.CREATE, {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Ошибка при создании отгрузки",
-        description: getErrorMessage(error),
-        variant: "destructive",
+    onSuccess: () => {
+      // Инвалидируем кеш отгрузок
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.SHIPMENTS.LIST],
+      });
+      
+      // Инвалидируем кеш остатков (отгрузки влияют на остатки)
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.AVAILABILITY],
       });
     },
   });
@@ -82,24 +63,32 @@ export function useCreateShipment() {
 // Обновление отгрузки
 export function useUpdateShipment() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: UpdateShipmentData }) => 
-      apiRequest(API_ROUTES.SHIPMENTS.UPDATE(id), "PUT", data),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.LIST] });
-      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.GET(variables.id)] });
-      toast({
-        title: "Отгрузка обновлена",
-        description: "Отгрузка успешно обновлена",
+    mutationFn: async ({ id, data }: { id: number; data: Partial<InsertShipment> }) => {
+      return await apiRequest(API_ROUTES.SHIPMENTS.UPDATE.replace(":id", id.toString()), {
+        method: "PUT",
+        body: JSON.stringify(data),
+        headers: { "Content-Type": "application/json" },
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Ошибка при обновлении отгрузки",
-        description: getErrorMessage(error),
-        variant: "destructive",
+    onSuccess: (_, { id }) => {
+      // Инвалидируем конкретную отгрузку
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.SHIPMENTS.LIST, id],
+      });
+      
+      // Инвалидируем список отгрузок
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.SHIPMENTS.LIST],
+      });
+      
+      // Инвалидируем кеш остатков
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.AVAILABILITY],
       });
     },
   });
@@ -108,73 +97,117 @@ export function useUpdateShipment() {
 // Удаление отгрузки
 export function useDeleteShipment() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
   return useMutation({
-    mutationFn: (id: number) => 
-      apiRequest(API_ROUTES.SHIPMENTS.DELETE(id), "DELETE"),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [API_ROUTES.SHIPMENTS.LIST] });
-      toast({
-        title: "Отгрузка удалена",
-        description: "Отгрузка успешно удалена",
+    mutationFn: async (id: number) => {
+      return await apiRequest(API_ROUTES.SHIPMENTS.DELETE.replace(":id", id.toString()), {
+        method: "DELETE",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Ошибка при удалении отгрузки",
-        description: getErrorMessage(error),
-        variant: "destructive",
+    onSuccess: () => {
+      // Инвалидируем кеш отгрузок
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.SHIPMENTS.LIST],
+      });
+      
+      // Инвалидируем кеш остатков
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.AVAILABILITY],
       });
     },
   });
 }
 
-// Получение всех отгрузок (для общей страницы)
-export function useAllShipments() {
-  return useQuery({
-    queryKey: ["shipments"],
-    queryFn: async () => {
-      try {
-        // Сначала получаем все заказы
-        const response = await apiRequest(API_ROUTES.ORDERS.LIST);
-        const orders = await response.json();
-        
-        // Убедимся что orders это массив
-        if (!Array.isArray(orders)) {
-          return [];
-        }
-        
-        // Затем для каждого заказа получаем отгрузки
-        const allShipments: Shipment[] = [];
-        
-        for (const order of orders) {
-          try {
-            const shipmentsResponse = await apiRequest(API_ROUTES.ORDERS.SHIPMENTS.LIST(order.id));
-            const shipmentsData = await shipmentsResponse.json();
-            const shipments = shipmentsData;
-            
-            if (!Array.isArray(shipments)) {
-              continue;
-            }
-            
-            // Добавляем информацию о заказе к каждой отгрузке
-            const shipmentsWithOrderInfo = shipments.map((shipment: Shipment) => ({
-              ...shipment,
-              orderId: order.id,
-              orderName: order.name,
-            }));
-            allShipments.push(...shipmentsWithOrderInfo);
-          } catch (error) {
-            // Если для заказа нет отгрузок, пропускаем
-            continue;
-          }
-        }
-        
-        return allShipments;
-      } catch (error) {
-        throw error;
-      }
+// Множественное удаление отгрузок
+export function useDeleteShipments() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (ids: number[]) => {
+      return await apiRequest(API_ROUTES.SHIPMENTS.DELETE_MULTIPLE, {
+        method: "POST",
+        body: JSON.stringify({ ids }),
+        headers: { "Content-Type": "application/json" },
+      });
     },
+    onSuccess: () => {
+      // Инвалидируем кеш отгрузок
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.SHIPMENTS.LIST],
+      });
+      
+      // Инвалидируем кеш остатков
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.AVAILABILITY],
+      });
+    },
+  });
+}
+
+// Экспорт в Excel
+export function useExportShipments() {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await fetch(API_ROUTES.SHIPMENTS.EXPORT);
+      if (!response.ok) {
+        throw new Error("Ошибка экспорта отгрузок");
+      }
+      return response.blob();
+    },
+  });
+}
+
+// Импорт из Excel
+export function useImportShipments() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      return await apiRequest(API_ROUTES.SHIPMENTS.IMPORT, {
+        method: "POST",
+        body: formData,
+      });
+    },
+    onSuccess: () => {
+      // Инвалидируем кеш отгрузок после импорта
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.SHIPMENTS.LIST],
+      });
+      
+      // Инвалидируем кеш остатков
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.LIST],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [API_ROUTES.INVENTORY.AVAILABILITY],
+      });
+    },
+  });
+}
+
+// Получение статистики отгрузок
+export function useShipmentStats() {
+  return useQuery({
+    queryKey: [API_ROUTES.SHIPMENTS.LIST, "stats"],
+    queryFn: async () => {
+      const shipments = await apiRequest(API_ROUTES.SHIPMENTS.LIST);
+      
+      return {
+        total: shipments.length,
+        draft: shipments.filter((s: Shipment) => s.status === "draft").length,
+        shipped: shipments.filter((s: Shipment) => s.status === "shipped").length,
+        delivered: shipments.filter((s: Shipment) => s.status === "delivered").length,
+      };
+    },
+    staleTime: 2 * 60 * 1000, // 2 минуты
   });
 }

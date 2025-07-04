@@ -130,6 +130,16 @@ describe('API Routing Tests', () => {
     expect(Array.isArray(body)).toBe(true);
   });
 
+  it('should work correctly for shipments API routes', async () => {
+    const response = await fetch(`http://localhost:${port}/api/shipments`);
+    
+    expect(response.status).toBe(200);
+    expect(response.headers.get('content-type')).toContain('application/json');
+    
+    const body = await response.json();
+    expect(Array.isArray(body)).toBe(true);
+  });
+
   it('should NOT return HTML for API routes', async () => {
     const response = await fetch(`http://localhost:${port}/api/completely-invalid-route`);
     

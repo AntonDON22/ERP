@@ -247,3 +247,28 @@ export function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - 3) + "...";
 }
+
+/**
+ * 🚨 Утилита для обработки ошибок с типизацией
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  
+  if (typeof error === "string") {
+    return error;
+  }
+  
+  if (typeof error === "object" && error !== null) {
+    if ("message" in error && typeof error.message === "string") {
+      return error.message;
+    }
+    
+    if ("error" in error && typeof error.error === "string") {
+      return error.error;
+    }
+  }
+  
+  return "Произошла неизвестная ошибка";
+}

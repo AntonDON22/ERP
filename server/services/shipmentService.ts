@@ -183,7 +183,7 @@ export class ShipmentService {
       }
 
       const result = await db.transaction(async (tx) => {
-        const updateData: any = {
+        const updateData: Partial<typeof shipments.$inferInsert> = {
           updatedAt: getMoscowTime(),
         };
 

@@ -69,7 +69,7 @@ export function useCreateShipment() {
         description: "Отгрузка успешно создана",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Ошибка при создании отгрузки",
         description: getErrorMessage(error),
@@ -95,7 +95,7 @@ export function useUpdateShipment() {
         description: "Отгрузка успешно обновлена",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Ошибка при обновлении отгрузки",
         description: getErrorMessage(error),
@@ -120,7 +120,7 @@ export function useDeleteShipment() {
         description: "Отгрузка успешно удалена",
       });
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast({
         title: "Ошибка при удалении отгрузки",
         description: getErrorMessage(error),
@@ -137,10 +137,7 @@ export function useAllShipments() {
     queryFn: async () => {
       try {
         // Сначала получаем все заказы
-        const response = await fetch("/api/orders");
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        const response = await apiRequest(API_ROUTES.ORDERS.LIST);
         const orders = await response.json();
         
         // Убедимся что orders это массив
@@ -153,18 +150,16 @@ export function useAllShipments() {
         
         for (const order of orders) {
           try {
-            const shipmentsResponse = await fetch(`/api/orders/${order.id}/shipments`);
-            if (!shipmentsResponse.ok) {
-              continue; // Пропускаем заказы без отгрузок
-            }
-            const shipments = await shipmentsResponse.json();
+            const shipmentsResponse = await apiRequest(API_ROUTES.ORDERS.SHIPMENTS.LIST(order.id));
+            const shipmentsData = await shipmentsResponse.json();
+            const shipments = shipmentsData;
             
             if (!Array.isArray(shipments)) {
               continue;
             }
             
             // Добавляем информацию о заказе к каждой отгрузке
-            const shipmentsWithOrderInfo = shipments.map((shipment: any) => ({
+            const shipmentsWithOrderInfo = shipments.map((shipment: Shipment) => ({
               ...shipment,
               orderId: order.id,
               orderName: order.name,

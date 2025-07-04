@@ -16,7 +16,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useProducts } from "@/hooks/api";
-import { useUpdateShipment, useDeleteShipment } from "@/hooks/api/useShipments";
+import { useCreateShipment, useUpdateShipment, useDeleteShipment } from "@/hooks/api/useShipments";
 import { useWarehouses, useOrders } from "@/hooks/api";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Product, Warehouse, Order } from "@shared/schema";

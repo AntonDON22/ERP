@@ -3,6 +3,8 @@ import { db } from "../db";
 import { 
   shipments, 
   shipmentItems, 
+  orders,
+  reserves,
   type Shipment, 
   type ShipmentItem
 } from "@shared/schema";
@@ -199,8 +201,15 @@ export class ShipmentService {
         return { ...updatedShipment, items };
       });
 
+      if (!result) {
+        return result;
+      }
+
+      // КРИТИЧЕСКИ ВАЖНО: Снятие резерва заказа при создании отгрузки
+      await this.releaseOrderReserve(result.orderId);
+
       // КРИТИЧЕСКИ ВАЖНО: Автоматическое списание товаров при смене статуса на "shipped"
-      if (result && shipmentData.status === "shipped" && currentShipment.status !== "shipped") {
+      if (shipmentData.status === "shipped" && currentShipment.status !== "shipped") {
         logger.info("Статус отгрузки изменен на 'shipped' - запускаем автоматическое списание товаров", { 
           shipmentId, 
           oldStatus: currentShipment.status, 
@@ -486,6 +495,30 @@ export class ShipmentService {
       return result;
     } catch (error) {
       logger.error("Ошибка удаления отгрузки", { error: getErrorMessage(error) });
+      throw error;
+    }
+  }
+
+  /**
+   * Снятие резерва заказа при создании отгрузки
+   */
+  private static async releaseOrderReserve(orderId: number): Promise<void> {
+    try {
+      logger.info("Снятие резерва заказа при создании отгрузки", { orderId });
+
+      await db.transaction(async (tx) => {
+        // Снимаем резерв с заказа и удаляем резервы используя TransactionService
+        const transactionService = require("./transactionService").transactionService;
+        await transactionService.clearOrderReserves(orderId);
+
+        logger.info("Резерв заказа снят успешно", { orderId });
+      });
+
+    } catch (error) {
+      logger.error("Ошибка снятия резерва заказа", { 
+        orderId, 
+        error: getErrorMessage(error) 
+      });
       throw error;
     }
   }

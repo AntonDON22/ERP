@@ -536,6 +536,43 @@ export class TransactionService {
       throw error;
     }
   }
+
+  /**
+   * Снятие резерва заказа при создании отгрузки
+   */
+  async clearOrderReserves(orderId: number) {
+    try {
+      logger.info("Снятие резерва заказа", { orderId });
+
+      await db.transaction(async (tx) => {
+        // Обновляем заказ - снимаем резерв
+        await tx
+          .update(orders)
+          .set({ 
+            isReserved: false,
+            updatedAt: getMoscowTime() 
+          })
+          .where(eq(orders.id, orderId));
+
+        // Удаляем все резервы этого заказа
+        await tx
+          .delete(reserves)
+          .where(eq(reserves.orderId, orderId));
+
+        logger.info("Резерв заказа снят успешно", { orderId });
+      });
+
+      // Инвалидируем кеш остатков
+      await cacheService.invalidatePattern("inventory:*");
+
+    } catch (error) {
+      logger.error("Ошибка снятия резерва заказа", { 
+        orderId, 
+        error: getErrorMessage(error) 
+      });
+      throw error;
+    }
+  }
 }
 
 export const transactionService = new TransactionService();
